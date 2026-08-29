@@ -1,0 +1,84 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import { WardrobeItem, Outfit, PlannedOutfit, User, AdminUser, ActivityLog, SystemHealthStatus } from '../types';
+
+export const INITIAL_USER: User = {
+  id: 'usr_paurvi_client',
+  name: 'Client',
+  email: 'client@paurvi.atelier',
+  pronouns: 'they/them',
+  bio: 'Personal digital wardrobe and luxury styling studio.',
+  location: 'Paris, France',
+  joinedDate: new Date().toISOString().split('T')[0],
+  lastActive: new Date().toISOString(),
+  role: 'user',
+  status: 'Active',
+  preferences: {
+    styleVibes: ['Minimal', 'Classic'],
+    favoriteColors: ['Black', 'Ivory', 'Navy', 'Camel'],
+    dislikedColors: [],
+    preferredFits: ['Tailored', 'Relaxed'],
+    temperatureUnit: 'Celsius',
+    theme: 'Dark',
+    notifications: {
+      dailySuggestions: true,
+      plannerReminders: true,
+      weatherAlerts: true,
+      productUpdates: false,
+    },
+    privacy: {
+      improveRecommendations: true,
+      publicProfile: false,
+      shareOutfits: false,
+    },
+    security: {
+      twoFactorEnabled: false,
+      activeSessionsCount: 1,
+    },
+    stylistRules: {
+      onlyUseOwnedItems: true,
+      explainSuggestions: true,
+      autoTagNewItems: true,
+    },
+  },
+};
+
+export const INITIAL_WARDROBE_ITEMS: WardrobeItem[] = [];
+
+export const INITIAL_OUTFITS: Outfit[] = [];
+
+export const INITIAL_PLANNED_OUTFITS: PlannedOutfit[] = [];
+
+export const INITIAL_ADMIN_USERS: AdminUser[] = [
+  {
+    id: 'usr_paurvi_client',
+    name: 'Client',
+    email: 'client@paurvi.atelier',
+    role: 'user',
+    wardrobeCount: 0,
+    outfitsCount: 0,
+    aiRequestsCount: 0,
+    createdAt: new Date().toISOString().split('T')[0],
+    lastActive: 'Just now',
+    status: 'Active',
+  },
+];
+
+export const INITIAL_ACTIVITY_LOGS: ActivityLog[] = [];
+
+export const INITIAL_SYSTEM_HEALTH: SystemHealthStatus = {
+  status: 'Operational',
+  uptimePercentage: 99.98,
+  aiServiceLatencyMs: 240,
+  storageUsageMb: 0.1,
+  storageLimitMb: 1000,
+  totalActiveUsers: 1,
+  totalWardrobeItems: 0,
+  totalOutfitsComposed: 0,
+  totalAiGenerations: 0,
+  databaseStatus: 'Local Storage / Connected to Gemini Engine',
+  lastBackupTimestamp: new Date().toISOString(),
+};

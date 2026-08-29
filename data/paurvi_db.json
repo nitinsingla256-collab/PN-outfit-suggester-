@@ -1,0 +1,243 @@
+{
+  "users": [
+    {
+      "id": "usr_supervisor_paurvi",
+      "name": "Nitin Singla (Admin)",
+      "email": "nitinsingla256@gmail.com",
+      "passwordHash": "dbc488dfb58230b8ceab8cdbe6cd850ac834f387e3df42657f3004e1db4792449d23e383a788724279ea8346b2fc9ade38da53576eba8a211304f0e2fac6e19d",
+      "salt": "9c1bf3a06256855a79f77bddd0b93fb8",
+      "role": "supervisor",
+      "status": "Active",
+      "joinedDate": "2026-08-29",
+      "lastActive": "2026-08-29T13:08:53.772Z",
+      "pronouns": "she/they",
+      "bio": "Lead Atelier Supervisor & Haute Horlogerie Archivist.",
+      "location": "Paris, France",
+      "preferences": {
+        "styleVibes": [
+          "Minimal",
+          "Classic"
+        ],
+        "favoriteColors": [
+          "Black",
+          "Ivory",
+          "Navy",
+          "Camel"
+        ],
+        "dislikedColors": [],
+        "preferredFits": [
+          "Tailored",
+          "Relaxed"
+        ],
+        "temperatureUnit": "Celsius",
+        "theme": "Dark",
+        "notifications": {
+          "dailySuggestions": true,
+          "plannerReminders": true,
+          "weatherAlerts": true,
+          "productUpdates": false
+        },
+        "privacy": {
+          "improveRecommendations": true,
+          "publicProfile": false,
+          "shareOutfits": false
+        },
+        "security": {
+          "twoFactorEnabled": false,
+          "activeSessionsCount": 1
+        },
+        "stylistRules": {
+          "onlyUseOwnedItems": true,
+          "explainSuggestions": true,
+          "autoTagNewItems": true
+        }
+      }
+    },
+    {
+      "id": "usr_client_paurvi",
+      "name": "Client",
+      "email": "client@paurvi.atelier",
+      "passwordHash": "8ce0841c3ad409ded77124bdc46a8745778ad41f353b55621950e97478a9f47b7814af9a6404a9c471d828d964841fbd55b71b15bf3052bfd13f620d991a0ddf",
+      "salt": "7fe587fb6b1187e0f379562d677db0a5",
+      "role": "user",
+      "status": "Suspended",
+      "joinedDate": "2026-08-29",
+      "lastActive": "2026-08-29T12:53:42.031Z",
+      "pronouns": "they/them",
+      "bio": "Personal digital wardrobe and luxury styling studio.",
+      "location": "Paris, France",
+      "preferences": {
+        "styleVibes": [
+          "Minimal",
+          "Classic"
+        ],
+        "favoriteColors": [
+          "Black",
+          "Ivory",
+          "Navy",
+          "Camel"
+        ],
+        "dislikedColors": [],
+        "preferredFits": [
+          "Tailored",
+          "Relaxed"
+        ],
+        "temperatureUnit": "Celsius",
+        "theme": "Dark",
+        "notifications": {
+          "dailySuggestions": true,
+          "plannerReminders": true,
+          "weatherAlerts": true,
+          "productUpdates": false
+        },
+        "privacy": {
+          "improveRecommendations": true,
+          "publicProfile": false,
+          "shareOutfits": false
+        },
+        "security": {
+          "twoFactorEnabled": false,
+          "activeSessionsCount": 1
+        },
+        "stylistRules": {
+          "onlyUseOwnedItems": true,
+          "explainSuggestions": true,
+          "autoTagNewItems": true
+        }
+      }
+    }
+  ],
+  "sessions": [
+    {
+      "token": "paurvi_tok_6cf8ac2f818d39904c900bf72da96c236e5486d7360037589cc39ade95e270ca",
+      "userId": "usr_supervisor_paurvi",
+      "createdAt": "2026-08-29T12:53:59.517Z",
+      "expiresAt": "2026-09-28T12:53:59.517Z"
+    },
+    {
+      "token": "paurvi_tok_94432e6894bf2417df4693bf7981f99a12740d90fcb33b01a50c67e55b4565d7",
+      "userId": "usr_supervisor_paurvi",
+      "createdAt": "2026-08-29T12:55:36.214Z",
+      "expiresAt": "2026-09-28T12:55:36.214Z"
+    },
+    {
+      "token": "paurvi_tok_1cf2702fac6205cf4fd6affa0fd90f3ecc57146950665b0d020f43b575f1d276",
+      "userId": "usr_supervisor_paurvi",
+      "createdAt": "2026-08-29T12:58:51.758Z",
+      "expiresAt": "2026-09-28T12:58:51.758Z"
+    },
+    {
+      "token": "paurvi_tok_61ff671704c3b5aff0a046c3b9e29394055175b40aad1893e54787d40147b4e4",
+      "userId": "usr_supervisor_paurvi",
+      "createdAt": "2026-08-29T12:59:15.353Z",
+      "expiresAt": "2026-09-28T12:59:15.353Z"
+    }
+  ],
+  "wardrobes": {
+    "usr_supervisor_paurvi": [],
+    "usr_client_paurvi": []
+  },
+  "outfits": {
+    "usr_supervisor_paurvi": [],
+    "usr_client_paurvi": []
+  },
+  "plans": {
+    "usr_supervisor_paurvi": [],
+    "usr_client_paurvi": []
+  },
+  "wearHistory": {
+    "usr_supervisor_paurvi": [],
+    "usr_client_paurvi": []
+  },
+  "stylistConversations": {
+    "usr_supervisor_paurvi": [],
+    "usr_client_paurvi": []
+  },
+  "activityLogs": [
+    {
+      "id": "log_1788008950325_c6e067",
+      "userId": "usr_supervisor_paurvi",
+      "userName": "Nitin Singla (Admin)",
+      "userEmail": "nitinsingla256@gmail.com",
+      "action": "AI Stylist request: Outfit Synthesis (\"Monochromatic Charcoal & Cream Smart Casual Blueprint\")",
+      "category": "AI_STYLIST",
+      "timestamp": "2026-08-29T13:09:10.325Z"
+    },
+    {
+      "id": "log_1788008355354_b275cf",
+      "userId": "usr_supervisor_paurvi",
+      "userName": "Nitin Singla (Admin)",
+      "userEmail": "nitinsingla256@gmail.com",
+      "action": "User signed into PAURVI",
+      "category": "AUTH",
+      "timestamp": "2026-08-29T12:59:15.354Z"
+    },
+    {
+      "id": "log_init_1788008344195",
+      "userId": "usr_supervisor_paurvi",
+      "userName": "Nitin Singla (Admin)",
+      "userEmail": "nitinsingla256@gmail.com",
+      "action": "System initialized and supervisor account provisioned",
+      "category": "SYSTEM",
+      "timestamp": "2026-08-29T12:59:04.195Z"
+    },
+    {
+      "id": "log_1788008331758_74102f",
+      "userId": "usr_supervisor_paurvi",
+      "userName": "Nitin Singla (Admin)",
+      "userEmail": "nitinsingla256@gmail.com",
+      "action": "User signed into PAURVI",
+      "category": "AUTH",
+      "timestamp": "2026-08-29T12:58:51.758Z"
+    },
+    {
+      "id": "log_1788008136214_2c4a5b",
+      "userId": "usr_supervisor_paurvi",
+      "userName": "Nitin Singla (Admin)",
+      "userEmail": "nitinsingla256@gmail.com",
+      "action": "User signed into PAURVI",
+      "category": "AUTH",
+      "timestamp": "2026-08-29T12:55:36.214Z"
+    },
+    {
+      "id": "log_1788008071653_8e396a",
+      "userId": "usr_supervisor_paurvi",
+      "userName": "Nitin Singla (Admin)",
+      "userEmail": "nitinsingla256@gmail.com",
+      "action": "Supervisor modified account status/role for nitinsingla256@gmail.com: status=Active, role=user",
+      "category": "SYSTEM",
+      "timestamp": "2026-08-29T12:54:31.653Z"
+    },
+    {
+      "id": "log_1788008062270_2d262d",
+      "userId": "usr_supervisor_paurvi",
+      "userName": "Nitin Singla (Admin)",
+      "userEmail": "nitinsingla256@gmail.com",
+      "action": "Supervisor modified account status/role for client@paurvi.atelier: status=Suspended, role=user",
+      "category": "SYSTEM",
+      "timestamp": "2026-08-29T12:54:22.270Z"
+    },
+    {
+      "id": "log_1788008039517_dcf888",
+      "userId": "usr_supervisor_paurvi",
+      "userName": "Nitin Singla (Admin)",
+      "userEmail": "nitinsingla256@gmail.com",
+      "action": "User signed into PAURVI",
+      "category": "AUTH",
+      "timestamp": "2026-08-29T12:53:59.517Z"
+    },
+    {
+      "id": "log_init_1788008022023",
+      "userId": "usr_supervisor_paurvi",
+      "userName": "Nitin Singla (Admin)",
+      "userEmail": "nitinsingla256@gmail.com",
+      "action": "System initialized and supervisor account provisioned",
+      "category": "SYSTEM",
+      "timestamp": "2026-08-29T12:53:42.023Z"
+    }
+  ],
+  "aiRequestsCount": {
+    "usr_supervisor_paurvi": 1,
+    "usr_client_paurvi": 0
+  }
+}

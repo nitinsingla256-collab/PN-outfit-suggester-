@@ -1,0 +1,6 @@
+{
+  "name": "PAURVI — AI Wardrobe & Stylist",
+  "description": "Personal digital wardrobe, luxury lookbook planner, and intelligent AI styling platform.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
