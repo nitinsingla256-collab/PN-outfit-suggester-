@@ -234,7 +234,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setIsAuthenticated(true);
       await loadUserData();
       showToast({
-        title: 'Welcome to PAURVI',
+        title: 'Welcome to PN',
         description: `Signed in as ${authedUser.name}.`,
         type: 'success',
       });
@@ -258,7 +258,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setPlans([]);
       showToast({
         title: 'Account Created',
-        description: `Welcome to PAURVI Atelier, ${newUser.name}. Your digital wardrobe is ready.`,
+        description: `Welcome to PN Outfit Suggester, ${newUser.name}. Your digital wardrobe is ready.`,
         type: 'success',
       });
       navigateTo('/');
@@ -276,7 +276,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setPlans([]);
     showToast({
       title: 'Signed Out',
-      description: 'You have been safely signed out of PAURVI.',
+      description: 'You have been safely signed out of PN.',
       type: 'info',
     });
     navigateTo('/');

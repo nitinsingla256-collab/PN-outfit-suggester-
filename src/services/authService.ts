@@ -11,7 +11,7 @@ export interface AuthSession {
   isAuthenticated: boolean;
 }
 
-const TOKEN_KEY = 'paurvi_auth_token_v3';
+const TOKEN_KEY = 'pn_auth_token_v1';
 
 export class AuthService {
   private token: string | null = null;

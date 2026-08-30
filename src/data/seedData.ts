@@ -6,9 +6,9 @@
 import { WardrobeItem, Outfit, PlannedOutfit, User, AdminUser, ActivityLog, SystemHealthStatus } from '../types';
 
 export const INITIAL_USER: User = {
-  id: 'usr_paurvi_client',
+  id: 'usr_pn_client',
   name: 'Client',
-  email: 'client@paurvi.atelier',
+  email: 'client@pn.outfit',
   pronouns: 'they/them',
   bio: 'Personal digital wardrobe and luxury styling studio.',
   location: 'Paris, France',
@@ -54,9 +54,9 @@ export const INITIAL_PLANNED_OUTFITS: PlannedOutfit[] = [];
 
 export const INITIAL_ADMIN_USERS: AdminUser[] = [
   {
-    id: 'usr_paurvi_client',
+    id: 'usr_pn_client',
     name: 'Client',
-    email: 'client@paurvi.atelier',
+    email: 'client@pn.outfit',
     role: 'user',
     wardrobeCount: 0,
     outfitsCount: 0,

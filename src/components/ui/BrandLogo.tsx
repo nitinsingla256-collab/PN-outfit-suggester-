@@ -40,7 +40,7 @@ export function BrandLogo({ size = 'md', showWordmark = true, className = '' }: 
         <div className="flex flex-col">
           <div className="flex items-center gap-1.5 leading-none">
             <span className={`font-editorial font-semibold text-gray-900 uppercase ${wordmarkSizes[size]}`}>
-              PAURVI
+              PN
             </span>
           </div>
           <span className="text-[9px] text-emerald-500 tracking-[0.2em] uppercase font-mono mt-0.5">

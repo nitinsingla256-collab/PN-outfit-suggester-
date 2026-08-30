@@ -20,7 +20,7 @@ export function SettingsPage() {
 
   const handleExportData = () => {
     const payload = {
-      brand: "PAURVI",
+      brand: "PN",
       user,
       wardrobe,
       outfits,
@@ -35,13 +35,13 @@ export function SettingsPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `paurvi-wardrobe-backup-${new Date().toISOString().split("T")[0]}.json`;
+    a.download = `pn-wardrobe-backup-${new Date().toISOString().split("T")[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
 
     showToast({
       title: "Archive Exported",
-      description: "Your complete PAURVI wardrobe manifest was downloaded.",
+      description: "Your complete PN wardrobe manifest was downloaded.",
       type: "success",
     });
   };
@@ -52,7 +52,7 @@ export function SettingsPage() {
       <div className="pb-4 border-b border-gray-200">
         <div className="flex items-center gap-2 mb-1">
           <span className="text-xs uppercase font-semibold tracking-wider text-emerald-500">
-            PAURVI Atelier
+            PN Outfit Suggester
           </span>
           <span className="text-gray-400">·</span>
           <span className="text-xs text-gray-600 font-mono">Preferences</span>
@@ -180,7 +180,7 @@ export function SettingsPage() {
               onClick={handleExportData}
               leftIcon={<Download className="w-3.5 h-3.5" />}
             >
-              Export PAURVI Backup (JSON)
+              Export PN Backup (JSON)
             </Button>
 
             <Button

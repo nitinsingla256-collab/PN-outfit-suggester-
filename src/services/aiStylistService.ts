@@ -167,6 +167,10 @@ export class AIStylistService {
     message: string;
     conversationHistory: { role: 'user' | 'assistant'; content: string }[];
     wardrobePool: WardrobeItem[];
+    weather?: string;
+    location?: string;
+    time?: string;
+    date?: string;
   }): Promise<string> {
     try {
       const response = await fetch('/api/gemini/chat', {

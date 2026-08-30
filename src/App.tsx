@@ -93,7 +93,7 @@ export function AppContent() {
           <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-emerald-500" />
         </div>
         <p className="text-xs uppercase tracking-[0.3em] text-gray-500 font-mono">
-          PAURVI ATELIER
+          PN OUTFIT SUGGESTER
         </p>
       </div>
     );

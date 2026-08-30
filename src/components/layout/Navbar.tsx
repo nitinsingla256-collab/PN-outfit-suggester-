@@ -46,7 +46,7 @@ export function Navbar() {
       case '/admin':
         return { title: 'Supervisor Console', subtitle: 'Platform Telemetry & Audit Logs' };
       default:
-        return { title: 'PAURVI', subtitle: 'AI Wardrobe & Stylist' };
+        return { title: 'PN', subtitle: 'AI Wardrobe & Stylist' };
     }
   };
 
@@ -135,7 +135,7 @@ export function Navbar() {
               </div>
               <div className="space-y-2.5">
                 <div className="p-2.5 rounded-xl bg-white/80 border border-gray-200 text-xs">
-                  <div className="font-medium text-gray-800">Welcome to PAURVI, {user.name}</div>
+                  <div className="font-medium text-gray-800">Welcome to PN, {user.name}</div>
                   <div className="text-[11px] text-gray-600 mt-0.5">
                     Your personal AI wardrobe and concierge stylist is ready.
                   </div>

@@ -186,7 +186,7 @@ export const AuthPage: React.FC = () => {
             </span>
           </div>
           <span className="font-serif text-xl tracking-[0.2em] font-semibold uppercase">
-            PAURVI
+            PN
           </span>
         </div>
 
@@ -254,7 +254,7 @@ export const AuthPage: React.FC = () => {
               </span>
             </div>
             <h1 className="text-xl font-serif tracking-[0.25em] text-gray-900 font-semibold uppercase">
-              PAURVI
+              PN
             </h1>
           </div>
 

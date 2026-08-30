@@ -1,6 +1,5 @@
-/** * @license * SPDX-License-Identifier: Apache-2.0 */ import React, {
-  useState,
-} from "react";
+/** * @license * SPDX-License-Identifier: Apache-2.0 */ import React, { useState, useEffect } from "react";
+import Markdown from "react-markdown";
 import { useApp } from "../context/AppContext";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
@@ -135,8 +134,8 @@ export function StylistPage() {
       role: "assistant",
       content:
         wardrobe.length === 0
-          ? `Welcome to PAURVI Atelier, ${user.name}. Your digital wardrobe currently has 0 items. You can upload photos of your garments or ask me for advice on color coordination and capsule building.`
-          : `Hello ${user.name}. I am your PAURVI AI Stylist. I have access to your ${wardrobe.length} catalogued pieces and can compose safe, modern, or statement ensembles for any occasion.`,
+          ? `Welcome to PN Outfit Suggester, ${user.name}. Your digital wardrobe currently has 0 items. You can upload photos of your garments or ask me for advice on color coordination and capsule building.`
+          : `Hello ${user.name}. I am your PN AI Stylist. I have access to your ${wardrobe.length} catalogued pieces and can compose safe, modern, or statement ensembles for any occasion.`,
       time: "Just now",
     },
   ]);
@@ -248,7 +247,7 @@ export function StylistPage() {
         ? [
             {
               id: "primary",
-              lookType: "Safe & Refined",
+              lookType: "SAFE & REFINED",
               title: generationResult.outfitName,
               subtitle: "Classic, balanced, and timeless harmony",
               pieces: generationResult.pieces,
@@ -352,10 +351,12 @@ export function StylistPage() {
       });
     }
   };
-  const handleSendChatMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!chatInput.trim() || isChatLoading) return;
-    const userText = chatInput.trim();
+  const handleSendChatMessage = async (e: React.FormEvent | string) => {
+    if (typeof e !== "string") {
+      e.preventDefault();
+    }
+    const userText = typeof e === "string" ? e : chatInput.trim();
+    if (!userText || isChatLoading) return;
     const newMsg = {
       role: "user" as const,
       content: userText,
@@ -375,6 +376,10 @@ export function StylistPage() {
           content: m.content,
         })),
         wardrobePool: wardrobe,
+        weather: weatherDescription,
+        location: location || user.location || "Unknown",
+        time: time || new Date().toLocaleTimeString(),
+        date: date || new Date().toLocaleDateString(),
       });
       setChatMessages((prev) => [
         ...prev,
@@ -387,13 +392,13 @@ export function StylistPage() {
           }),
         },
       ]);
-    } catch (err: any) {
+    } catch (error) {
+      console.error(error);
       setChatMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content:
-            "Unable to connect with styling concierge. Please try again.",
+          content: "Your stylist is temporarily unavailable. Please try again.",
           time: new Date().toLocaleTimeString([], {
             hour: "2-digit",
             minute: "2-digit",
@@ -1412,10 +1417,16 @@ export function StylistPage() {
                   )}{" "}
                 </div>{" "}
                 <div
-                  className={`rounded-2xl p-4 text-xs leading-relaxed ${msg.role === "user" ? "bg-emerald-600 text-gray-900" : "bg-gray-50 text-gray-800 border border-gray-200/60 "}`}
+                  className={`rounded-2xl p-4 text-xs leading-relaxed ${msg.role === "user" ? "bg-emerald-600 text-white" : "bg-gray-50 text-gray-800 border border-gray-200/60 "}`}
                 >
                   {" "}
-                  <p className="whitespace-pre-line">{msg.content}</p>{" "}
+                  {msg.role === "assistant" ? (
+                    <div className="markdown-body prose prose-sm max-w-none">
+                      <Markdown>{msg.content}</Markdown>
+                    </div>
+                  ) : (
+                    <p className="whitespace-pre-line">{msg.content}</p>
+                  )}{" "}
                   <span
                     className={`block text-[10px] mt-2 ${msg.role === "user" ? "text-emerald-200" : "text-gray-400 "}`}
                   >
@@ -1439,6 +1450,27 @@ export function StylistPage() {
               </div>
             )}{" "}
           </div>{" "}
+          {/* Suggested Chat Prompts */}
+          <div className="px-6 pb-2">
+            <div className="flex flex-wrap items-center gap-2">
+              {[
+                "Style me for tonight",
+                "What should I wear today?",
+                "Make this outfit more formal",
+                "What goes with navy trousers?",
+                "Help me choose colours",
+              ].map((prompt, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => handleSendChatMessage(prompt)}
+                  className="px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-full text-[11px] font-medium transition-colors border border-emerald-100"
+                >
+                  {prompt}
+                </button>
+              ))}
+            </div>
+          </div>
           {/* Chat Input Bar */}{" "}
           <form
             onSubmit={handleSendChatMessage}

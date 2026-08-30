@@ -1,4 +1,5 @@
-
+const fs = require('fs');
+const newAdminCode = `
 import React, { useState } from "react";
 import { useApp } from "../context/AppContext";
 import { Card } from "../components/ui/Card";
@@ -29,3 +30,5 @@ export function AdminPage() {
     </div>
   );
 }
+`;
+fs.writeFileSync('src/pages/AdminPage.tsx', newAdminCode);

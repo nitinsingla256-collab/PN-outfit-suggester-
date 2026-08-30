@@ -122,7 +122,7 @@ export function HomePage() {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="text-xs font-medium uppercase tracking-widest text-emerald-500">
-              PAURVI Atelier Intelligence
+              PN Outfit Suggester Intelligence
             </span>
             <span className="text-gray-400">·</span>
             <span className="text-xs text-gray-600 font-mono">
@@ -134,7 +134,7 @@ export function HomePage() {
           </h2>
           <p className="text-xs sm:text-sm text-gray-600 mt-1 max-w-xl leading-relaxed">
             {wardrobe.length === 0
-              ? "Your PAURVI digital wardrobe is ready. Upload and catalogue your first clothing pieces to unlock AI styling recommendations."
+              ? "Your PN digital wardrobe is ready. Upload and catalogue your first clothing pieces to unlock AI styling recommendations."
               : `Your digital wardrobe has ${wardrobe.length} active pieces. Review today's styling recommendations, planned engagements, and wardrobe statistics.`}
           </p>
         </div>
@@ -277,7 +277,7 @@ export function HomePage() {
                   Start Your Digital Wardrobe
                 </h3>
                 <p className="text-xs sm:text-sm text-gray-400 max-w-md leading-relaxed relative z-10">
-                  Add coats, tops, bottoms, and accessories. PAURVI&apos;s
+                  Add coats, tops, bottoms, and accessories. PN&apos;s
                   Gemini AI will automatically recognize fabric textures, cuts,
                   and colorways to build tailored outfit formulas.
                 </p>
@@ -530,7 +530,7 @@ export function HomePage() {
           <div className="flex items-center justify-center sm:justify-start gap-2">
             <Sparkles className="w-4 h-4 text-emerald-500" />
             <span className="text-xs uppercase font-semibold tracking-wider text-emerald-500">
-              PAURVI Intelligent Outfit Generator
+              PN Intelligent Outfit Generator
             </span>
           </div>
           <h3 className="text-lg sm:text-xl font-semibold text-gray-900 font-editorial">
