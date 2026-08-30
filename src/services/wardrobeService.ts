@@ -36,7 +36,16 @@ export class WardrobeService {
         headers: this.getHeaders(),
       });
       if (res.ok) {
-        const data = await res.json();
+        let data;
+    const text = await res.text();
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      if (!res.ok) {
+        throw new Error('Server returned an error: ' + res.status + ' ' + res.statusText);
+      }
+      throw new Error('Received unexpected response format from server (possibly 502/503 from the platform proxy).');
+    }
         return data.items || [];
       }
     } catch (err) {
@@ -57,7 +66,16 @@ export class WardrobeService {
       body: JSON.stringify(itemData),
     });
 
-    const data = await res.json();
+    let data;
+    const text = await res.text();
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      if (!res.ok) {
+        throw new Error('Server returned an error: ' + res.status + ' ' + res.statusText);
+      }
+      throw new Error('Received unexpected response format from server (possibly 502/503 from the platform proxy).');
+    }
     if (!res.ok || !data.success) {
       throw new Error(data.error || 'Failed to save wardrobe piece.');
     }
@@ -71,7 +89,16 @@ export class WardrobeService {
       body: JSON.stringify(updates),
     });
 
-    const data = await res.json();
+    let data;
+    const text = await res.text();
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      if (!res.ok) {
+        throw new Error('Server returned an error: ' + res.status + ' ' + res.statusText);
+      }
+      throw new Error('Received unexpected response format from server (possibly 502/503 from the platform proxy).');
+    }
     if (!res.ok || !data.success) {
       throw new Error(data.error || 'Failed to update wardrobe piece.');
     }
@@ -84,7 +111,16 @@ export class WardrobeService {
       headers: this.getHeaders(),
     });
 
-    const data = await res.json();
+    let data;
+    const text = await res.text();
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      if (!res.ok) {
+        throw new Error('Server returned an error: ' + res.status + ' ' + res.statusText);
+      }
+      throw new Error('Received unexpected response format from server (possibly 502/503 from the platform proxy).');
+    }
     if (!res.ok || !data.success) {
       throw new Error(data.error || 'Failed to remove piece.');
     }
@@ -97,7 +133,16 @@ export class WardrobeService {
       headers: this.getHeaders(),
     });
 
-    const data = await res.json();
+    let data;
+    const text = await res.text();
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      if (!res.ok) {
+        throw new Error('Server returned an error: ' + res.status + ' ' + res.statusText);
+      }
+      throw new Error('Received unexpected response format from server (possibly 502/503 from the platform proxy).');
+    }
     if (!res.ok || !data.success) {
       throw new Error(data.error || 'Failed to toggle favorite.');
     }
@@ -110,7 +155,16 @@ export class WardrobeService {
       headers: this.getHeaders(),
     });
 
-    const data = await res.json();
+    let data;
+    const text = await res.text();
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      if (!res.ok) {
+        throw new Error('Server returned an error: ' + res.status + ' ' + res.statusText);
+      }
+      throw new Error('Received unexpected response format from server (possibly 502/503 from the platform proxy).');
+    }
     if (!res.ok || !data.success) {
       throw new Error(data.error || 'Failed to record wear.');
     }

@@ -3,10 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
-import { useApp } from '../context/AppContext';
-import { Button } from '../components/ui/Button';
-import { Compass, ArrowLeft } from 'lucide-react';
+import React from "react";
+import { useApp } from "../context/AppContext";
+import { Button } from "../components/ui/Button";
+import { Compass, ArrowLeft } from "lucide-react";
 
 export function NotFoundPage() {
   const { navigateTo } = useApp();
@@ -20,11 +20,12 @@ export function NotFoundPage() {
         Route Not Found
       </h2>
       <p className="text-xs sm:text-sm text-gray-600 max-w-sm">
-        The sartorial coordinate you are searching for does not exist in your current digital capsule.
+        The sartorial coordinate you are searching for does not exist in your
+        current digital capsule.
       </p>
       <Button
         variant="primary"
-        onClick={() => navigateTo('/')}
+        onClick={() => navigateTo("/")}
         leftIcon={<ArrowLeft className="w-4 h-4" />}
       >
         Return to Dashboard

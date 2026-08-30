@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import React, { useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import {
   Lock,
   Mail,
@@ -17,36 +17,37 @@ import {
   KeyRound,
   CheckCircle2,
   AlertCircle,
-} from 'lucide-react';
-import { useApp } from '../context/AppContext';
+} from "lucide-react";
+import { useApp } from "../context/AppContext";
 
-type AuthMode = 'signin' | 'signup' | 'forgot';
+type AuthMode = "signin" | "signup" | "forgot";
 
 export const AuthPage: React.FC = () => {
-  const { signIn, signUp, requestPasswordReset, resetPassword, showToast } = useApp();
+  const { signIn, signUp, requestPasswordReset, resetPassword, showToast } =
+    useApp();
 
-  const [mode, setMode] = useState<AuthMode>('signin');
+  const [mode, setMode] = useState<AuthMode>("signin");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Form Fields
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
   // Forgot password flow
-  const [resetCode, setResetCode] = useState('');
-  const [newPassword, setNewPassword] = useState('');
+  const [resetCode, setResetCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
   const [resetStep, setResetStep] = useState<1 | 2>(1);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     if (!email || !password) {
-      setError('Please enter your email and password.');
+      setError("Please enter your email and password.");
       return;
     }
 
@@ -54,7 +55,9 @@ export const AuthPage: React.FC = () => {
     try {
       await signIn(email, password);
     } catch (err: any) {
-      setError(err.message || 'Failed to sign in. Please verify your credentials.');
+      setError(
+        err.message || "Failed to sign in. Please verify your credentials.",
+      );
     } finally {
       setLoading(false);
     }
@@ -65,29 +68,33 @@ export const AuthPage: React.FC = () => {
     setError(null);
 
     if (!name.trim()) {
-      setError('Please enter your full name.');
+      setError("Please enter your full name.");
       return;
     }
-    if (!email || !email.includes('@')) {
-      setError('Please enter a valid email address.');
+    if (!email || !email.includes("@")) {
+      setError("Please enter a valid email address.");
       return;
     }
     if (password.length < 8) {
-      setError('Password must be at least 8 characters.');
+      setError("Password must be at least 8 characters.");
       return;
     }
     const hasUpper = /[A-Z]/.test(password);
     const hasLower = /[a-z]/.test(password);
     const hasNumberOrSpecial = /[0-9!@#$%^&*]/.test(password);
-    const score = [hasUpper, hasLower, hasNumberOrSpecial].filter(Boolean).length;
-    
+    const score = [hasUpper, hasLower, hasNumberOrSpecial].filter(
+      Boolean,
+    ).length;
+
     if (score < 3) {
-      setError('Password must contain uppercase, lowercase, and a number/special character.');
+      setError(
+        "Password must contain uppercase, lowercase, and a number/special character.",
+      );
       return;
     }
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match.');
+      setError("Passwords do not match.");
       return;
     }
 
@@ -95,7 +102,7 @@ export const AuthPage: React.FC = () => {
     try {
       await signUp(name, email, password, confirmPassword);
     } catch (err: any) {
-      setError(err.message || 'Registration failed. Please try again.');
+      setError(err.message || "Registration failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -105,7 +112,7 @@ export const AuthPage: React.FC = () => {
     e.preventDefault();
     setError(null);
     if (!email) {
-      setError('Please enter your email address.');
+      setError("Please enter your email address.");
       return;
     }
 
@@ -118,12 +125,12 @@ export const AuthPage: React.FC = () => {
       }
       setResetStep(2);
       showToast({
-        title: 'Reset Code Dispatched',
-        description: 'Check your code below to update your password.',
-        type: 'info',
+        title: "Reset Code Dispatched",
+        description: "Check your code below to update your password.",
+        type: "info",
       });
     } catch (err: any) {
-      setError(err.message || 'Password reset request failed.');
+      setError(err.message || "Password reset request failed.");
     } finally {
       setLoading(false);
     }
@@ -133,11 +140,11 @@ export const AuthPage: React.FC = () => {
     e.preventDefault();
     setError(null);
     if (!resetCode || !newPassword) {
-      setError('Please enter the reset code and your new password.');
+      setError("Please enter the reset code and your new password.");
       return;
     }
     if (newPassword.length < 6) {
-      setError('New password must be at least 6 characters.');
+      setError("New password must be at least 6 characters.");
       return;
     }
 
@@ -145,54 +152,61 @@ export const AuthPage: React.FC = () => {
     try {
       const msg = await resetPassword(email, resetCode, newPassword);
       showToast({
-        title: 'Password Updated',
+        title: "Password Updated",
         description: msg,
-        type: 'success',
+        type: "success",
       });
-      setMode('signin');
+      setMode("signin");
       setPassword(newPassword);
-      setSuccessMessage('Password reset successfully. You may now sign in.');
+      setSuccessMessage("Password reset successfully. You may now sign in.");
       setResetStep(1);
     } catch (err: any) {
-      setError(err.message || 'Failed to reset password.');
+      setError(err.message || "Failed to reset password.");
     } finally {
       setLoading(false);
     }
   };
 
   const fillDemoSupervisor = () => {
-    setMode('signin');
-    setEmail('nitinsingla256@gmail.com');
-    setPassword('');
-    setSuccessMessage('Admin email loaded. Enter your secure password.');
+    setMode("signin");
+    setEmail("nitinsingla256@gmail.com");
+    setPassword("");
+    setSuccessMessage("Admin email loaded. Enter your secure password.");
   };
 
   return (
     <div className="min-h-screen w-full flex bg-gray-50 text-gray-900 overflow-hidden">
       {/* Left Column - Marketing/Branding (Hidden on mobile) */}
       <div className="hidden lg:flex flex-col w-1/2 relative bg-gray-50 px-12 xl:px-24 py-16 justify-between border-r border-gray-200">
-        
         {/* Brand */}
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-white border border-gray-200 flex items-center justify-center shadow-sm relative">
-            <span className="font-serif text-lg font-bold tracking-widest text-gray-900">PN</span>
+            <span className="font-serif text-lg font-bold tracking-widest text-gray-900">
+              PN
+            </span>
           </div>
-          <span className="font-serif text-xl tracking-[0.2em] font-semibold uppercase">PAURVI</span>
+          <span className="font-serif text-xl tracking-[0.2em] font-semibold uppercase">
+            PAURVI
+          </span>
         </div>
 
         {/* Hero Content */}
         <div className="max-w-md mt-12">
           <h1 className="text-4xl xl:text-5xl font-serif text-gray-900 leading-tight mb-4">
-            Your Wardrobe.<br />
-            Reimagined by <span className="text-emerald-500 font-sans font-semibold">AI</span>.
+            Your Wardrobe.
+            <br />
+            Reimagined by{" "}
+            <span className="text-emerald-500 font-sans font-semibold">AI</span>
+            .
           </h1>
           <p className="text-gray-500 mb-10 text-base">
-            Upload what you own. Let AI understand your wardrobe and create outfits that actually make sense for you.
+            Upload what you own. Let AI understand your wardrobe and create
+            outfits that actually make sense for you.
           </p>
-          
+
           <div className="relative rounded-3xl overflow-hidden aspect-[4/3] bg-gray-100 shadow-xl mb-12 border border-gray-200">
-            <img 
-              src="https://images.unsplash.com/photo-1558769132-cb1fac08c044?auto=format&fit=crop&q=80&w=1000" 
+            <img
+              src="https://images.unsplash.com/photo-1558769132-cb1fac08c044?auto=format&fit=crop&q=80&w=1000"
               alt="Curated Wardrobe"
               className="w-full h-full object-cover"
             />
@@ -201,19 +215,31 @@ export const AuthPage: React.FC = () => {
           <div className="grid grid-cols-3 gap-6">
             <div>
               <Sparkles className="w-5 h-5 text-emerald-500 mb-2" />
-              <h3 className="text-xs font-semibold text-gray-900 mb-1">AI-Powered<br/>Identification</h3>
+              <h3 className="text-xs font-semibold text-gray-900 mb-1">
+                AI-Powered
+                <br />
+                Identification
+              </h3>
             </div>
             <div>
               <UserIcon className="w-5 h-5 text-emerald-500 mb-2" />
-              <h3 className="text-xs font-semibold text-gray-900 mb-1">Smart Outfit<br/>Recommendations</h3>
+              <h3 className="text-xs font-semibold text-gray-900 mb-1">
+                Smart Outfit
+                <br />
+                Recommendations
+              </h3>
             </div>
             <div>
               <CheckCircle2 className="w-5 h-5 text-emerald-500 mb-2" />
-              <h3 className="text-xs font-semibold text-gray-900 mb-1">Personal Style<br/>Learning</h3>
+              <h3 className="text-xs font-semibold text-gray-900 mb-1">
+                Personal Style
+                <br />
+                Learning
+              </h3>
             </div>
           </div>
         </div>
-        
+
         <div></div>
       </div>
 
@@ -223,9 +249,13 @@ export const AuthPage: React.FC = () => {
           {/* Mobile-only Branding Header */}
           <div className="flex lg:hidden flex-col items-center text-center mb-8">
             <div className="w-14 h-14 rounded-2xl bg-gray-50 border border-gray-200 flex items-center justify-center shadow-sm mb-3">
-              <span className="font-serif text-xl font-bold tracking-widest text-gray-900">PN</span>
+              <span className="font-serif text-xl font-bold tracking-widest text-gray-900">
+                PN
+              </span>
             </div>
-            <h1 className="text-xl font-serif tracking-[0.25em] text-gray-900 font-semibold uppercase">PAURVI</h1>
+            <h1 className="text-xl font-serif tracking-[0.25em] text-gray-900 font-semibold uppercase">
+              PAURVI
+            </h1>
           </div>
 
           {/* Auth Box Container */}
@@ -248,7 +278,7 @@ export const AuthPage: React.FC = () => {
 
             <AnimatePresence mode="wait">
               {/* ================= SIGN IN MODE ================= */}
-              {mode === 'signin' && (
+              {mode === "signin" && (
                 <motion.div
                   key="signin"
                   initial={{ opacity: 0, y: 10 }}
@@ -274,7 +304,7 @@ export const AuthPage: React.FC = () => {
                         type="email"
                         required
                         value={email}
-                        onChange={e => setEmail(e.target.value)}
+                        onChange={(e) => setEmail(e.target.value)}
                         placeholder="you@example.com"
                         className="w-full bg-white border border-gray-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition"
                       />
@@ -286,10 +316,10 @@ export const AuthPage: React.FC = () => {
                       </label>
                       <div className="relative">
                         <input
-                          type={showPassword ? 'text' : 'password'}
+                          type={showPassword ? "text" : "password"}
                           required
                           value={password}
-                          onChange={e => setPassword(e.target.value)}
+                          onChange={(e) => setPassword(e.target.value)}
                           placeholder="••••••••"
                           className="w-full bg-white border border-gray-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl pl-3 pr-10 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition"
                         />
@@ -298,21 +328,28 @@ export const AuthPage: React.FC = () => {
                           onClick={() => setShowPassword(!showPassword)}
                           className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
                         >
-                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          {showPassword ? (
+                            <EyeOff className="w-4 h-4" />
+                          ) : (
+                            <Eye className="w-4 h-4" />
+                          )}
                         </button>
                       </div>
                     </div>
 
                     <div className="flex items-center justify-between pt-2">
                       <label className="flex items-center gap-2 cursor-pointer group">
-                        <input type="checkbox" className="w-4 h-4 rounded border-gray-300 text-emerald-500 focus:ring-emerald-500 bg-white cursor-pointer" />
+                        <input
+                          type="checkbox"
+                          className="w-4 h-4 rounded border-gray-300 text-emerald-500 focus:ring-emerald-500 bg-white cursor-pointer"
+                        />
                         <span className="text-xs text-gray-500 group-hover:text-gray-700 transition">
                           Remember me
                         </span>
                       </label>
                       <button
                         type="button"
-                        onClick={() => setMode('forgot')}
+                        onClick={() => setMode("forgot")}
                         className="text-xs text-emerald-600 hover:text-emerald-700 font-medium transition"
                       >
                         Forgot password?
@@ -325,19 +362,19 @@ export const AuthPage: React.FC = () => {
                         disabled={loading}
                         className="w-full bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-medium h-12 rounded-xl transition flex items-center justify-center disabled:opacity-70 gap-2 shadow-sm"
                       >
-                        {loading ? 'Authenticating...' : 'Log In'}
+                        {loading ? "Authenticating..." : "Log In"}
                       </button>
                     </div>
                   </form>
 
                   <div className="mt-8 text-center pt-6">
                     <p className="text-sm text-gray-500">
-                      Don't have an account?{' '}
+                      Don't have an account?{" "}
                       <button
                         type="button"
                         onClick={() => {
                           setError(null);
-                          setMode('signup');
+                          setMode("signup");
                         }}
                         className="text-emerald-600 hover:text-emerald-700 font-medium transition"
                       >
@@ -349,7 +386,7 @@ export const AuthPage: React.FC = () => {
               )}
 
               {/* ================= SIGN UP MODE ================= */}
-              {mode === 'signup' && (
+              {mode === "signup" && (
                 <motion.div
                   key="signup"
                   initial={{ opacity: 0, y: 10 }}
@@ -375,7 +412,7 @@ export const AuthPage: React.FC = () => {
                         type="text"
                         required
                         value={name}
-                        onChange={e => setName(e.target.value)}
+                        onChange={(e) => setName(e.target.value)}
                         placeholder="Your full name"
                         className="w-full bg-white border border-gray-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition"
                       />
@@ -389,7 +426,7 @@ export const AuthPage: React.FC = () => {
                         type="email"
                         required
                         value={email}
-                        onChange={e => setEmail(e.target.value)}
+                        onChange={(e) => setEmail(e.target.value)}
                         placeholder="you@example.com"
                         className="w-full bg-white border border-gray-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition"
                       />
@@ -401,10 +438,10 @@ export const AuthPage: React.FC = () => {
                       </label>
                       <div className="relative">
                         <input
-                          type={showPassword ? 'text' : 'password'}
+                          type={showPassword ? "text" : "password"}
                           required
                           value={password}
-                          onChange={e => setPassword(e.target.value)}
+                          onChange={(e) => setPassword(e.target.value)}
                           placeholder="••••••••"
                           className="w-full bg-white border border-gray-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl pl-3 pr-10 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition"
                         />
@@ -413,38 +450,78 @@ export const AuthPage: React.FC = () => {
                           onClick={() => setShowPassword(!showPassword)}
                           className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
                         >
-                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          {showPassword ? (
+                            <EyeOff className="w-4 h-4" />
+                          ) : (
+                            <Eye className="w-4 h-4" />
+                          )}
                         </button>
                       </div>
-                      
+
                       {/* Password Strength and Requirements */}
                       {password && (
                         <div className="mt-2 space-y-1.5">
                           <div className="flex gap-1">
                             {[1, 2, 3, 4].map((step) => {
-                              let color = 'bg-gray-200';
+                              let color = "bg-gray-200";
                               const hasLength = password.length >= 8;
                               const hasUpper = /[A-Z]/.test(password);
                               const hasLower = /[a-z]/.test(password);
-                              const hasNumberOrSpecial = /[0-9!@#$%^&*]/.test(password);
-                              const score = [hasLength, hasUpper, hasLower, hasNumberOrSpecial].filter(Boolean).length;
-                              
+                              const hasNumberOrSpecial = /[0-9!@#$%^&*]/.test(
+                                password,
+                              );
+                              const score = [
+                                hasLength,
+                                hasUpper,
+                                hasLower,
+                                hasNumberOrSpecial,
+                              ].filter(Boolean).length;
+
                               if (score >= step) {
-                                if (score <= 2) color = 'bg-rose-500';
-                                else if (score === 3) color = 'bg-amber-500';
-                                else color = 'bg-emerald-500';
+                                if (score <= 2) color = "bg-rose-500";
+                                else if (score === 3) color = "bg-amber-500";
+                                else color = "bg-emerald-500";
                               }
-                              
+
                               return (
-                                <div key={step} className={`h-1 w-full rounded-full ${color} transition-colors duration-300`} />
+                                <div
+                                  key={step}
+                                  className={`h-1 w-full rounded-full ${color} transition-colors duration-300`}
+                                />
                               );
                             })}
                           </div>
                           <div className="text-[10px] text-gray-500 grid grid-cols-2 gap-1 mt-1">
-                            <span className={password.length >= 8 ? 'text-emerald-600' : ''}>✓ Min 8 characters</span>
-                            <span className={/[A-Z]/.test(password) ? 'text-emerald-600' : ''}>✓ Uppercase letter</span>
-                            <span className={/[a-z]/.test(password) ? 'text-emerald-600' : ''}>✓ Lowercase letter</span>
-                            <span className={/[0-9!@#$%^&*]/.test(password) ? 'text-emerald-600' : ''}>✓ Number / Special</span>
+                            <span
+                              className={
+                                password.length >= 8 ? "text-emerald-600" : ""
+                              }
+                            >
+                              ✓ Min 8 characters
+                            </span>
+                            <span
+                              className={
+                                /[A-Z]/.test(password) ? "text-emerald-600" : ""
+                              }
+                            >
+                              ✓ Uppercase letter
+                            </span>
+                            <span
+                              className={
+                                /[a-z]/.test(password) ? "text-emerald-600" : ""
+                              }
+                            >
+                              ✓ Lowercase letter
+                            </span>
+                            <span
+                              className={
+                                /[0-9!@#$%^&*]/.test(password)
+                                  ? "text-emerald-600"
+                                  : ""
+                              }
+                            >
+                              ✓ Number / Special
+                            </span>
                           </div>
                         </div>
                       )}
@@ -456,10 +533,10 @@ export const AuthPage: React.FC = () => {
                       </label>
                       <div className="relative">
                         <input
-                          type={showPassword ? 'text' : 'password'}
+                          type={showPassword ? "text" : "password"}
                           required
                           value={confirmPassword}
-                          onChange={e => setConfirmPassword(e.target.value)}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
                           placeholder="••••••••"
                           className="w-full bg-white border border-gray-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl pl-3 pr-10 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition"
                         />
@@ -468,9 +545,20 @@ export const AuthPage: React.FC = () => {
 
                     <div className="flex items-start pt-2">
                       <label className="flex items-start gap-2 cursor-pointer group mt-1">
-                        <input type="checkbox" required className="w-4 h-4 mt-0.5 rounded border-gray-300 text-emerald-500 focus:ring-emerald-500 bg-white cursor-pointer" />
+                        <input
+                          type="checkbox"
+                          required
+                          className="w-4 h-4 mt-0.5 rounded border-gray-300 text-emerald-500 focus:ring-emerald-500 bg-white cursor-pointer"
+                        />
                         <span className="text-xs text-gray-500 group-hover:text-gray-700 transition leading-snug">
-                          I agree to the <span className="text-emerald-600 hover:underline">Terms & Conditions</span> and <span className="text-emerald-600 hover:underline">Privacy Policy</span>
+                          I agree to the{" "}
+                          <span className="text-emerald-600 hover:underline">
+                            Terms & Conditions
+                          </span>{" "}
+                          and{" "}
+                          <span className="text-emerald-600 hover:underline">
+                            Privacy Policy
+                          </span>
                         </span>
                       </label>
                     </div>
@@ -481,19 +569,19 @@ export const AuthPage: React.FC = () => {
                         disabled={loading}
                         className="w-full bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-medium h-12 rounded-xl transition flex items-center justify-center disabled:opacity-70 gap-2 shadow-sm"
                       >
-                        {loading ? 'Creating Account...' : 'Create Account'}
+                        {loading ? "Creating Account..." : "Create Account"}
                       </button>
                     </div>
                   </form>
 
                   <div className="mt-8 text-center pt-6">
                     <p className="text-sm text-gray-500">
-                      Already have an account?{' '}
+                      Already have an account?{" "}
                       <button
                         type="button"
                         onClick={() => {
                           setError(null);
-                          setMode('signin');
+                          setMode("signin");
                         }}
                         className="text-emerald-600 hover:text-emerald-700 font-medium transition"
                       >
@@ -505,7 +593,7 @@ export const AuthPage: React.FC = () => {
               )}
 
               {/* ================= FORGOT PASSWORD ================= */}
-              {mode === 'forgot' && (
+              {mode === "forgot" && (
                 <motion.div
                   key="forgot"
                   initial={{ opacity: 0, y: 10 }}
@@ -518,8 +606,8 @@ export const AuthPage: React.FC = () => {
                       Recover Access
                     </h2>
                     <p className="text-sm text-gray-500 mt-2">
-                      {resetStep === 1 
-                        ? "Enter your email to receive a secure recovery code." 
+                      {resetStep === 1
+                        ? "Enter your email to receive a secure recovery code."
                         : "Enter the code sent to your email and a new password."}
                     </p>
                   </div>
@@ -534,7 +622,7 @@ export const AuthPage: React.FC = () => {
                           type="email"
                           required
                           value={email}
-                          onChange={e => setEmail(e.target.value)}
+                          onChange={(e) => setEmail(e.target.value)}
                           placeholder="you@example.com"
                           className="w-full bg-white border border-gray-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition"
                         />
@@ -546,12 +634,12 @@ export const AuthPage: React.FC = () => {
                           disabled={loading}
                           className="w-full bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-medium h-12 rounded-xl transition flex items-center justify-center disabled:opacity-70 gap-2 shadow-sm"
                         >
-                          {loading ? 'Sending...' : 'Send Recovery Code'}
+                          {loading ? "Sending..." : "Send Recovery Code"}
                         </button>
-                        
+
                         <button
                           type="button"
-                          onClick={() => setMode('signin')}
+                          onClick={() => setMode("signin")}
                           className="w-full bg-transparent hover:bg-gray-50 text-gray-500 border border-gray-200 font-medium h-12 rounded-xl transition flex items-center justify-center"
                         >
                           Cancel
@@ -568,7 +656,7 @@ export const AuthPage: React.FC = () => {
                           type="text"
                           required
                           value={resetCode}
-                          onChange={e => setResetCode(e.target.value)}
+                          onChange={(e) => setResetCode(e.target.value)}
                           placeholder="Enter 6-digit code"
                           className="w-full bg-white border border-gray-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition"
                         />
@@ -580,10 +668,10 @@ export const AuthPage: React.FC = () => {
                         </label>
                         <div className="relative">
                           <input
-                            type={showPassword ? 'text' : 'password'}
+                            type={showPassword ? "text" : "password"}
                             required
                             value={newPassword}
-                            onChange={e => setNewPassword(e.target.value)}
+                            onChange={(e) => setNewPassword(e.target.value)}
                             placeholder="••••••••"
                             className="w-full bg-white border border-gray-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl pl-3 pr-10 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition"
                           />
@@ -592,7 +680,11 @@ export const AuthPage: React.FC = () => {
                             onClick={() => setShowPassword(!showPassword)}
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
                           >
-                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            {showPassword ? (
+                              <EyeOff className="w-4 h-4" />
+                            ) : (
+                              <Eye className="w-4 h-4" />
+                            )}
                           </button>
                         </div>
                       </div>
@@ -603,14 +695,14 @@ export const AuthPage: React.FC = () => {
                           disabled={loading}
                           className="w-full bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-medium h-12 rounded-xl transition flex items-center justify-center disabled:opacity-70 gap-2 shadow-sm"
                         >
-                          {loading ? 'Resetting...' : 'Reset Password'}
+                          {loading ? "Resetting..." : "Reset Password"}
                         </button>
-                        
+
                         <button
                           type="button"
                           onClick={() => {
                             setResetStep(1);
-                            setResetCode('');
+                            setResetCode("");
                           }}
                           className="w-full bg-transparent hover:bg-gray-50 text-gray-500 border border-gray-200 font-medium h-12 rounded-xl transition flex items-center justify-center"
                         >
@@ -623,17 +715,19 @@ export const AuthPage: React.FC = () => {
               )}
             </AnimatePresence>
           </div>
-          
+
           <div className="mt-12 pt-6 flex justify-between items-center text-[10px] text-gray-400 max-w-[420px] mx-auto w-full">
             <div className="flex gap-4">
               <span className="flex items-center gap-1.5 font-medium">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" /> Secure & Private
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" /> Secure
+                & Private
               </span>
               <span className="flex items-center gap-1.5 font-medium">
-                <Sparkles className="w-3.5 h-3.5 text-emerald-500" /> AI Personalization
+                <Sparkles className="w-3.5 h-3.5 text-emerald-500" /> AI
+                Personalization
               </span>
             </div>
-            <button 
+            <button
               type="button"
               onClick={fillDemoSupervisor}
               className="hover:text-emerald-500 transition-colors underline decoration-dotted"

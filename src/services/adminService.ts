@@ -57,7 +57,16 @@ export class AdminService {
       headers: this.getHeaders(),
     });
 
-    const data = await res.json();
+    let data;
+    const text = await res.text();
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      if (!res.ok) {
+        throw new Error('Server returned an error: ' + res.status + ' ' + res.statusText);
+      }
+      throw new Error('Received unexpected response format from server (possibly 502/503 from the platform proxy).');
+    }
     if (!res.ok || !data.success) {
       throw new Error(data.error || 'Failed to retrieve admin overview.');
     }
@@ -69,7 +78,16 @@ export class AdminService {
       headers: this.getHeaders(),
     });
 
-    const data = await res.json();
+    let data;
+    const text = await res.text();
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      if (!res.ok) {
+        throw new Error('Server returned an error: ' + res.status + ' ' + res.statusText);
+      }
+      throw new Error('Received unexpected response format from server (possibly 502/503 from the platform proxy).');
+    }
     if (!res.ok || !data.success) {
       throw new Error(data.error || 'Failed to retrieve registered users.');
     }
@@ -81,7 +99,16 @@ export class AdminService {
       headers: this.getHeaders(),
     });
 
-    const data = await res.json();
+    let data;
+    const text = await res.text();
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      if (!res.ok) {
+        throw new Error('Server returned an error: ' + res.status + ' ' + res.statusText);
+      }
+      throw new Error('Received unexpected response format from server (possibly 502/503 from the platform proxy).');
+    }
     if (!res.ok || !data.success) {
       throw new Error(data.error || 'Failed to load user details.');
     }
@@ -98,7 +125,16 @@ export class AdminService {
       body: JSON.stringify(updates),
     });
 
-    const data = await res.json();
+    let data;
+    const text = await res.text();
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      if (!res.ok) {
+        throw new Error('Server returned an error: ' + res.status + ' ' + res.statusText);
+      }
+      throw new Error('Received unexpected response format from server (possibly 502/503 from the platform proxy).');
+    }
     if (!res.ok || !data.success) {
       throw new Error(data.error || 'Failed to update user status.');
     }
@@ -110,7 +146,16 @@ export class AdminService {
       headers: this.getHeaders(),
     });
 
-    const data = await res.json();
+    let data;
+    const text = await res.text();
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      if (!res.ok) {
+        throw new Error('Server returned an error: ' + res.status + ' ' + res.statusText);
+      }
+      throw new Error('Received unexpected response format from server (possibly 502/503 from the platform proxy).');
+    }
     if (!res.ok || !data.success) {
       throw new Error(data.error || 'Failed to fetch activity logs.');
     }
@@ -122,7 +167,16 @@ export class AdminService {
       headers: this.getHeaders(),
     });
 
-    const data = await res.json();
+    let data;
+    const text = await res.text();
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      if (!res.ok) {
+        throw new Error('Server returned an error: ' + res.status + ' ' + res.statusText);
+      }
+      throw new Error('Received unexpected response format from server (possibly 502/503 from the platform proxy).');
+    }
     if (!res.ok || !data.success) {
       throw new Error(data.error || 'Failed to fetch system telemetry.');
     }

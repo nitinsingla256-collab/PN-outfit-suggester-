@@ -3,13 +3,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
-import { useApp } from '../context/AppContext';
-import { Card } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
-import { Badge } from '../components/ui/Badge';
-import { Sparkles, MapPin, Ruler, Palette, Save, User as UserIcon } from 'lucide-react';
+import React, { useState } from "react";
+import { useApp } from "../context/AppContext";
+import { Card } from "../components/ui/Card";
+import { Button } from "../components/ui/Button";
+import { Input } from "../components/ui/Input";
+import { Badge } from "../components/ui/Badge";
+import {
+  Sparkles,
+  MapPin,
+  Ruler,
+  Palette,
+  Save,
+  User as UserIcon,
+} from "lucide-react";
 
 export function ProfilePage() {
   const { user, updateUser, showToast } = useApp();
@@ -18,9 +25,9 @@ export function ProfilePage() {
   const [email, setEmail] = useState(user.email);
   const [location, setLocation] = useState(user.location);
   const [bio, setBio] = useState(user.bio);
-  const [topSize, setTopSize] = useState('IT 40 / FR 36');
+  const [topSize, setTopSize] = useState("IT 40 / FR 36");
   const [bottomSize, setBottomSize] = useState('IT 38 / 26"');
-  const [shoeSize, setShoeSize] = useState('EU 38.5');
+  const [shoeSize, setShoeSize] = useState("EU 38.5");
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSave = async (e: React.FormEvent) => {
@@ -34,9 +41,10 @@ export function ProfilePage() {
         bio,
       });
       showToast({
-        title: 'Profile Updated',
-        description: 'Your sartorial profile and sizing calibrations have been saved.',
-        type: 'success',
+        title: "Profile Updated",
+        description:
+          "Your sartorial profile and sizing calibrations have been saved.",
+        type: "success",
       });
     } catch (err) {
       console.error(err);
@@ -54,13 +62,16 @@ export function ProfilePage() {
             Client Profile
           </span>
           <span className="text-gray-400">·</span>
-          <span className="text-xs text-gray-600 font-mono">Role: {user.role}</span>
+          <span className="text-xs text-gray-600 font-mono">
+            Role: {user.role}
+          </span>
         </div>
         <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-gray-900 font-editorial">
           Sartorial Identity & Calibration
         </h2>
         <p className="text-xs sm:text-sm text-gray-600 mt-1">
-          Manage your personal style archetype, sizing metrics, and concierge styling preferences.
+          Manage your personal style archetype, sizing metrics, and concierge
+          styling preferences.
         </p>
       </div>
 
@@ -90,7 +101,9 @@ export function ProfilePage() {
 
             <div className="text-center sm:text-left space-y-1">
               <div className="flex items-center justify-center sm:justify-start gap-2">
-                <h3 className="text-lg font-semibold text-gray-900">{user.name}</h3>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {user.name}
+                </h3>
                 <Badge variant="gold" size="sm">
                   VIP Atelier Member
                 </Badge>
@@ -107,13 +120,13 @@ export function ProfilePage() {
             <Input
               label="Full Name"
               value={name}
-              onChange={e => setName(e.target.value)}
+              onChange={(e) => setName(e.target.value)}
             />
             <Input
               label="Email Address"
               type="email"
               value={email}
-              onChange={e => setEmail(e.target.value)}
+              onChange={(e) => setEmail(e.target.value)}
             />
           </div>
 
@@ -121,13 +134,13 @@ export function ProfilePage() {
             <Input
               label="Primary Styling Base / City"
               value={location}
-              onChange={e => setLocation(e.target.value)}
+              onChange={(e) => setLocation(e.target.value)}
               leftIcon={<MapPin className="w-4 h-4" />}
             />
             <Input
               label="Personal Sartorial Philosophy / Bio"
               value={bio}
-              onChange={e => setBio(e.target.value)}
+              onChange={(e) => setBio(e.target.value)}
             />
           </div>
         </Card>
@@ -136,24 +149,26 @@ export function ProfilePage() {
         <Card className="p-6">
           <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-200">
             <Ruler className="w-4 h-4 text-emerald-500" />
-            <h3 className="text-sm font-semibold text-gray-900">Sizing Calibration & Fit</h3>
+            <h3 className="text-sm font-semibold text-gray-900">
+              Sizing Calibration & Fit
+            </h3>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Input
               label="Tops / Outerwear Size"
               value={topSize}
-              onChange={e => setTopSize(e.target.value)}
+              onChange={(e) => setTopSize(e.target.value)}
             />
             <Input
               label="Trousers / Bottoms Size"
               value={bottomSize}
-              onChange={e => setBottomSize(e.target.value)}
+              onChange={(e) => setBottomSize(e.target.value)}
             />
             <Input
               label="Footwear (EU / US)"
               value={shoeSize}
-              onChange={e => setShoeSize(e.target.value)}
+              onChange={(e) => setShoeSize(e.target.value)}
             />
           </div>
         </Card>
@@ -162,14 +177,18 @@ export function ProfilePage() {
         <Card className="p-6">
           <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-200">
             <Palette className="w-4 h-4 text-emerald-500" />
-            <h3 className="text-sm font-semibold text-gray-900">Aesthetic Palette & Signature Fits</h3>
+            <h3 className="text-sm font-semibold text-gray-900">
+              Aesthetic Palette & Signature Fits
+            </h3>
           </div>
 
           <div className="space-y-4 text-xs">
             <div>
-              <span className="text-gray-500 block mb-1.5 font-medium">Dominant Color Palette</span>
+              <span className="text-gray-500 block mb-1.5 font-medium">
+                Dominant Color Palette
+              </span>
               <div className="flex flex-wrap gap-2">
-                {user.preferences.favoriteColors.map(c => (
+                {user.preferences.favoriteColors.map((c) => (
                   <Badge key={c} variant="subtle" size="sm">
                     {c}
                   </Badge>
@@ -178,9 +197,11 @@ export function ProfilePage() {
             </div>
 
             <div>
-              <span className="text-gray-500 block mb-1.5 font-medium">Preferred Silhouettes</span>
+              <span className="text-gray-500 block mb-1.5 font-medium">
+                Preferred Silhouettes
+              </span>
               <div className="flex flex-wrap gap-2">
-                {user.preferences.preferredFits.map(f => (
+                {user.preferences.preferredFits.map((f) => (
                   <Badge key={f} variant="gold" size="sm">
                     {`${f} Fit`}
                   </Badge>

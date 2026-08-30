@@ -3,15 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useMemo } from 'react';
-import { useApp } from '../context/AppContext';
-import { Card } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
-import { Badge } from '../components/ui/Badge';
-import { EmptyState } from '../components/ui/EmptyState';
-import { PlanOutfitModal } from '../components/planner/PlanOutfitModal';
-import { WeatherWidget } from '../components/ui/WeatherWidget';
-import { motion, AnimatePresence } from 'motion/react';
+import React, { useState, useMemo } from "react";
+import { useApp } from "../context/AppContext";
+import { Card } from "../components/ui/Card";
+import { Button } from "../components/ui/Button";
+import { Badge } from "../components/ui/Badge";
+import { EmptyState } from "../components/ui/EmptyState";
+import { PlanOutfitModal } from "../components/planner/PlanOutfitModal";
+import { WeatherWidget } from "../components/ui/WeatherWidget";
+import { motion, AnimatePresence } from "motion/react";
 import {
   Calendar as CalendarIcon,
   ChevronLeft,
@@ -23,7 +23,7 @@ import {
   CheckCircle2,
   Trash2,
   CloudSun,
-} from 'lucide-react';
+} from "lucide-react";
 
 export function PlannerPage() {
   const {
@@ -37,13 +37,16 @@ export function PlannerPage() {
   } = useApp();
 
   const [currentDate, setCurrentDate] = useState(new Date(2026, 7, 29)); // August 2026 anchor
-  const [selectedDateStr, setSelectedDateStr] = useState('2026-08-30');
+  const [selectedDateStr, setSelectedDateStr] = useState("2026-08-30");
 
   // Month navigation
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
-  const monthName = currentDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+  const monthName = currentDate.toLocaleString("default", {
+    month: "long",
+    year: "numeric",
+  });
 
   const handlePrevMonth = () => {
     setCurrentDate(new Date(year, month - 1, 1));
@@ -56,7 +59,7 @@ export function PlannerPage() {
   const handleToday = () => {
     const now = new Date(2026, 7, 29);
     setCurrentDate(now);
-    setSelectedDateStr('2026-08-29');
+    setSelectedDateStr("2026-08-29");
   };
 
   // Calendar matrix calculation
@@ -65,13 +68,14 @@ export function PlannerPage() {
     const totalDaysInMonth = new Date(year, month + 1, 0).getDate();
     const prevMonthDays = new Date(year, month, 0).getDate();
 
-    const days: { dateStr: string; dayNum: number; isCurrentMonth: boolean }[] = [];
+    const days: { dateStr: string; dayNum: number; isCurrentMonth: boolean }[] =
+      [];
 
     // Previous month padding
     for (let i = firstDayIndex - 1; i >= 0; i--) {
       const prevDate = new Date(year, month - 1, prevMonthDays - i);
       days.push({
-        dateStr: `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}-${String(prevDate.getDate()).padStart(2, '0')}`,
+        dateStr: `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, "0")}-${String(prevDate.getDate()).padStart(2, "0")}`,
         dayNum: prevDate.getDate(),
         isCurrentMonth: false,
       });
@@ -79,7 +83,7 @@ export function PlannerPage() {
 
     // Current month days
     for (let d = 1; d <= totalDaysInMonth; d++) {
-      const str = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const str = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
       days.push({
         dateStr: str,
         dayNum: d,
@@ -92,7 +96,7 @@ export function PlannerPage() {
     for (let r = 1; r <= remaining; r++) {
       const nextDate = new Date(year, month + 1, r);
       days.push({
-        dateStr: `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}-${String(nextDate.getDate()).padStart(2, '0')}`,
+        dateStr: `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, "0")}-${String(nextDate.getDate()).padStart(2, "0")}`,
         dayNum: r,
         isCurrentMonth: false,
       });
@@ -102,7 +106,7 @@ export function PlannerPage() {
   }, [year, month]);
 
   // Selected date plans
-  const selectedPlans = plans.filter(p => p.date === selectedDateStr);
+  const selectedPlans = plans.filter((p) => p.date === selectedDateStr);
 
   return (
     <div className="space-y-6">
@@ -114,13 +118,16 @@ export function PlannerPage() {
               Wardrobe Schedule
             </span>
             <span className="text-gray-400">·</span>
-            <span className="text-xs text-gray-600 font-mono">Calendar Intelligence</span>
+            <span className="text-xs text-gray-600 font-mono">
+              Calendar Intelligence
+            </span>
           </div>
           <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-gray-900 font-editorial">
             Style Planner
           </h2>
           <p className="text-xs sm:text-sm text-gray-600 mt-1">
-            Map out weekly ensembles, travel itineraries, and destination styling in advance.
+            Map out weekly ensembles, travel itineraries, and destination
+            styling in advance.
           </p>
         </div>
 
@@ -128,7 +135,7 @@ export function PlannerPage() {
           <Button
             variant="gold-outline"
             size="sm"
-            onClick={() => navigateTo('/stylist')}
+            onClick={() => navigateTo("/stylist")}
             leftIcon={<Sparkles className="w-3.5 h-3.5 text-emerald-500" />}
           >
             Get a Suggestion
@@ -156,7 +163,12 @@ export function PlannerPage() {
                 <h3 className="text-base sm:text-lg font-semibold text-gray-900 font-editorial">
                   {monthName}
                 </h3>
-                <Button variant="secondary" size="sm" onClick={handleToday} className="text-xs">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleToday}
+                  className="text-xs"
+                >
                   Today
                 </Button>
               </div>
@@ -194,10 +206,10 @@ export function PlannerPage() {
 
             {/* Days Matrix */}
             <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
-              {calendarDays.map(day => {
+              {calendarDays.map((day) => {
                 const isSelected = day.dateStr === selectedDateStr;
-                const isToday = day.dateStr === '2026-08-29';
-                const dayPlans = plans.filter(p => p.date === day.dateStr);
+                const isToday = day.dateStr === "2026-08-29";
+                const dayPlans = plans.filter((p) => p.date === day.dateStr);
 
                 return (
                   <motion.button
@@ -208,10 +220,10 @@ export function PlannerPage() {
                     onClick={() => setSelectedDateStr(day.dateStr)}
                     className={`min-h-[70px] sm:min-h-[85px] p-2 rounded-xl border text-left flex flex-col justify-between transition-all relative overflow-hidden shadow-sm ${
                       isSelected
-                        ? 'bg-emerald-500/10 border-emerald-500 ring-1 ring-emerald-500/40 text-gray-900 backdrop-blur-sm'
+                        ? "bg-emerald-500/10 border-emerald-500 ring-1 ring-emerald-500/40 text-gray-900 backdrop-blur-sm"
                         : day.isCurrentMonth
-                        ? 'bg-white border-gray-200 text-gray-700 hover:border-emerald-300 hover:bg-emerald-50/50'
-                        : 'bg-white/40 border-gray-100 text-gray-400 opacity-60 backdrop-blur-md'
+                          ? "bg-white border-gray-200 text-gray-700 hover:border-emerald-300 hover:bg-emerald-50/50"
+                          : "bg-white/40 border-gray-100 text-gray-400 opacity-60 backdrop-blur-md"
                     }`}
                   >
                     {isSelected && (
@@ -224,10 +236,10 @@ export function PlannerPage() {
                       <span
                         className={`text-xs font-mono font-medium ${
                           isToday
-                            ? 'w-5 h-5 rounded-full bg-emerald-500 text-gray-50 flex items-center justify-center font-bold'
+                            ? "w-5 h-5 rounded-full bg-emerald-500 text-gray-50 flex items-center justify-center font-bold"
                             : isSelected
-                            ? 'text-emerald-500'
-                            : ''
+                              ? "text-emerald-500"
+                              : ""
                         }`}
                       >
                         {day.dayNum}
@@ -240,7 +252,7 @@ export function PlannerPage() {
                     {/* Micro tags inside day cell */}
                     {dayPlans.length > 0 && (
                       <div className="space-y-1 mt-1">
-                        {dayPlans.slice(0, 2).map(p => (
+                        {dayPlans.slice(0, 2).map((p) => (
                           <div
                             key={p.id}
                             className="text-[9px] px-1.5 py-0.5 rounded bg-white border border-gray-200 truncate text-emerald-500 font-medium"
@@ -284,7 +296,7 @@ export function PlannerPage() {
             {selectedPlans.length > 0 ? (
               <AnimatePresence>
                 <div className="space-y-3 mt-4">
-                  {selectedPlans.map(plan => (
+                  {selectedPlans.map((plan) => (
                     <motion.div
                       initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
@@ -294,64 +306,72 @@ export function PlannerPage() {
                     >
                       <div className="absolute top-0 right-0 -mr-4 -mt-4 w-20 h-20 bg-emerald-100/30 blur-2xl rounded-full pointer-events-none group-hover:bg-emerald-200/40 transition-colors"></div>
                       <div className="flex items-start justify-between gap-2 relative z-10">
-                      <div>
-                        <Badge variant="gold" size="sm">
-                          {plan.occasion}
-                        </Badge>
-                        <h4 className="text-sm font-semibold text-gray-900 mt-2">{plan.title}</h4>
-                      </div>
-                      <button
-                        onClick={() => togglePlanCompleted(plan.id)}
-                        className={`p-1 rounded-lg transition-colors ${
-                          plan.isCompleted ? 'text-emerald-400' : 'text-gray-500 hover:text-gray-700'
-                        }`}
-                        title={plan.isCompleted ? 'Marked as worn' : 'Mark as worn'}
-                      >
-                        <CheckCircle2 className="w-4 h-4" />
-                      </button>
-                    </div>
-
-                    {plan.time && (
-                      <p className="text-xs text-gray-600 flex items-center gap-1.5 font-mono">
-                        <Clock className="w-3.5 h-3.5 text-gray-500" />
-                        {plan.time}
-                      </p>
-                    )}
-
-                    {plan.location && (
-                      <p className="text-xs text-gray-600 flex items-center gap-1.5">
-                        <MapPin className="w-3.5 h-3.5 text-gray-500" />
-                        {plan.location}
-                      </p>
-                    )}
-
-                    {plan.notes && (
-                      <p className="text-xs text-gray-600 italic bg-gray-50/60 p-2 rounded-lg border border-gray-200">
-                        &ldquo;{plan.notes}&rdquo;
-                      </p>
-                    )}
-
-                    {/* Outfit linked preview */}
-                    {plan.outfit && (
-                      <div className="pt-2 border-t border-gray-200 flex items-center gap-2">
-                        {plan.outfit.imageUrl && (
-                          <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 bg-gray-100">
-                            <img
-                              src={plan.outfit.imageUrl}
-                              alt={plan.outfit.name}
-                              className="w-full h-full object-cover"
-                              referrerPolicy="no-referrer"
-                            />
-                          </div>
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <span className="text-[10px] text-gray-500 block">Assigned Look:</span>
-                          <span className="text-xs font-medium text-emerald-500 truncate block">
-                            {plan.outfit.name}
-                          </span>
+                        <div>
+                          <Badge variant="gold" size="sm">
+                            {plan.occasion}
+                          </Badge>
+                          <h4 className="text-sm font-semibold text-gray-900 mt-2">
+                            {plan.title}
+                          </h4>
                         </div>
+                        <button
+                          onClick={() => togglePlanCompleted(plan.id)}
+                          className={`p-1 rounded-lg transition-colors ${
+                            plan.isCompleted
+                              ? "text-emerald-400"
+                              : "text-gray-500 hover:text-gray-700"
+                          }`}
+                          title={
+                            plan.isCompleted ? "Marked as worn" : "Mark as worn"
+                          }
+                        >
+                          <CheckCircle2 className="w-4 h-4" />
+                        </button>
                       </div>
-                    )}
+
+                      {plan.time && (
+                        <p className="text-xs text-gray-600 flex items-center gap-1.5 font-mono">
+                          <Clock className="w-3.5 h-3.5 text-gray-500" />
+                          {plan.time}
+                        </p>
+                      )}
+
+                      {plan.location && (
+                        <p className="text-xs text-gray-600 flex items-center gap-1.5">
+                          <MapPin className="w-3.5 h-3.5 text-gray-500" />
+                          {plan.location}
+                        </p>
+                      )}
+
+                      {plan.notes && (
+                        <p className="text-xs text-gray-600 italic bg-gray-50/60 p-2 rounded-lg border border-gray-200">
+                          &ldquo;{plan.notes}&rdquo;
+                        </p>
+                      )}
+
+                      {/* Outfit linked preview */}
+                      {plan.outfit && (
+                        <div className="pt-2 border-t border-gray-200 flex items-center gap-2">
+                          {plan.outfit.imageUrl && (
+                            <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 bg-gray-100">
+                              <img
+                                src={plan.outfit.imageUrl}
+                                alt={plan.outfit.name}
+                                className="w-full h-full object-cover"
+                                referrerPolicy="no-referrer"
+                              />
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <span className="text-[10px] text-gray-500 block">
+                              Assigned Look:
+                            </span>
+                            <span className="text-xs font-medium text-emerald-500 truncate block">
+                              {plan.outfit.name}
+                            </span>
+                          </div>
+                        </div>
+                      )}
 
                       <div className="flex items-center justify-end pt-2 border-t border-gray-200/60 relative z-10">
                         <Button
@@ -371,9 +391,12 @@ export function PlannerPage() {
             ) : (
               <div className="py-8 text-center space-y-2">
                 <CalendarIcon className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                <h5 className="text-xs font-semibold text-gray-700">No Look Scheduled</h5>
+                <h5 className="text-xs font-semibold text-gray-700">
+                  No Look Scheduled
+                </h5>
                 <p className="text-[11px] text-gray-500 max-w-xs mx-auto">
-                  Click &ldquo;Plan Look&rdquo; to reserve an ensemble for {selectedDateStr}.
+                  Click &ldquo;Plan Look&rdquo; to reserve an ensemble for{" "}
+                  {selectedDateStr}.
                 </p>
               </div>
             )}

@@ -3,14 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
-import { useApp } from '../context/AppContext';
-import { Card } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
-import { Badge } from '../components/ui/Badge';
-import { Tabs } from '../components/ui/Tabs';
-import { EmptyState } from '../components/ui/EmptyState';
-import { Outfit, OccasionType } from '../types';
+import React, { useState } from "react";
+import { useApp } from "../context/AppContext";
+import { Card } from "../components/ui/Card";
+import { Button } from "../components/ui/Button";
+import { Badge } from "../components/ui/Badge";
+import { Tabs } from "../components/ui/Tabs";
+import { EmptyState } from "../components/ui/EmptyState";
+import { Outfit, OccasionType } from "../types";
 import {
   Layers,
   Plus,
@@ -21,17 +21,17 @@ import {
   Trash2,
   Tag,
   ArrowRight,
-} from 'lucide-react';
+} from "lucide-react";
 
 const OUTFIT_CATEGORIES = [
-  { id: 'All', label: 'All Looks' },
-  { id: 'Favorites', label: 'Favorites' },
-  { id: 'Formal', label: 'Formal' },
-  { id: 'Work', label: 'Work' },
-  { id: 'Casual', label: 'Casual' },
-  { id: 'Date', label: 'Date' },
-  { id: 'Party', label: 'Party' },
-  { id: 'Travel', label: 'Travel' },
+  { id: "All", label: "All Looks" },
+  { id: "Favorites", label: "Favorites" },
+  { id: "Formal", label: "Formal" },
+  { id: "Work", label: "Work" },
+  { id: "Casual", label: "Casual" },
+  { id: "Date", label: "Date" },
+  { id: "Party", label: "Party" },
+  { id: "Travel", label: "Travel" },
 ];
 
 export function OutfitsPage() {
@@ -45,12 +45,13 @@ export function OutfitsPage() {
     showToast,
   } = useApp();
 
-  const [activeCategory, setActiveCategory] = useState('All');
-  const [selectedOutfitForDetail, setSelectedOutfitForDetail] = useState<Outfit | null>(null);
+  const [activeCategory, setActiveCategory] = useState("All");
+  const [selectedOutfitForDetail, setSelectedOutfitForDetail] =
+    useState<Outfit | null>(null);
 
-  const filteredOutfits = outfits.filter(outfit => {
-    if (activeCategory === 'All') return true;
-    if (activeCategory === 'Favorites') return outfit.isFavorite;
+  const filteredOutfits = outfits.filter((outfit) => {
+    if (activeCategory === "All") return true;
+    if (activeCategory === "Favorites") return outfit.isFavorite;
     return outfit.occasion === activeCategory;
   });
 
@@ -64,13 +65,16 @@ export function OutfitsPage() {
               Lookbook & Ensembles
             </span>
             <span className="text-gray-400">·</span>
-            <span className="text-xs text-gray-600 font-mono">{outfits.length} Compositions</span>
+            <span className="text-xs text-gray-600 font-mono">
+              {outfits.length} Compositions
+            </span>
           </div>
           <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-gray-900 font-editorial">
             Curated Lookbook
           </h2>
           <p className="text-xs sm:text-sm text-gray-600 mt-1">
-            Browse styled compositions, save favorites, and prepare outfits for scheduled events.
+            Browse styled compositions, save favorites, and prepare outfits for
+            scheduled events.
           </p>
         </div>
 
@@ -78,7 +82,7 @@ export function OutfitsPage() {
           <Button
             variant="gold-outline"
             size="sm"
-            onClick={() => navigateTo('/stylist')}
+            onClick={() => navigateTo("/stylist")}
             leftIcon={<Sparkles className="w-3.5 h-3.5 text-emerald-500" />}
           >
             Ask Stylist
@@ -96,14 +100,14 @@ export function OutfitsPage() {
 
       {/* 2. Category Tabs */}
       <Tabs
-        tabs={OUTFIT_CATEGORIES.map(cat => ({
+        tabs={OUTFIT_CATEGORIES.map((cat) => ({
           ...cat,
           count:
-            cat.id === 'All'
+            cat.id === "All"
               ? outfits.length
-              : cat.id === 'Favorites'
-              ? outfits.filter(o => o.isFavorite).length
-              : outfits.filter(o => o.occasion === cat.id).length,
+              : cat.id === "Favorites"
+                ? outfits.filter((o) => o.isFavorite).length
+                : outfits.filter((o) => o.occasion === cat.id).length,
         }))}
         activeTab={activeCategory}
         onChange={setActiveCategory}
@@ -116,18 +120,18 @@ export function OutfitsPage() {
           title="No outfits yet"
           description="Build a look by hand, or ask your stylist to compose one for you."
           primaryAction={{
-            label: 'Ask Your Stylist',
-            onClick: () => navigateTo('/stylist'),
+            label: "Ask Your Stylist",
+            onClick: () => navigateTo("/stylist"),
             icon: <Sparkles className="w-4 h-4" />,
           }}
           secondaryAction={{
-            label: 'Compose New Look',
+            label: "Compose New Look",
             onClick: () => setIsCreateLookModalOpen(true),
           }}
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredOutfits.map(outfit => (
+          {filteredOutfits.map((outfit) => (
             <Card
               key={outfit.id}
               className="p-5 flex flex-col justify-between group"
@@ -147,12 +151,14 @@ export function OutfitsPage() {
                       onClick={() => toggleOutfitFavorite(outfit.id)}
                       className={`absolute top-2.5 right-2.5 p-2 rounded-full backdrop-blur-md transition-all ${
                         outfit.isFavorite
-                          ? 'bg-emerald-500 text-gray-50'
-                          : 'bg-gray-100 text-gray-700 hover:text-gray-900'
+                          ? "bg-emerald-500 text-gray-50"
+                          : "bg-gray-100 text-gray-700 hover:text-gray-900"
                       }`}
                       aria-label="Toggle favorite"
                     >
-                      <Heart className={`w-3.5 h-3.5 ${outfit.isFavorite ? 'fill-current' : ''}`} />
+                      <Heart
+                        className={`w-3.5 h-3.5 ${outfit.isFavorite ? "fill-current" : ""}`}
+                      />
                     </button>
                     <div className="absolute bottom-2.5 left-2.5 flex items-center gap-1.5">
                       <Badge variant="gold" size="sm">
@@ -180,7 +186,7 @@ export function OutfitsPage() {
                   </span>
                   <div className="flex items-center gap-2 overflow-x-auto pb-1">
                     {outfit.itemDetails && outfit.itemDetails.length > 0 ? (
-                      outfit.itemDetails.map(item => (
+                      outfit.itemDetails.map((item) => (
                         <div
                           key={item.id}
                           title={`${item.name} (${item.category})`}
@@ -227,9 +233,9 @@ export function OutfitsPage() {
                   className="text-xs"
                   onClick={() => {
                     showToast({
-                      title: 'Look Bookmarked',
-                      description: 'Outfit copied to styling buffer.',
-                      type: 'info',
+                      title: "Look Bookmarked",
+                      description: "Outfit copied to styling buffer.",
+                      type: "info",
                     });
                   }}
                   leftIcon={<Share2 className="w-3.5 h-3.5" />}

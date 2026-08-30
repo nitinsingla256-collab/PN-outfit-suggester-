@@ -56,7 +56,16 @@ export class AuthService {
         });
 
         if (res.ok) {
-          const data = await res.json();
+          let data;
+    const text = await res.text();
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      if (!res.ok) {
+        throw new Error('Server returned an error: ' + res.status + ' ' + res.statusText);
+      }
+      throw new Error('Received unexpected response format from server (possibly 502/503 from the platform proxy).');
+    }
           if (data.success && data.user) {
             this.currentUser = data.user;
             return {
@@ -96,7 +105,16 @@ export class AuthService {
       body: JSON.stringify({ email, password: passwordPlain }),
     });
 
-    const data = await res.json();
+    let data;
+    const text = await res.text();
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      if (!res.ok) {
+        throw new Error('Server returned an error: ' + res.status + ' ' + res.statusText);
+      }
+      throw new Error('Received unexpected response format from server (possibly 502/503 from the platform proxy).');
+    }
     if (!res.ok || !data.success) {
       throw new Error(data.error || 'Invalid credentials.');
     }
@@ -112,7 +130,16 @@ export class AuthService {
       body: JSON.stringify({ name, email, password: passwordPlain, confirmPassword }),
     });
 
-    const data = await res.json();
+    let data;
+    const text = await res.text();
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      if (!res.ok) {
+        throw new Error('Server returned an error: ' + res.status + ' ' + res.statusText);
+      }
+      throw new Error('Received unexpected response format from server (possibly 502/503 from the platform proxy).');
+    }
     if (!res.ok || !data.success) {
       throw new Error(data.error || 'Registration failed.');
     }
@@ -143,7 +170,16 @@ export class AuthService {
       body: JSON.stringify({ email }),
     });
 
-    const data = await res.json();
+    let data;
+    const text = await res.text();
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      if (!res.ok) {
+        throw new Error('Server returned an error: ' + res.status + ' ' + res.statusText);
+      }
+      throw new Error('Received unexpected response format from server (possibly 502/503 from the platform proxy).');
+    }
     if (!res.ok || !data.success) {
       throw new Error(data.error || 'Failed to request password reset.');
     }
@@ -161,7 +197,16 @@ export class AuthService {
       body: JSON.stringify({ email, resetCode, newPassword: newPasswordPlain }),
     });
 
-    const data = await res.json();
+    let data;
+    const text = await res.text();
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      if (!res.ok) {
+        throw new Error('Server returned an error: ' + res.status + ' ' + res.statusText);
+      }
+      throw new Error('Received unexpected response format from server (possibly 502/503 from the platform proxy).');
+    }
     if (!res.ok || !data.success) {
       throw new Error(data.error || 'Failed to reset password.');
     }
@@ -182,7 +227,16 @@ export class AuthService {
       body: JSON.stringify(updates),
     });
 
-    const data = await res.json();
+    let data;
+    const text = await res.text();
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      if (!res.ok) {
+        throw new Error('Server returned an error: ' + res.status + ' ' + res.statusText);
+      }
+      throw new Error('Received unexpected response format from server (possibly 502/503 from the platform proxy).');
+    }
     if (!res.ok || !data.success) {
       throw new Error(data.error || 'Failed to update profile.');
     }
