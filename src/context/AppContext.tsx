@@ -97,29 +97,53 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Navigation State with browser history sync
-  const [currentRoute, setCurrentRoute] = useState<NavigationRoute>(() => {
-    try {
-      const path = (window.location.pathname || '/') as NavigationRoute;
-      const validRoutes: NavigationRoute[] = [
-        '/',
-        '/home',
-        '/wardrobe',
-        '/stylist',
-        '/outfits',
-        '/planner',
-        '/favorites',
-        '/profile',
-        '/settings',
-        '/admin',
-      ];
-      if (path === '/home') return '/';
-      return validRoutes.includes(path) ? path : '/';
-    } catch {
-      return '/';
+const VALID_NAVIGATION_ROUTES: NavigationRoute[] = [
+  '/',
+  '/wardrobe',
+  '/stylist',
+  '/outfits',
+  '/planner',
+  '/favorites',
+  '/profile',
+  '/settings',
+  '/admin',
+];
+
+function resolveCurrentRoute(): NavigationRoute {
+  try {
+    if (typeof window === 'undefined') return '/';
+
+    // 1. Prioritize hash-based route if present (e.g. "#/wardrobe", "#wardrobe")
+    const hash = window.location.hash || '';
+    if (hash) {
+      const cleanHash = hash.replace(/^#\/?/, '').split('?')[0].split('/')[0];
+      if (cleanHash === 'home' || cleanHash === '') return '/';
+      const candidate = `/${cleanHash}` as NavigationRoute;
+      if (VALID_NAVIGATION_ROUTES.includes(candidate)) {
+        return candidate;
+      }
     }
-  });
+
+    // 2. Fallback to pathname if accessed directly (e.g. "/wardrobe")
+    const pathname = window.location.pathname || '/';
+    if (pathname !== '/' && pathname !== '') {
+      const cleanPath = pathname.replace(/^\//, '').split('?')[0].split('/')[0];
+      if (cleanPath === 'home' || cleanPath === '') return '/';
+      const candidate = `/${cleanPath}` as NavigationRoute;
+      if (VALID_NAVIGATION_ROUTES.includes(candidate)) {
+        return candidate;
+      }
+    }
+
+    return '/';
+  } catch {
+    return '/';
+  }
+}
+
+export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Navigation State with zero-reload browser & PWA sync
+  const [currentRoute, setCurrentRoute] = useState<NavigationRoute>(() => resolveCurrentRoute());
 
   const [user, setUser] = useState<User>(INITIAL_USER);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -204,70 +228,58 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setIsFirstLoginMeasurementsModalOpen(true);
   }, []);
 
-  // Sync route with window.location safely inside iframes and PWA
+  // Sync route safely across standalone PWA, mobile Chrome, and embedded iframes
   const navigateTo = useCallback((route: NavigationRoute) => {
     const targetRoute = route === '/home' ? '/' : route;
     setCurrentRoute(prev => {
       if (prev !== targetRoute) {
-        console.log(`[PN Router] Navigation: ${prev} -> ${targetRoute}`);
+        console.log(`[PN Router] Navigated: ${prev} -> ${targetRoute}`);
       }
       return targetRoute;
     });
 
     try {
-      if (typeof window !== 'undefined' && window.history && typeof window.history.pushState === 'function') {
-        const currentUrl = new URL(window.location.href);
-        if (currentUrl.pathname !== targetRoute) {
-          window.history.pushState({ route: targetRoute }, '', targetRoute + currentUrl.search);
-        }
+      if (typeof window !== 'undefined' && window.history) {
+        const hashTarget = targetRoute === '/' ? '' : `#${targetRoute.replace(/^\//, '')}`;
+        // Preserve current pathname and search, update hash for smooth single-page history
+        const urlToPush = `${window.location.pathname}${window.location.search}${hashTarget}`;
+        window.history.pushState({ route: targetRoute }, '', urlToPush);
       }
     } catch (e) {
-      console.warn('[PN Router] pushState warning (restricted iframe):', e);
+      console.warn('[PN Router] pushState warning (restricted environment):', e);
     }
     try {
       window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     } catch {}
   }, []);
 
-  // Initialize initial history state and handle back/forward navigation
+  // Initialize history state and handle back/forward / hashchange navigation
   useEffect(() => {
     try {
       if (typeof window !== 'undefined' && window.history && typeof window.history.replaceState === 'function') {
-        const path = (window.location.pathname || '/') as NavigationRoute;
-        window.history.replaceState({ route: path === '/home' ? '/' : path }, '', window.location.href);
+        const initial = resolveCurrentRoute();
+        const hashTarget = initial === '/' ? '' : `#${initial.replace(/^\//, '')}`;
+        const urlToReplace = `${window.location.pathname}${window.location.search}${hashTarget}`;
+        window.history.replaceState({ route: initial }, '', urlToReplace);
       }
     } catch {}
 
-    const handlePopState = (event: PopStateEvent) => {
+    const handleSync = () => {
       try {
-        let path = (window.location.pathname || '/') as NavigationRoute;
-        if (event.state && event.state.route) {
-          path = event.state.route;
-        }
-        if (path === '/home') path = '/';
-
-        const validRoutes: NavigationRoute[] = [
-          '/',
-          '/wardrobe',
-          '/stylist',
-          '/outfits',
-          '/planner',
-          '/favorites',
-          '/profile',
-          '/settings',
-          '/admin',
-        ];
-
-        const targetRoute = validRoutes.includes(path) ? path : '/';
-        console.log(`[PN Router] PopState Event -> Route: ${targetRoute}`);
-        setCurrentRoute(targetRoute);
+        const nextRoute = resolveCurrentRoute();
+        console.log(`[PN Router] Route Sync Event -> ${nextRoute}`);
+        setCurrentRoute(nextRoute);
       } catch (err) {
-        console.warn('[PN Router] PopState warning:', err);
+        console.warn('[PN Router] Route Sync warning:', err);
       }
     };
 
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
+    window.addEventListener('popstate', handleSync);
+    window.addEventListener('hashchange', handleSync);
+    return () => {
+      window.removeEventListener('popstate', handleSync);
+      window.removeEventListener('hashchange', handleSync);
+    };
   }, []);
 
   // Toasts
