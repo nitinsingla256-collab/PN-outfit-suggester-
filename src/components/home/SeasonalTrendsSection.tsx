@@ -51,8 +51,17 @@ export function SeasonalTrendsSection({ className = "" }: SeasonalTrendsSectionP
 
   const [selectedSeason, setSelectedSeason] = useState<string>("Current Season");
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
-  const [report, setReport] = useState<FashionTrendsReport | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [report, setReport] = useState<FashionTrendsReport | null>(() => {
+    try {
+      const cached = localStorage.getItem('pn_trends_current_season');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed?.report) return parsed.report;
+      }
+    } catch {}
+    return null;
+  });
+  const [isLoading, setIsLoading] = useState<boolean>(!report);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [activeTrendDetail, setActiveTrendDetail] = useState<FashionTrend | null>(null);
   const [showSourcesModal, setShowSourcesModal] = useState<boolean>(false);
@@ -60,7 +69,7 @@ export function SeasonalTrendsSection({ className = "" }: SeasonalTrendsSectionP
   const fetchTrends = async (season: string, force = false) => {
     if (force) {
       setIsRefreshing(true);
-    } else {
+    } else if (!report) {
       setIsLoading(true);
     }
 
@@ -71,7 +80,7 @@ export function SeasonalTrendsSection({ className = "" }: SeasonalTrendsSectionP
       });
       setReport(data);
     } catch (err) {
-      console.error("Failed to load fashion trends report", err);
+      console.warn("Notice loading fashion trends report:", err);
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);

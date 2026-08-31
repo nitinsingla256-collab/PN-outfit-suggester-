@@ -13,23 +13,38 @@ import { useApp } from "../../context/AppContext";
 
 export function WeatherWidget({ className = "" }: { className?: string }) {
   const { user } = useApp();
-  const [weather, setWeather] = useState<WeatherData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [weather, setWeather] = useState<WeatherData | null>(() => {
+    try {
+      const locKey = (user?.location || 'auto_default').toLowerCase().trim();
+      const local = localStorage.getItem(`pn_weather_${locKey}`);
+      if (local) {
+        const parsed = JSON.parse(local);
+        if (parsed?.data) return parsed.data;
+      }
+    } catch {}
+    return {
+      temperatureCelsius: 21,
+      feelsLikeCelsius: 21,
+      condition: "Clear",
+      isRaining: false,
+      windSpeed: 8,
+      lastUpdated: new Date().toISOString(),
+      locationName: user?.location || "Live Location",
+    };
+  });
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     let mounted = true;
 
     async function fetchWeather() {
-      setLoading(true);
       try {
         const data = await weatherService.getAutoLocationWeather(
-          user?.location || "New York",
+          user?.location || "London",
         );
         if (mounted) setWeather(data);
       } catch (err) {
-        console.error("Weather error:", err);
-      } finally {
-        if (mounted) setLoading(false);
+        console.warn("Weather notice:", err);
       }
     }
 
@@ -38,22 +53,6 @@ export function WeatherWidget({ className = "" }: { className?: string }) {
       mounted = false;
     };
   }, [user?.location]);
-
-  if (loading) {
-    return (
-      <div
-        className={`relative overflow-hidden rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 p-5 shadow-xl ${className}`}
-      >
-        <div className="animate-pulse flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-gray-200/20"></div>
-          <div className="space-y-2">
-            <div className="h-6 w-16 bg-gray-200/20 rounded"></div>
-            <div className="h-4 w-24 bg-gray-200/20 rounded"></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   if (!weather) return null;
 

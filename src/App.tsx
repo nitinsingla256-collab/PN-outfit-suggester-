@@ -3,27 +3,50 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { AppLayout } from './components/layout/AppLayout';
-import { HomePage } from './pages/HomePage';
-import { WardrobePage } from './pages/WardrobePage';
-import { StylistPage } from './pages/StylistPage';
-import { OutfitsPage } from './pages/OutfitsPage';
-import { PlannerPage } from './pages/PlannerPage';
-import { FavoritesPage } from './pages/FavoritesPage';
-import { ProfilePage } from './pages/ProfilePage';
-import { SettingsPage } from './pages/SettingsPage';
-import { AdminPage } from './pages/AdminPage';
-import { NotFoundPage } from './pages/NotFoundPage';
-import { AuthPage } from './pages/AuthPage';
-import { AddClothingModal } from './components/wardrobe/AddClothingModal';
-import { ClothingDetailModal } from './components/wardrobe/ClothingDetailModal';
-import { CreateLookModal } from './components/outfits/CreateLookModal';
-import { FirstLoginMeasurementsModal } from './components/profile/FirstLoginMeasurementsModal';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { ShieldAlert, ArrowLeft } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+
+// Lazy-load all pages for fast route transitions and minimal initial memory footprint
+const HomePage = lazy(() => import('./pages/HomePage').then(m => ({ default: m.HomePage })));
+const WardrobePage = lazy(() => import('./pages/WardrobePage').then(m => ({ default: m.WardrobePage })));
+const StylistPage = lazy(() => import('./pages/StylistPage').then(m => ({ default: m.StylistPage })));
+const OutfitsPage = lazy(() => import('./pages/OutfitsPage').then(m => ({ default: m.OutfitsPage })));
+const PlannerPage = lazy(() => import('./pages/PlannerPage').then(m => ({ default: m.PlannerPage })));
+const FavoritesPage = lazy(() => import('./pages/FavoritesPage').then(m => ({ default: m.FavoritesPage })));
+const ProfilePage = lazy(() => import('./pages/ProfilePage').then(m => ({ default: m.ProfilePage })));
+const SettingsPage = lazy(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
+const AdminPage = lazy(() => import('./pages/AdminPage').then(m => ({ default: m.AdminPage })));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })));
+const AuthPage = lazy(() => import('./pages/AuthPage').then(m => ({ default: m.AuthPage })));
+
+// Lazy-load heavy workspace modals only when opened
+const AddClothingModal = lazy(() => import('./components/wardrobe/AddClothingModal').then(m => ({ default: m.AddClothingModal })));
+const ClothingDetailModal = lazy(() => import('./components/wardrobe/ClothingDetailModal').then(m => ({ default: m.ClothingDetailModal })));
+const CreateLookModal = lazy(() => import('./components/outfits/CreateLookModal').then(m => ({ default: m.CreateLookModal })));
+const FirstLoginMeasurementsModal = lazy(() => import('./components/profile/FirstLoginMeasurementsModal').then(m => ({ default: m.FirstLoginMeasurementsModal })));
+
+function PageLoadingSkeleton() {
+  return (
+    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 animate-pulse">
+      <div className="flex items-center justify-between">
+        <div className="space-y-2">
+          <div className="h-7 w-48 bg-gray-200 dark:bg-gray-800 rounded-lg" />
+          <div className="h-4 w-72 bg-gray-100 dark:bg-gray-800/60 rounded-md" />
+        </div>
+        <div className="h-10 w-32 bg-gray-200 dark:bg-gray-800 rounded-xl hidden sm:block" />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+        <div className="h-48 bg-gray-100 dark:bg-gray-800/50 rounded-2xl border border-gray-200/60 dark:border-gray-700/40" />
+        <div className="h-48 bg-gray-100 dark:bg-gray-800/50 rounded-2xl border border-gray-200/60 dark:border-gray-700/40" />
+        <div className="h-48 bg-gray-100 dark:bg-gray-800/50 rounded-2xl border border-gray-200/60 dark:border-gray-700/40" />
+      </div>
+      <div className="h-64 bg-gray-100 dark:bg-gray-800/40 rounded-2xl border border-gray-200/60 dark:border-gray-700/40" />
+    </div>
+  );
+}
 
 function RouterView() {
   const { currentRoute, user, navigateTo } = useApp();
@@ -34,7 +57,7 @@ function RouterView() {
         <div className="w-16 h-16 rounded-2xl bg-red-50 border border-red-200 flex items-center justify-center text-red-500 mb-5">
           <ShieldAlert className="w-8 h-8" />
         </div>
-        <h2 className="text-xl font-serif tracking-widest text-gray-900 uppercase">
+        <h2 className="text-xl font-serif tracking-widest text-gray-900 dark:text-gray-100 uppercase">
           Access Restricted
         </h2>
         <p className="text-sm text-gray-500 max-w-md mt-2 mb-6">
@@ -42,7 +65,7 @@ function RouterView() {
         </p>
         <button
           onClick={() => navigateTo('/')}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gray-100 hover:bg-gray-300 text-gray-900 text-xs font-medium uppercase tracking-wider transition"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-900 text-xs font-medium uppercase tracking-wider transition"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Return to Private Wardrobe</span>
@@ -74,9 +97,11 @@ function RouterView() {
       fallbackTitle={`Issue rendering ${currentRoute.replace('/', '') || 'Home'} page`}
       fallbackMessage="We encountered an issue displaying this page. Your wardrobe and data remain completely safe."
     >
-      <div className="w-full h-full">
-        {renderPage()}
-      </div>
+      <Suspense fallback={<PageLoadingSkeleton />}>
+        <div className="w-full h-full">
+          {renderPage()}
+        </div>
+      </Suspense>
     </ErrorBoundary>
   );
 }
@@ -85,20 +110,23 @@ export function AppContent() {
   const {
     isAuthenticated,
     authLoading,
+    isAddClothingModalOpen,
+    selectedWardrobeItemForDetail,
+    isCreateLookModalOpen,
     isFirstLoginMeasurementsModalOpen,
     setIsFirstLoginMeasurementsModalOpen,
   } = useApp();
 
   if (authLoading) {
     return (
-      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-gray-50 text-gray-900">
-        <div className="w-16 h-16 rounded-2xl bg-gray-50 border border-gray-300 flex items-center justify-center shadow-2xl mb-4 relative animate-pulse">
-          <span className="font-serif text-2xl font-bold tracking-widest text-gray-900">
+      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+        <div className="w-16 h-16 rounded-2xl bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 flex items-center justify-center shadow-xl mb-4 relative animate-pulse">
+          <span className="font-serif text-2xl font-bold tracking-widest text-gray-900 dark:text-gray-100">
             PN
           </span>
           <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-emerald-500" />
         </div>
-        <p className="text-xs uppercase tracking-[0.3em] text-gray-500 font-mono">
+        <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400 font-mono">
           PN OUTFIT SUGGESTER
         </p>
       </div>
@@ -106,19 +134,44 @@ export function AppContent() {
   }
 
   if (!isAuthenticated) {
-    return <AuthPage />;
+    return (
+      <Suspense fallback={<PageLoadingSkeleton />}>
+        <AuthPage />
+      </Suspense>
+    );
   }
 
   return (
     <AppLayout>
       <RouterView />
-      <AddClothingModal />
-      <ClothingDetailModal />
-      <CreateLookModal />
-      <FirstLoginMeasurementsModal
-        isOpen={isFirstLoginMeasurementsModalOpen}
-        onClose={() => setIsFirstLoginMeasurementsModalOpen(false)}
-      />
+
+      {/* Conditionally rendered modals for pristine memory and zero idle CPU usage */}
+      {isAddClothingModalOpen && (
+        <Suspense fallback={null}>
+          <AddClothingModal />
+        </Suspense>
+      )}
+
+      {selectedWardrobeItemForDetail && (
+        <Suspense fallback={null}>
+          <ClothingDetailModal />
+        </Suspense>
+      )}
+
+      {isCreateLookModalOpen && (
+        <Suspense fallback={null}>
+          <CreateLookModal />
+        </Suspense>
+      )}
+
+      {isFirstLoginMeasurementsModalOpen && (
+        <Suspense fallback={null}>
+          <FirstLoginMeasurementsModal
+            isOpen={isFirstLoginMeasurementsModalOpen}
+            onClose={() => setIsFirstLoginMeasurementsModalOpen(false)}
+          />
+        </Suspense>
+      )}
     </AppLayout>
   );
 }

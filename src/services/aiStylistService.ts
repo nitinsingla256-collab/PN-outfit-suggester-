@@ -209,12 +209,30 @@ export class AIStylistService {
     category?: string;
     forceRefresh?: boolean;
   }): Promise<import('../types').FashionTrendsReport> {
+    const seasonKey = params?.season || "Current Season";
+    const cacheKey = `pn_trends_${seasonKey.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
+
+    if (!params?.forceRefresh) {
+      try {
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed && (Date.now() - parsed.timestamp < 3600000)) { // 1 hour TTL
+            return parsed.report;
+          }
+        }
+      } catch {}
+    }
+
     const res = await this.safePost<{ success: boolean; report?: import('../types').FashionTrendsReport }>(
       '/api/gemini/fashion-trends',
       params || {}
     );
 
     if (res.ok && res.data?.success && res.data?.report) {
+      try {
+        localStorage.setItem(cacheKey, JSON.stringify({ report: res.data.report, timestamp: Date.now() }));
+      } catch {}
       return res.data.report;
     }
 

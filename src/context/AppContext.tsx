@@ -425,15 +425,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     navigateTo('/');
   };
 
-  const requestPasswordReset = async (email: string) => {
+  const requestPasswordReset = useCallback(async (email: string) => {
     return await authService.requestPasswordReset(email);
-  };
+  }, []);
 
-  const resetPassword = async (email: string, resetCode: string, newPasswordPlain: string) => {
+  const resetPassword = useCallback(async (email: string, resetCode: string, newPasswordPlain: string) => {
     return await authService.resetPassword(email, resetCode, newPasswordPlain);
-  };
+  }, []);
 
-  const updateProfile = async (updates: Partial<User>) => {
+  const updateProfile = useCallback(async (updates: Partial<User>) => {
     const updated = await authService.updateUserProfile(updates);
     setUser(updated);
     showToast({
@@ -441,20 +441,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       description: 'Your styling parameters and profile have been synchronized.',
       type: 'success',
     });
-  };
+  }, [showToast]);
 
   const updateUser = updateProfile;
 
-  const resetToDemoData = async () => {
+  const resetToDemoData = useCallback(async () => {
     await loadUserData();
     showToast({
       title: 'Synchronized with Cloud Store',
       description: 'Your wardrobe data has been refreshed.',
       type: 'success',
     });
-  };
+  }, [loadUserData, showToast]);
 
-  const clearAllData = async () => {
+  const clearAllData = useCallback(async () => {
     setWardrobe([]);
     setOutfits([]);
     setPlans([]);
@@ -463,9 +463,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       description: 'In-memory state refreshed.',
       type: 'info',
     });
-  };
+  }, [showToast]);
 
-  const addWardrobeItem = async (
+  const addWardrobeItem = useCallback(async (
     itemData: Omit<WardrobeItem, 'id' | 'createdAt' | 'updatedAt' | 'timesWorn'>
   ): Promise<WardrobeItem> => {
     const newItem = await wardrobeService.create(itemData);
@@ -476,9 +476,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       type: 'success',
     });
     return newItem;
-  };
+  }, [showToast]);
 
-  const updateWardrobeItem = async (id: string, updates: Partial<WardrobeItem>) => {
+  const updateWardrobeItem = useCallback(async (id: string, updates: Partial<WardrobeItem>) => {
     const updated = await wardrobeService.update(id, updates);
     setWardrobe(prev => prev.map(item => (item.id === id ? updated : item)));
     showToast({
@@ -486,9 +486,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       description: `Changes to "${updated.name}" have been saved.`,
       type: 'success',
     });
-  };
+  }, [showToast]);
 
-  const deleteWardrobeItem = async (id: string) => {
+  const deleteWardrobeItem = useCallback(async (id: string) => {
     await wardrobeService.delete(id);
     setWardrobe(prev => prev.filter(item => item.id !== id));
     showToast({
@@ -496,9 +496,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       description: 'Item removed from your wardrobe catalogue.',
       type: 'info',
     });
-  };
+  }, [showToast]);
 
-  const deleteMultipleWardrobeItems = async (ids: string[]) => {
+  const deleteMultipleWardrobeItems = useCallback(async (ids: string[]) => {
     if (ids.length === 0) return;
     await wardrobeService.deleteMany(ids);
     const idSet = new Set(ids);
@@ -508,9 +508,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       description: `${ids.length} pieces removed from your digital wardrobe.`,
       type: 'info',
     });
-  };
+  }, [showToast]);
 
-  const clearWardrobe = async () => {
+  const clearWardrobe = useCallback(async () => {
     await wardrobeService.clearAll();
     setWardrobe([]);
     showToast({
@@ -518,9 +518,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       description: 'All pieces have been removed from your wardrobe.',
       type: 'info',
     });
-  };
+  }, [showToast]);
 
-  const resetToSampleWardrobe = async () => {
+  const resetToSampleWardrobe = useCallback(async () => {
     const samples = await wardrobeService.resetToDemoItems();
     setWardrobe(samples);
     showToast({
@@ -528,9 +528,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       description: 'Editorial sample items have been restored.',
       type: 'success',
     });
-  };
+  }, [showToast]);
 
-  const toggleWardrobeFavorite = async (id: string) => {
+  const toggleWardrobeFavorite = useCallback(async (id: string) => {
     const updated = await wardrobeService.toggleFavorite(id);
     setWardrobe(prev => prev.map(item => (item.id === id ? updated : item)));
     showToast({
@@ -539,9 +539,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       type: 'info',
       durationMs: 2500,
     });
-  };
+  }, [showToast]);
 
-  const recordWearItem = async (id: string) => {
+  const recordWearItem = useCallback(async (id: string) => {
     const updated = await wardrobeService.recordWear(id);
     setWardrobe(prev => prev.map(item => (item.id === id ? updated : item)));
     showToast({
@@ -550,14 +550,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       type: 'success',
       durationMs: 3000,
     });
-  };
+  }, [showToast]);
 
-  const reloadWardrobe = async () => {
+  const reloadWardrobe = useCallback(async () => {
     const items = await wardrobeService.getAll();
     setWardrobe(items);
-  };
+  }, []);
 
-  const addOutfit = async (
+  const addOutfit = useCallback(async (
     outfitData: Omit<Outfit, 'id' | 'createdAt' | 'updatedAt' | 'timesWorn'>
   ): Promise<Outfit> => {
     const created = await outfitService.create(outfitData);
@@ -569,9 +569,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       type: 'success',
     });
     return created;
-  };
+  }, [wardrobe, showToast]);
 
-  const deleteOutfit = async (id: string) => {
+  const deleteOutfit = useCallback(async (id: string) => {
     await outfitService.delete(id);
     setOutfits(prev => prev.filter(o => o.id !== id));
     showToast({
@@ -579,9 +579,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       description: 'Outfit removed from your collection.',
       type: 'info',
     });
-  };
+  }, [showToast]);
 
-  const deleteMultipleOutfits = async (ids: string[]) => {
+  const deleteMultipleOutfits = useCallback(async (ids: string[]) => {
     if (ids.length === 0) return;
     await outfitService.deleteMany(ids);
     const idSet = new Set(ids);
@@ -591,9 +591,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       description: `${ids.length} outfits removed from your lookbook.`,
       type: 'info',
     });
-  };
+  }, [showToast]);
 
-  const clearOutfits = async () => {
+  const clearOutfits = useCallback(async () => {
     await outfitService.clearAll();
     setOutfits([]);
     showToast({
@@ -601,9 +601,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       description: 'All saved outfits have been removed.',
       type: 'info',
     });
-  };
+  }, [showToast]);
 
-  const toggleOutfitFavorite = async (id: string) => {
+  const toggleOutfitFavorite = useCallback(async (id: string) => {
     const updated = await outfitService.toggleFavorite(id);
     setOutfits(prev =>
       prev.map(o => (o.id === id ? { ...o, isFavorite: updated.isFavorite } : o))
@@ -614,9 +614,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       type: 'info',
       durationMs: 2500,
     });
-  };
+  }, [showToast]);
 
-  const recordWearOutfit = async (id: string) => {
+  const recordWearOutfit = useCallback(async (id: string) => {
     const updated = await outfitService.recordWear(id);
     setOutfits(prev => prev.map(o => (o.id === id ? { ...o, timesWorn: updated.timesWorn } : o)));
     await reloadWardrobe();
@@ -626,9 +626,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       type: 'success',
       durationMs: 3500,
     });
-  };
+  }, [reloadWardrobe, showToast]);
 
-  const addPlan = async (
+  const addPlan = useCallback(async (
     planData: Omit<PlannedOutfit, 'id' | 'createdAt' | 'isCompleted'>
   ): Promise<PlannedOutfit> => {
     const newPlan = await plannerService.create(planData);
@@ -640,9 +640,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       type: 'success',
     });
     return newPlan;
-  };
+  }, [outfits, showToast]);
 
-  const deletePlan = async (id: string) => {
+  const deletePlan = useCallback(async (id: string) => {
     await plannerService.delete(id);
     setPlans(prev => prev.filter(p => p.id !== id));
     showToast({
@@ -650,9 +650,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       description: 'Planned outfit entry removed.',
       type: 'info',
     });
-  };
+  }, [showToast]);
 
-  const togglePlanCompleted = async (id: string) => {
+  const togglePlanCompleted = useCallback(async (id: string) => {
     const target = plans.find(p => p.id === id);
     if (!target) return;
     const updated = await plannerService.update(id, { isCompleted: !target.isCompleted });
@@ -663,70 +663,125 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       type: 'info',
       durationMs: 2500,
     });
-  };
+  }, [plans, showToast]);
+
+  const contextValue = React.useMemo<AppContextType>(
+    () => ({
+      currentRoute,
+      navigateTo,
+      theme,
+      setTheme,
+      toggleTheme,
+      isAuthenticated,
+      authLoading,
+      user,
+      signIn,
+      signUp,
+      signOut,
+      requestPasswordReset,
+      resetPassword,
+      updateProfile,
+      updateUser,
+      resetToDemoData,
+      clearAllData,
+      wardrobe,
+      isLoadingWardrobe,
+      addWardrobeItem,
+      updateWardrobeItem,
+      deleteWardrobeItem,
+      deleteMultipleWardrobeItems,
+      clearWardrobe,
+      resetToSampleWardrobe,
+      toggleWardrobeFavorite,
+      recordWearItem,
+      reloadWardrobe,
+      outfits,
+      isLoadingOutfits,
+      addOutfit,
+      deleteOutfit,
+      deleteMultipleOutfits,
+      clearOutfits,
+      toggleOutfitFavorite,
+      recordWearOutfit,
+      plans,
+      isLoadingPlans,
+      addPlan,
+      deletePlan,
+      togglePlanCompleted,
+      toasts,
+      showToast,
+      dismissToast,
+      isAddClothingModalOpen,
+      setIsAddClothingModalOpen,
+      isCreateLookModalOpen,
+      setIsCreateLookModalOpen,
+      isPlanModalOpen,
+      setIsPlanModalOpen,
+      isFirstLoginMeasurementsModalOpen,
+      setIsFirstLoginMeasurementsModalOpen,
+      openMeasurementsModal,
+      selectedWardrobeItemForDetail,
+      setSelectedWardrobeItemForDetail,
+      quickOccasionForStylist,
+      setQuickOccasionForStylist,
+    }),
+    [
+      currentRoute,
+      navigateTo,
+      theme,
+      setTheme,
+      toggleTheme,
+      isAuthenticated,
+      authLoading,
+      user,
+      signIn,
+      signUp,
+      signOut,
+      requestPasswordReset,
+      resetPassword,
+      updateProfile,
+      updateUser,
+      resetToDemoData,
+      clearAllData,
+      wardrobe,
+      isLoadingWardrobe,
+      addWardrobeItem,
+      updateWardrobeItem,
+      deleteWardrobeItem,
+      deleteMultipleWardrobeItems,
+      clearWardrobe,
+      resetToSampleWardrobe,
+      toggleWardrobeFavorite,
+      recordWearItem,
+      reloadWardrobe,
+      outfits,
+      isLoadingOutfits,
+      addOutfit,
+      deleteOutfit,
+      deleteMultipleOutfits,
+      clearOutfits,
+      toggleOutfitFavorite,
+      recordWearOutfit,
+      plans,
+      isLoadingPlans,
+      addPlan,
+      deletePlan,
+      togglePlanCompleted,
+      toasts,
+      showToast,
+      dismissToast,
+      isAddClothingModalOpen,
+      isCreateLookModalOpen,
+      isPlanModalOpen,
+      isFirstLoginMeasurementsModalOpen,
+      openMeasurementsModal,
+      selectedWardrobeItemForDetail,
+      quickOccasionForStylist,
+    ]
+  );
 
   return (
-    <AppContext.Provider
-      value={{
-        currentRoute,
-        navigateTo,
-        theme,
-        setTheme,
-        toggleTheme,
-        isAuthenticated,
-        authLoading,
-        user,
-        signIn,
-        signUp,
-        signOut,
-        requestPasswordReset,
-        resetPassword,
-        updateProfile,
-        updateUser,
-        resetToDemoData,
-        clearAllData,
-        wardrobe,
-        isLoadingWardrobe,
-        addWardrobeItem,
-        updateWardrobeItem,
-        deleteWardrobeItem,
-        deleteMultipleWardrobeItems,
-        clearWardrobe,
-        resetToSampleWardrobe,
-        toggleWardrobeFavorite,
-        recordWearItem,
-        reloadWardrobe,
-        outfits,
-        isLoadingOutfits,
-        addOutfit,
-        deleteOutfit,
-        deleteMultipleOutfits,
-        clearOutfits,
-        toggleOutfitFavorite,
-        recordWearOutfit,
-        plans,
-        isLoadingPlans,
-        addPlan,
-        deletePlan,
-        togglePlanCompleted,
-        toasts,
-        showToast,
-        dismissToast,
-        isAddClothingModalOpen,
-        setIsAddClothingModalOpen,
-        isCreateLookModalOpen,
-        setIsCreateLookModalOpen,
-        isPlanModalOpen,
-        setIsPlanModalOpen,
-        isFirstLoginMeasurementsModalOpen,
-        setIsFirstLoginMeasurementsModalOpen,
-        openMeasurementsModal,
-        selectedWardrobeItemForDetail,
-        setSelectedWardrobeItemForDetail,
-        quickOccasionForStylist,
-        setQuickOccasionForStylist,
-      }}
-    >
+    <AppContext.Provider value={contextValue}>
       {children}
     </AppContext.Provider>
   );

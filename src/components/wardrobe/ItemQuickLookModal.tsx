@@ -38,6 +38,8 @@ export function ItemQuickLookModal({
   onClose,
   onOpenFullDetail,
 }: ItemQuickLookModalProps) {
+  if (!isOpen || !item) return null;
+
   const {
     wardrobe,
     toggleWardrobeFavorite,

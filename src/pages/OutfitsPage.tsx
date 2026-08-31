@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { motion, AnimatePresence, Variants } from "motion/react";
 import { useApp } from "../context/AppContext";
 import { Button } from "../components/ui/Button";
@@ -78,11 +78,13 @@ export function OutfitsPage() {
 
   const [activeCategory, setActiveCategory] = useState("All");
 
-  const filteredOutfits = outfits.filter((outfit) => {
-    if (activeCategory === "All") return true;
-    if (activeCategory === "Favorites") return outfit.isFavorite;
-    return outfit.occasion === activeCategory;
-  });
+  const filteredOutfits = useMemo(() => {
+    return outfits.filter((outfit) => {
+      if (activeCategory === "All") return true;
+      if (activeCategory === "Favorites") return outfit.isFavorite;
+      return outfit.occasion === activeCategory;
+    });
+  }, [outfits, activeCategory]);
 
   return (
     <div className="space-y-8">
