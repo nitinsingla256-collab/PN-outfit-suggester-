@@ -1,13 +1,15 @@
 {
   "name": "PN Outfit Suggester",
-  "short_name": "PN Outfit Suggester",
+  "short_name": "PN Outfit",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#022c22",
-  "theme_color": "#047857",
+  "orientation": "portrait-primary",
+  "background_color": "#F8FAFC",
+  "theme_color": "#059669",
   "icons": [
     {
-      "src": "/icon.svg",
+      "src": "/favicon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"

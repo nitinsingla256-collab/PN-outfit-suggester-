@@ -20,6 +20,8 @@ import { AuthPage } from './pages/AuthPage';
 import { AddClothingModal } from './components/wardrobe/AddClothingModal';
 import { ClothingDetailModal } from './components/wardrobe/ClothingDetailModal';
 import { CreateLookModal } from './components/outfits/CreateLookModal';
+import { FirstLoginMeasurementsModal } from './components/profile/FirstLoginMeasurementsModal';
+import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { ShieldAlert, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -52,6 +54,7 @@ function RouterView() {
   const renderPage = () => {
     switch (currentRoute) {
       case '/': return <HomePage key="home" />;
+      case '/home': return <HomePage key="home" />;
       case '/wardrobe': return <WardrobePage key="wardrobe" />;
       case '/stylist': return <StylistPage key="stylist" />;
       case '/outfits': return <OutfitsPage key="outfits" />;
@@ -65,23 +68,26 @@ function RouterView() {
   };
 
   return (
-    <AnimatePresence mode="wait">
-      <motion.div
-        key={currentRoute}
-        initial={{ opacity: 0, y: 15, filter: 'blur(8px)' }}
-        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-        exit={{ opacity: 0, y: -15, filter: 'blur(8px)' }}
-        transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-        className="w-full h-full"
-      >
+    <ErrorBoundary
+      key={currentRoute}
+      pageName={currentRoute}
+      fallbackTitle={`Issue rendering ${currentRoute.replace('/', '') || 'Home'} page`}
+      fallbackMessage="We encountered an issue displaying this page. Your wardrobe and data remain completely safe."
+    >
+      <div className="w-full h-full">
         {renderPage()}
-      </motion.div>
-    </AnimatePresence>
+      </div>
+    </ErrorBoundary>
   );
 }
 
 export function AppContent() {
-  const { isAuthenticated, authLoading } = useApp();
+  const {
+    isAuthenticated,
+    authLoading,
+    isFirstLoginMeasurementsModalOpen,
+    setIsFirstLoginMeasurementsModalOpen,
+  } = useApp();
 
   if (authLoading) {
     return (
@@ -109,14 +115,23 @@ export function AppContent() {
       <AddClothingModal />
       <ClothingDetailModal />
       <CreateLookModal />
+      <FirstLoginMeasurementsModal
+        isOpen={isFirstLoginMeasurementsModalOpen}
+        onClose={() => setIsFirstLoginMeasurementsModalOpen(false)}
+      />
     </AppLayout>
   );
 }
 
 export default function App() {
   return (
-    <AppProvider>
-      <AppContent />
-    </AppProvider>
+    <ErrorBoundary
+      fallbackTitle="Application Recovery"
+      fallbackMessage="An unexpected issue occurred. Click below to reload the Atelier."
+    >
+      <AppProvider>
+        <AppContent />
+      </AppProvider>
+    </ErrorBoundary>
   );
 }

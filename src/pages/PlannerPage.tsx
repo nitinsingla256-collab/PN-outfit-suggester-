@@ -22,7 +22,6 @@ import {
   Clock,
   CheckCircle2,
   Trash2,
-  CloudSun,
 } from "lucide-react";
 
 export function PlannerPage() {
@@ -68,8 +67,7 @@ export function PlannerPage() {
     const totalDaysInMonth = new Date(year, month + 1, 0).getDate();
     const prevMonthDays = new Date(year, month, 0).getDate();
 
-    const days: { dateStr: string; dayNum: number; isCurrentMonth: boolean }[] =
-      [];
+    const days: { dateStr: string; dayNum: number; isCurrentMonth: boolean }[] = [];
 
     // Previous month padding
     for (let i = firstDayIndex - 1; i >= 0; i--) {
@@ -109,307 +107,249 @@ export function PlannerPage() {
   const selectedPlans = plans.filter((p) => p.date === selectedDateStr);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* 1. Header Banner */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-4 border-b border-gray-200">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs uppercase font-semibold tracking-wider text-emerald-500">
-              Wardrobe Schedule
-            </span>
-            <span className="text-gray-400">·</span>
-            <span className="text-xs text-gray-600 font-mono">
-              Calendar Intelligence
-            </span>
-          </div>
-          <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-gray-900 font-editorial">
-            Style Planner
-          </h2>
-          <p className="text-xs sm:text-sm text-gray-600 mt-1">
-            Map out weekly ensembles, travel itineraries, and destination
-            styling in advance.
-          </p>
-        </div>
+      <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 text-white rounded-3xl p-6 sm:p-8 shadow-xl border border-slate-700/50">
+        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/3 -mb-16 w-80 h-80 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="flex items-center gap-2.5">
-          <Button
-            variant="gold-outline"
-            size="sm"
-            onClick={() => navigateTo("/stylist")}
-            leftIcon={<Sparkles className="w-3.5 h-3.5 text-emerald-500" />}
-          >
-            Get a Suggestion
-          </Button>
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => setIsPlanModalOpen(true)}
-            leftIcon={<Plus className="w-3.5 h-3.5" />}
-          >
-            Plan Outfit
-          </Button>
+        <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-widest bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                Atelier Calendar
+              </span>
+              <span className="text-slate-500">·</span>
+              <span className="text-xs text-slate-300 font-mono">
+                {plans.length} Scheduled {plans.length === 1 ? 'Event' : 'Events'}
+              </span>
+            </div>
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-white font-editorial">
+              Style Planner
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-300 mt-2 max-w-xl leading-relaxed">
+              Map out weekly ensembles, formal engagements, and destination styling with linked wardrobe pieces.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2.5 shrink-0">
+            <Button
+              variant="secondary"
+              size="sm"
+              className="rounded-xl px-4 py-2"
+              onClick={() => navigateTo("/stylist")}
+              leftIcon={<Sparkles className="w-3.5 h-3.5 text-emerald-600" />}
+            >
+              Ask Stylist
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              className="rounded-xl px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold shadow-lg shadow-emerald-500/20"
+              onClick={() => setIsPlanModalOpen(true)}
+              leftIcon={<Plus className="w-3.5 h-3.5" />}
+            >
+              Schedule Look
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* 2. Calendar Grid & Selected Day Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Monthly Calendar View */}
-        <div className="lg:col-span-8 space-y-4">
-          <Card className="p-5 backdrop-blur-xl bg-white/70 border-white/50 shadow-2xl relative overflow-hidden">
-            <div className="absolute top-[-10%] right-[-5%] w-96 h-96 bg-emerald-200/20 rounded-full blur-[100px] pointer-events-none"></div>
-            {/* Calendar Controls */}
-            <div className="flex items-center justify-between pb-4 border-b border-gray-200 mb-4">
-              <div className="flex items-center gap-3">
-                <h3 className="text-base sm:text-lg font-semibold text-gray-900 font-editorial">
-                  {monthName}
-                </h3>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={handleToday}
-                  className="text-xs"
-                >
-                  Today
-                </Button>
-              </div>
-
-              <div className="flex items-center gap-1.5">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handlePrevMonth}
-                  aria-label="Previous Month"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleNextMonth}
-                  aria-label="Next Month"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-              </div>
+      {/* 2. Main Calendar & Agenda Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Calendar View (7 cols) */}
+        <div className="lg:col-span-7 bg-white rounded-3xl border border-slate-200/80 p-6 shadow-2xs space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-3">
+              <h3 className="text-lg font-bold text-slate-900 font-editorial">
+                {monthName}
+              </h3>
+              <button
+                onClick={handleToday}
+                className="text-xs font-semibold text-emerald-700 hover:text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg"
+              >
+                Today
+              </button>
             </div>
 
-            {/* Weekday headers */}
-            <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">
-              <span>Sun</span>
-              <span>Mon</span>
-              <span>Tue</span>
-              <span>Wed</span>
-              <span>Thu</span>
-              <span>Fri</span>
-              <span>Sat</span>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={handlePrevMonth}
+                className="p-2 rounded-xl hover:bg-slate-100 text-slate-600 transition-colors"
+                aria-label="Previous month"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                onClick={handleNextMonth}
+                className="p-2 rounded-xl hover:bg-slate-100 text-slate-600 transition-colors"
+                aria-label="Next month"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
             </div>
+          </div>
 
-            {/* Days Matrix */}
-            <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
-              {calendarDays.map((day) => {
-                const isSelected = day.dateStr === selectedDateStr;
-                const isToday = day.dateStr === "2026-08-29";
-                const dayPlans = plans.filter((p) => p.date === day.dateStr);
+          {/* Weekday Labels */}
+          <div className="grid grid-cols-7 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider py-1">
+            <span>Sun</span>
+            <span>Mon</span>
+            <span>Tue</span>
+            <span>Wed</span>
+            <span>Thu</span>
+            <span>Fri</span>
+            <span>Sat</span>
+          </div>
 
-                return (
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    key={day.dateStr}
-                    type="button"
-                    onClick={() => setSelectedDateStr(day.dateStr)}
-                    className={`min-h-[70px] sm:min-h-[85px] p-2 rounded-xl border text-left flex flex-col justify-between transition-all relative overflow-hidden shadow-sm ${
-                      isSelected
-                        ? "bg-emerald-500/10 border-emerald-500 ring-1 ring-emerald-500/40 text-gray-900 backdrop-blur-sm"
-                        : day.isCurrentMonth
-                          ? "bg-white border-gray-200 text-gray-700 hover:border-emerald-300 hover:bg-emerald-50/50"
-                          : "bg-white/40 border-gray-100 text-gray-400 opacity-60 backdrop-blur-md"
-                    }`}
-                  >
-                    {isSelected && (
-                      <motion.div
-                        layoutId="selectedDayHighlight"
-                        className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-transparent pointer-events-none"
-                      />
-                    )}
-                    <div className="flex items-center justify-between relative z-10">
-                      <span
-                        className={`text-xs font-mono font-medium ${
-                          isToday
-                            ? "w-5 h-5 rounded-full bg-emerald-500 text-gray-50 flex items-center justify-center font-bold"
-                            : isSelected
-                              ? "text-emerald-500"
-                              : ""
-                        }`}
-                      >
-                        {day.dayNum}
-                      </span>
-                      {dayPlans.length > 0 && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                      )}
-                    </div>
+          {/* Days Grid */}
+          <div className="grid grid-cols-7 gap-1.5">
+            {calendarDays.map((day, idx) => {
+              const isSelected = day.dateStr === selectedDateStr;
+              const hasPlans = plans.some((p) => p.date === day.dateStr);
 
-                    {/* Micro tags inside day cell */}
-                    {dayPlans.length > 0 && (
-                      <div className="space-y-1 mt-1">
-                        {dayPlans.slice(0, 2).map((p) => (
-                          <div
-                            key={p.id}
-                            className="text-[9px] px-1.5 py-0.5 rounded bg-white border border-gray-200 truncate text-emerald-500 font-medium"
-                          >
-                            {p.title}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </motion.button>
-                );
-              })}
-            </div>
-          </Card>
+              return (
+                <button
+                  key={idx}
+                  onClick={() => setSelectedDateStr(day.dateStr)}
+                  className={`aspect-square rounded-2xl p-1.5 flex flex-col items-center justify-between text-xs transition-all relative ${
+                    isSelected
+                      ? "bg-slate-900 text-white font-bold shadow-md"
+                      : day.isCurrentMonth
+                        ? "hover:bg-slate-100 text-slate-800 bg-slate-50/50"
+                        : "text-slate-300 hover:bg-slate-50"
+                  }`}
+                >
+                  <span className="text-xs">{day.dayNum}</span>
+                  {hasPlans && (
+                    <div
+                      className={`w-1.5 h-1.5 rounded-full mb-1 ${
+                        isSelected ? "bg-emerald-400" : "bg-emerald-600"
+                      }`}
+                    />
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        {/* Selected Date Details Column */}
-        <div className="lg:col-span-4 space-y-4">
-          <WeatherWidget />
-          <Card className="p-5 backdrop-blur-xl bg-white/80 border-white/40 shadow-xl">
-            <div className="flex items-center justify-between pb-3 border-b border-gray-200/60">
+        {/* Selected Date Agenda (5 cols) */}
+        <div className="lg:col-span-5 space-y-4">
+          <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-2xs space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
-                <span className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold">
-                  Scheduled Day
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-emerald-700">
+                  Agenda for
                 </span>
-                <h4 className="text-sm font-semibold text-gray-900 font-mono mt-0.5">
-                  {selectedDateStr}
-                </h4>
+                <h3 className="text-lg font-bold text-slate-900 font-editorial">
+                  {new Date(selectedDateStr + "T00:00:00").toLocaleDateString(
+                    undefined,
+                    {
+                      weekday: "long",
+                      month: "short",
+                      day: "numeric",
+                    }
+                  )}
+                </h3>
               </div>
               <Button
                 variant="primary"
                 size="sm"
-                className="text-xs"
+                className="rounded-xl px-3 py-1.5 text-xs"
                 onClick={() => setIsPlanModalOpen(true)}
                 leftIcon={<Plus className="w-3.5 h-3.5" />}
               >
-                Plan Look
+                Add Look
               </Button>
             </div>
 
-            {selectedPlans.length > 0 ? (
-              <AnimatePresence>
-                <div className="space-y-3 mt-4">
-                  {selectedPlans.map((plan) => (
-                    <motion.div
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, scale: 0.9 }}
-                      key={plan.id}
-                      className="p-4 rounded-xl bg-white/60 backdrop-blur-lg border border-gray-200/60 space-y-3 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group"
-                    >
-                      <div className="absolute top-0 right-0 -mr-4 -mt-4 w-20 h-20 bg-emerald-100/30 blur-2xl rounded-full pointer-events-none group-hover:bg-emerald-200/40 transition-colors"></div>
-                      <div className="flex items-start justify-between gap-2 relative z-10">
-                        <div>
-                          <Badge variant="gold" size="sm">
-                            {plan.occasion}
-                          </Badge>
-                          <h4 className="text-sm font-semibold text-gray-900 mt-2">
-                            {plan.title}
-                          </h4>
-                        </div>
+            {selectedPlans.length === 0 ? (
+              <div className="py-8 text-center space-y-3">
+                <div className="w-12 h-12 rounded-2xl bg-slate-50 text-slate-400 flex items-center justify-center mx-auto border border-slate-100">
+                  <CalendarIcon className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-slate-800 font-editorial">
+                    No outfits scheduled for this day
+                  </p>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Plan your signature ensemble in advance.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {selectedPlans.map((plan) => (
+                  <div
+                    key={plan.id}
+                    className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                        {plan.occasion}
+                      </span>
+                      <div className="flex items-center gap-1.5">
                         <button
                           onClick={() => togglePlanCompleted(plan.id)}
-                          className={`p-1 rounded-lg transition-colors ${
+                          className={`p-1.5 rounded-lg transition-colors ${
                             plan.isCompleted
-                              ? "text-emerald-400"
-                              : "text-gray-500 hover:text-gray-700"
+                              ? "text-emerald-600 bg-emerald-100"
+                              : "text-slate-400 hover:text-emerald-600"
                           }`}
-                          title={
-                            plan.isCompleted ? "Marked as worn" : "Mark as worn"
-                          }
+                          title={plan.isCompleted ? "Completed" : "Mark completed"}
                         >
                           <CheckCircle2 className="w-4 h-4" />
                         </button>
+                        <button
+                          onClick={() => deletePlan(plan.id)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 transition-colors"
+                          title="Delete plan"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
+                    </div>
 
-                      {plan.time && (
-                        <p className="text-xs text-gray-600 flex items-center gap-1.5 font-mono">
-                          <Clock className="w-3.5 h-3.5 text-gray-500" />
-                          {plan.time}
-                        </p>
-                      )}
-
+                    <div>
+                      <h4 className="font-bold text-sm text-slate-900 font-editorial">
+                        {plan.title}
+                      </h4>
                       {plan.location && (
-                        <p className="text-xs text-gray-600 flex items-center gap-1.5">
-                          <MapPin className="w-3.5 h-3.5 text-gray-500" />
+                        <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-1">
+                          <MapPin className="w-3 h-3 text-slate-400" />
                           {plan.location}
                         </p>
                       )}
-
-                      {plan.notes && (
-                        <p className="text-xs text-gray-600 italic bg-gray-50/60 p-2 rounded-lg border border-gray-200">
-                          &ldquo;{plan.notes}&rdquo;
+                      {plan.time && (
+                        <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-1">
+                          <Clock className="w-3 h-3 text-slate-400" />
+                          {plan.time}
                         </p>
                       )}
+                    </div>
 
-                      {/* Outfit linked preview */}
-                      {plan.outfit && (
-                        <div className="pt-2 border-t border-gray-200 flex items-center gap-2">
-                          {plan.outfit.imageUrl && (
-                            <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 bg-gray-100">
-                              <img
-                                src={plan.outfit.imageUrl}
-                                alt={plan.outfit.name}
-                                className="w-full h-full object-cover"
-                                referrerPolicy="no-referrer"
-                              />
-                            </div>
-                          )}
-                          <div className="min-w-0 flex-1">
-                            <span className="text-[10px] text-gray-500 block">
-                              Assigned Look:
-                            </span>
-                            <span className="text-xs font-medium text-emerald-500 truncate block">
-                              {plan.outfit.name}
-                            </span>
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="flex items-center justify-end pt-2 border-t border-gray-200/60 relative z-10">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-50"
-                          onClick={() => deletePlan(plan.id)}
-                          leftIcon={<Trash2 className="w-3.5 h-3.5" />}
-                        >
-                          Delete Schedule
-                        </Button>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </AnimatePresence>
-            ) : (
-              <div className="py-8 text-center space-y-2">
-                <CalendarIcon className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                <h5 className="text-xs font-semibold text-gray-700">
-                  No Look Scheduled
-                </h5>
-                <p className="text-[11px] text-gray-500 max-w-xs mx-auto">
-                  Click &ldquo;Plan Look&rdquo; to reserve an ensemble for{" "}
-                  {selectedDateStr}.
-                </p>
+                    {plan.notes && (
+                      <p className="text-xs text-slate-600 italic bg-white p-2.5 rounded-xl border border-slate-100">
+                        &ldquo;{plan.notes}&rdquo;
+                      </p>
+                    )}
+                  </div>
+                ))}
               </div>
             )}
-          </Card>
+          </div>
+
+          <WeatherWidget />
         </div>
       </div>
 
-      {/* Plan Outfit Modal */}
-      <PlanOutfitModal
-        defaultDate={selectedDateStr}
-        isOpen={isPlanModalOpen}
-        onClose={() => setIsPlanModalOpen(false)}
-      />
+      {isPlanModalOpen && (
+        <PlanOutfitModal
+          isOpen={isPlanModalOpen}
+          onClose={() => setIsPlanModalOpen(false)}
+          defaultDate={selectedDateStr}
+        />
+      )}
     </div>
   );
 }

@@ -53,6 +53,7 @@ export function ClothingDetailModal() {
   const item = selectedWardrobeItemForDetail;
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
 
   // Edit form states
   const [editName, setEditName] = useState('');
@@ -154,15 +155,9 @@ export function ClothingDetailModal() {
   };
 
   const handleDelete = async () => {
-    if (window.confirm(`Are you sure you want to remove "${item.name}" from your wardrobe?`)) {
-      await deleteWardrobeItem(item.id);
-      setSelectedWardrobeItemForDetail(null);
-      showToast({
-        title: 'Garment Removed',
-        description: 'Item removed from your wardrobe catalogue.',
-        type: 'info',
-      });
-    }
+    await deleteWardrobeItem(item.id);
+    setIsConfirmingDelete(false);
+    setSelectedWardrobeItemForDetail(null);
   };
 
   const formattedDate = item.createdAt
@@ -396,39 +391,67 @@ export function ClothingDetailModal() {
               {!isEditing ? (
                 <>
                   <div className="flex items-center gap-2">
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      onClick={startEditing}
-                      leftIcon={<Edit3 className="w-3.5 h-3.5" />}
-                    >
-                      Edit Details
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      onClick={handleDelete}
-                      leftIcon={<Trash2 className="w-3.5 h-3.5" />}
-                    >
-                      Delete
-                    </Button>
+                    {!isConfirmingDelete ? (
+                      <>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={startEditing}
+                          leftIcon={<Edit3 className="w-3.5 h-3.5" />}
+                        >
+                          Edit Details
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => setIsConfirmingDelete(true)}
+                          leftIcon={<Trash2 className="w-3.5 h-3.5" />}
+                        >
+                          Remove Piece
+                        </Button>
+                      </>
+                    ) : (
+                      <div className="flex items-center gap-1.5 p-1 bg-rose-50 border border-rose-200 rounded-xl">
+                        <span className="text-xs text-rose-700 font-medium px-2">Confirm remove?</span>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          className="text-xs px-2.5 py-1 h-7"
+                          onClick={handleDelete}
+                        >
+                          Yes, Delete
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="text-xs px-2 py-1 h-7 text-gray-600"
+                          onClick={() => setIsConfirmingDelete(false)}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    )}
                   </div>
 
-                  <Button
-                    type="button"
-                    variant="primary"
-                    size="sm"
-                    className="rounded-xl"
-                    onClick={() => {
-                      setSelectedWardrobeItemForDetail(null);
-                      navigateTo('/stylist');
-                    }}
-                    leftIcon={<Sparkles className="w-3.5 h-3.5" />}
-                  >
-                    Style in Studio
-                  </Button>
+                  {!isConfirmingDelete && (
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="sm"
+                      className="rounded-xl"
+                      onClick={() => {
+                        setSelectedWardrobeItemForDetail(null);
+                        navigateTo('/stylist');
+                      }}
+                      leftIcon={<Sparkles className="w-3.5 h-3.5" />}
+                    >
+                      Style in Studio
+                    </Button>
+                  )}
                 </>
               ) : (
                 <>

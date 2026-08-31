@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useRef } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Modal } from '../ui/Modal';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
@@ -11,7 +12,7 @@ import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import { ClothingCategory, ClothingFit, ClothingFormality, Season } from '../../types';
 import { useApp } from '../../context/AppContext';
-import { aiStylistService } from '../../services/aiStylistService';
+import { aiStylistService, GarmentAnalysisResult } from '../../services/aiStylistService';
 import {
   Sparkles,
   UploadCloud,
@@ -26,6 +27,12 @@ import {
   Layers,
   Palette,
   Sparkle,
+  Plus,
+  Trash2,
+  CheckCheck,
+  RefreshCw,
+  Eye,
+  FolderPlus,
 } from 'lucide-react';
 
 const CATEGORIES: ClothingCategory[] = [
@@ -124,16 +131,42 @@ const FORMALITIES: ClothingFormality[] = [
 
 const SEASONS: Season[] = ['All-Season', 'Spring', 'Summer', 'Autumn', 'Winter'];
 
+export interface BatchGarmentItem {
+  id: string;
+  name: string;
+  imageUrl: string;
+  imageBase64: string;
+  mimeType: string;
+  category: ClothingCategory;
+  type: string;
+  color: string;
+  secondaryColor?: string;
+  pattern: string;
+  material?: string;
+  style: string;
+  formality: ClothingFormality;
+  brand?: string;
+  fit: ClothingFit;
+  season: string[];
+  occasion: string[];
+  tags: string[];
+  careInstructions?: string;
+  stylingNote?: string;
+  confidence?: number;
+  status: 'pending' | 'analyzing' | 'ready' | 'saved' | 'error';
+}
+
 export function AddClothingModal() {
   const { isAddClothingModalOpen, setIsAddClothingModalOpen, addWardrobeItem, showToast } = useApp();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const multiFileInputRef = useRef<HTMLInputElement>(null);
 
-  // Modal Step State: 'upload' | 'ai_review' | 'edit_details'
-  const [currentStep, setCurrentStep] = useState<'upload' | 'ai_review' | 'edit_details'>('upload');
+  // Modal Step State: 'upload' | 'ai_review' | 'edit_details' | 'batch_workspace'
+  const [currentStep, setCurrentStep] = useState<'upload' | 'ai_review' | 'edit_details' | 'batch_workspace'>('upload');
   const [uploadMode, setUploadMode] = useState<'single' | 'multiple'>('single');
 
-  // Garment Fields
+  // Single Garment Fields
   const [name, setName] = useState('');
   const [category, setCategory] = useState<ClothingCategory>('Tops');
   const [type, setType] = useState('Shirt');
@@ -152,13 +185,19 @@ export function AddClothingModal() {
   const [imageUrl, setImageUrl] = useState('');
   const [imageBase64, setImageBase64] = useState<string | null>(null);
 
-  // AI Analysis state
+  // Single AI Analysis state
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [aiConfidence, setAiConfidence] = useState<number | null>(null);
   const [aiStylingNote, setAiStylingNote] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Batch Multi-Item State (Supports 5+ images at once)
+  const [batchItems, setBatchItems] = useState<BatchGarmentItem[]>([]);
+  const [isBatchAnalyzing, setIsBatchAnalyzing] = useState(false);
+  const [isBatchSaving, setIsBatchSaving] = useState(false);
+  const [selectedBatchItemForEdit, setSelectedBatchItemForEdit] = useState<BatchGarmentItem | null>(null);
 
   const toggleSeason = (s: Season) => {
     if (selectedSeasons.includes(s)) {
@@ -192,6 +231,8 @@ export function AddClothingModal() {
     setAiStylingNote(null);
     setCurrentStep('upload');
     setErrors({});
+    setBatchItems([]);
+    setSelectedBatchItemForEdit(null);
   };
 
   const handleClose = () => {
@@ -199,33 +240,96 @@ export function AddClothingModal() {
     setIsAddClothingModalOpen(false);
   };
 
-  const handleFile = (file: File) => {
-    if (!file.type.startsWith('image/')) {
+  // Helper to read File to Base64
+  const readFileAsDataUrl = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // Process files (single or multiple)
+  const handleFiles = async (files: FileList | File[]) => {
+    const validImageFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
+
+    if (validImageFiles.length === 0) {
       showToast({
-        title: 'Invalid File',
-        description: 'Please select an image file (JPG, PNG, WebP).',
+        title: 'Invalid Files',
+        description: 'Please select valid image files (JPG, PNG, WebP).',
         type: 'error',
       });
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const result = reader.result as string;
+    // If more than 1 file or already in multiple mode: switch to Batch Workspace
+    if (validImageFiles.length > 1 || uploadMode === 'multiple' || batchItems.length > 0) {
+      const newItems: BatchGarmentItem[] = [];
+
+      for (let i = 0; i < validImageFiles.length; i++) {
+        const file = validImageFiles[i];
+        try {
+          const b64 = await readFileAsDataUrl(file);
+          // Derive clean name from file name
+          const cleanName = file.name
+            .replace(/\.[^/.]+$/, '')
+            .replace(/[-_]/g, ' ')
+            .replace(/\b\w/g, c => c.toUpperCase());
+
+          newItems.push({
+            id: `batch_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+            name: cleanName || `Piece #${batchItems.length + i + 1}`,
+            imageUrl: b64,
+            imageBase64: b64,
+            mimeType: file.type || 'image/jpeg',
+            category: 'Tops',
+            type: 'Shirt',
+            color: 'Navy',
+            pattern: 'Solid',
+            style: 'Casual',
+            formality: 'Casual',
+            fit: 'Regular',
+            season: ['All-Season'],
+            occasion: ['Casual'],
+            tags: ['Wardrobe Piece'],
+            status: 'pending',
+          });
+        } catch (e) {
+          console.error('Failed to read file:', e);
+        }
+      }
+
+      const merged = [...batchItems, ...newItems];
+      setBatchItems(merged);
+      setUploadMode('multiple');
+      setCurrentStep('batch_workspace');
+
+      showToast({
+        title: 'Images Loaded',
+        description: `Loaded ${newItems.length} image(s). You have ${merged.length} pieces in the batch queue.`,
+        type: 'info',
+      });
+
+      // Automatically trigger batch AI analysis on new items
+      triggerBatchAIAnalysis(newItems, merged);
+    } else {
+      // Single file workflow
+      const file = validImageFiles[0];
+      const result = await readFileAsDataUrl(file);
       setImageBase64(result);
       setImageUrl(result);
       setErrors(prev => ({ ...prev, imageUrl: '' }));
       setCurrentStep('ai_review');
       await triggerAIAnalysis({ base64: result, mimeType: file.type });
-    };
-    reader.readAsDataURL(file);
+    }
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFile(e.dataTransfer.files[0]);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFiles(e.dataTransfer.files);
     }
   };
 
@@ -276,7 +380,68 @@ export function AddClothingModal() {
     }
   };
 
-  const handleSaveToWardrobe = async () => {
+  // Batch AI Analyzer for all unanalyzed items in queue
+  const triggerBatchAIAnalysis = async (itemsToAnalyze?: BatchGarmentItem[], currentAllItems?: BatchGarmentItem[]) => {
+    const list = itemsToAnalyze || batchItems.filter(item => item.status === 'pending');
+    if (list.length === 0) return;
+
+    setIsBatchAnalyzing(true);
+    let updatedList = [...(currentAllItems || batchItems)];
+
+    for (const item of list) {
+      // Mark item as analyzing
+      updatedList = updatedList.map(i => i.id === item.id ? { ...i, status: 'analyzing' } : i);
+      setBatchItems([...updatedList]);
+
+      try {
+        const analysis = await aiStylistService.analyzeGarment({
+          imageBase64: item.imageBase64,
+          mimeType: item.mimeType,
+          hint: item.name,
+        });
+
+        updatedList = updatedList.map(i => {
+          if (i.id === item.id) {
+            return {
+              ...i,
+              name: analysis.name || i.name,
+              category: analysis.category || i.category,
+              type: analysis.type || analysis.subcategory || i.type,
+              color: analysis.color || i.color,
+              secondaryColor: analysis.secondaryColor,
+              pattern: analysis.pattern || i.pattern,
+              material: analysis.material,
+              style: analysis.style || i.style,
+              formality: (analysis.formality as ClothingFormality) || i.formality,
+              fit: analysis.fit || i.fit,
+              season: analysis.season && analysis.season.length > 0 ? analysis.season : i.season,
+              occasion: analysis.occasion && analysis.occasion.length > 0 ? analysis.occasion : i.occasion,
+              tags: analysis.tags || i.tags,
+              careInstructions: analysis.careInstructions,
+              stylingNote: analysis.stylingNote,
+              confidence: analysis.confidence || 92,
+              status: 'ready' as const,
+            };
+          }
+          return i;
+        });
+        setBatchItems([...updatedList]);
+      } catch (err) {
+        console.warn('AI analysis error for item:', item.id, err);
+        updatedList = updatedList.map(i => i.id === item.id ? { ...i, status: 'ready' } : i);
+        setBatchItems([...updatedList]);
+      }
+    }
+
+    setIsBatchAnalyzing(false);
+    showToast({
+      title: 'Batch Analysis Complete',
+      description: `AI successfully analyzed attributes for all pieces in the queue.`,
+      type: 'success',
+    });
+  };
+
+  const handleSaveSinglePiece = async () => {
     if (!name.trim()) {
       showToast({
         title: 'Name Required',
@@ -341,39 +506,113 @@ export function AddClothingModal() {
     }
   };
 
+  // Save All Batch Items in One Click
+  const handleSaveAllBatchItems = async () => {
+    if (batchItems.length === 0) return;
+
+    try {
+      setIsBatchSaving(true);
+      let successCount = 0;
+
+      for (const item of batchItems) {
+        await addWardrobeItem({
+          name: item.name.trim(),
+          category: item.category,
+          type: item.type.trim(),
+          subcategory: item.type.trim(),
+          color: item.color.trim(),
+          secondaryColor: item.secondaryColor,
+          pattern: item.pattern,
+          material: item.material,
+          style: item.style,
+          formality: item.formality,
+          brand: item.brand,
+          fit: item.fit,
+          season: item.season,
+          occasion: item.occasion,
+          tags: item.tags.length > 0 ? item.tags : ['Wardrobe Essential', item.category],
+          imageUrl: item.imageUrl,
+          isFavorite: false,
+          careInstructions: item.careInstructions,
+        });
+        successCount++;
+      }
+
+      showToast({
+        title: 'Batch Saved to Wardrobe!',
+        description: `Successfully added all ${successCount} pieces to your digital wardrobe.`,
+        type: 'success',
+      });
+
+      handleClose();
+    } catch (err: any) {
+      console.error(err);
+      showToast({
+        title: 'Batch Save Error',
+        description: err.message || 'Some items could not be saved.',
+        type: 'error',
+      });
+    } finally {
+      setIsBatchSaving(false);
+    }
+  };
+
+  const removeBatchItem = (id: string) => {
+    const updated = batchItems.filter(item => item.id !== id);
+    setBatchItems(updated);
+    if (updated.length === 0) {
+      setCurrentStep('upload');
+    }
+  };
+
+  const updateBatchItemField = (id: string, updates: Partial<BatchGarmentItem>) => {
+    setBatchItems(prev => prev.map(item => item.id === id ? { ...item, ...updates } : item));
+    if (selectedBatchItemForEdit && selectedBatchItemForEdit.id === id) {
+      setSelectedBatchItemForEdit({ ...selectedBatchItemForEdit, ...updates });
+    }
+  };
+
   return (
     <Modal
       isOpen={isAddClothingModalOpen}
       onClose={handleClose}
-      title="Add New Piece"
-      subtitle="Upload your clothes and let AI automatically identify, categorize and organize them."
+      title={currentStep === 'batch_workspace' ? 'Batch Wardrobe Upload' : 'Add New Piece'}
+      subtitle={
+        currentStep === 'batch_workspace'
+          ? `Upload at least 5 images at once with automated AI multi-garment detection & tagging.`
+          : 'Upload single or multiple images (up to 10+) and let AI automatically organize your wardrobe.'
+      }
       maxWidth="2xl"
     >
       <div className="space-y-6">
         {/* Upload Mode Selector (Single vs Multiple) */}
         {currentStep === 'upload' && (
-          <div className="flex items-center justify-center p-1 bg-slate-100 dark:bg-white rounded-xl max-w-xs mx-auto">
+          <div className="flex items-center justify-center p-1 bg-gray-100 rounded-xl max-w-sm mx-auto border border-gray-200">
             <button
               type="button"
               onClick={() => setUploadMode('single')}
               className={`flex-1 py-1.5 px-3 text-xs font-semibold rounded-lg transition-all ${
                 uploadMode === 'single'
-                  ? 'bg-white dark:bg-gray-100 text-indigo-600 dark:text-emerald-500 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-900 dark:text-gray-600'
+                  ? 'bg-white text-gray-900 shadow-sm border border-gray-200/50'
+                  : 'text-gray-500 hover:text-gray-900'
               }`}
             >
-              Upload Image
+              Single Photo
             </button>
             <button
               type="button"
-              onClick={() => setUploadMode('multiple')}
-              className={`flex-1 py-1.5 px-3 text-xs font-semibold rounded-lg transition-all ${
+              onClick={() => {
+                setUploadMode('multiple');
+                multiFileInputRef.current?.click();
+              }}
+              className={`flex-1 py-1.5 px-3 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
                 uploadMode === 'multiple'
-                  ? 'bg-white dark:bg-gray-100 text-indigo-600 dark:text-emerald-500 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-900 dark:text-gray-600'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              Multiple Upload
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              Batch Multi-Upload (5+ Images)
             </button>
           </div>
         )}
@@ -388,49 +627,82 @@ export function AddClothingModal() {
               }}
               onDragLeave={() => setIsDragOver(false)}
               onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => {
+                if (uploadMode === 'multiple') {
+                  multiFileInputRef.current?.click();
+                } else {
+                  fileInputRef.current?.click();
+                }
+              }}
               className={`border-2 border-dashed rounded-3xl p-10 sm:p-14 text-center cursor-pointer transition-all flex flex-col items-center justify-center ${
                 isDragOver
-                  ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/20'
-                  : 'border-slate-200 dark:border-gray-200 bg-slate-50/50 dark:bg-white/40 hover:border-indigo-300 dark:hover:border-gray-300 hover:bg-slate-50'
+                  ? 'border-emerald-500 bg-emerald-50/50'
+                  : 'border-gray-300 bg-gray-50/70 hover:border-emerald-400 hover:bg-gray-50'
               }`}
             >
+              {/* Single File Input */}
               <input
                 type="file"
                 ref={fileInputRef}
                 accept="image/*"
                 className="hidden"
-                onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])}
+                onChange={e => e.target.files && handleFiles(e.target.files)}
               />
 
-              <div className="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-emerald-500 flex items-center justify-center mb-4 shadow-sm">
+              {/* Multi File Input (Allows 5+ images simultaneously) */}
+              <input
+                type="file"
+                ref={multiFileInputRef}
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={e => e.target.files && handleFiles(e.target.files)}
+              />
+
+              <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4 shadow-sm border border-emerald-100">
                 <UploadCloud className="w-8 h-8" />
               </div>
 
-              <h4 className="text-base font-semibold text-slate-900 dark:text-gray-900 mb-1">
-                Drag and drop your image here
+              <h4 className="text-base font-bold text-gray-900 mb-1">
+                Drag and drop your images here
               </h4>
-              <p className="text-xs text-slate-500 dark:text-gray-600 mb-4">
-                Supported formats: JPG, PNG, WEBP • Max size: 20MB
+              <p className="text-xs text-gray-600 mb-4 max-w-md">
+                Select <span className="font-semibold text-emerald-700">1 to 10+ photos</span> at once (JPG, PNG, WebP). AI will automatically identify cuts, colors, and styles for each.
               </p>
 
-              <Button
-                type="button"
-                variant="primary"
-                size="md"
-                className="rounded-xl px-5"
-                onClick={e => {
-                  e.stopPropagation();
-                  fileInputRef.current?.click();
-                }}
-              >
-                Choose Image
-              </Button>
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="md"
+                  className="rounded-xl px-5"
+                  onClick={e => {
+                    e.stopPropagation();
+                    multiFileInputRef.current?.click();
+                  }}
+                  leftIcon={<Sparkles className="w-4 h-4 text-amber-300" />}
+                >
+                  Select 5+ Photos in Batch
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="md"
+                  className="rounded-xl px-4"
+                  onClick={e => {
+                    e.stopPropagation();
+                    fileInputRef.current?.click();
+                  }}
+                >
+                  Single Image
+                </Button>
+              </div>
             </div>
 
             {/* URL Fallback */}
             <div className="pt-2">
-              <div className="text-xs text-slate-400 dark:text-gray-500 text-center mb-2 font-medium">
+              <div className="text-xs text-gray-400 text-center mb-2 font-medium">
                 — OR PASTE IMAGE URL —
               </div>
               <div className="flex gap-2">
@@ -441,7 +713,7 @@ export function AddClothingModal() {
                     setImageUrl(e.target.value);
                     setImageBase64(null);
                   }}
-                  leftIcon={<ImageIcon className="w-4 h-4 text-slate-400" />}
+                  leftIcon={<ImageIcon className="w-4 h-4 text-gray-400" />}
                 />
                 <Button
                   type="button"
@@ -461,13 +733,204 @@ export function AddClothingModal() {
           </div>
         )}
 
-        {/* STEP 2: AI IDENTIFICATION CONFIRMATION (Matches Reference Image) */}
+        {/* STEP: BATCH MULTI-GARMENT WORKSPACE (5+ Images Queue) */}
+        {currentStep === 'batch_workspace' && (
+          <div className="space-y-6 animate-fadeIn">
+            {/* Batch Status Bar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-gray-50 border border-gray-200">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-gray-900">
+                    Batch Upload Queue ({batchItems.length} pieces)
+                  </span>
+                  <Badge variant="emerald" size="sm">
+                    Multi-Upload Active
+                  </Badge>
+                </div>
+                <p className="text-xs text-gray-600 mt-0.5">
+                  AI will auto-tag each garment. Review or customize attributes before saving to your wardrobe.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {/* Hidden input for adding more files */}
+                <input
+                  type="file"
+                  ref={multiFileInputRef}
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={e => e.target.files && handleFiles(e.target.files)}
+                />
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => multiFileInputRef.current?.click()}
+                  leftIcon={<Plus className="w-3.5 h-3.5" />}
+                >
+                  Add More Images
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="gold-outline"
+                  size="sm"
+                  disabled={isBatchAnalyzing}
+                  onClick={() => triggerBatchAIAnalysis()}
+                  leftIcon={<Sparkles className={`w-3.5 h-3.5 ${isBatchAnalyzing ? 'animate-spin' : 'text-amber-500'}`} />}
+                >
+                  {isBatchAnalyzing ? 'Analyzing AI...' : 'Re-Analyze All'}
+                </Button>
+              </div>
+            </div>
+
+            {/* Batch Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 max-h-[50vh] overflow-y-auto pr-1">
+              {batchItems.map((item, idx) => (
+                <motion.div
+                  key={item.id}
+                  layout
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className="relative flex flex-col justify-between p-3.5 rounded-2xl bg-white border border-gray-200 hover:border-emerald-400/80 shadow-xs hover:shadow-md transition-all group"
+                >
+                  <div>
+                    {/* Thumbnail */}
+                    <div className="relative aspect-square rounded-xl overflow-hidden mb-3 bg-gray-100 border border-gray-100">
+                      <img
+                        src={item.imageUrl}
+                        alt={item.name}
+                        className="w-full h-full object-cover"
+                      />
+
+                      {/* Remove Button */}
+                      <button
+                        type="button"
+                        onClick={() => removeBatchItem(item.id)}
+                        className="absolute top-2 right-2 p-1.5 rounded-full bg-black/60 hover:bg-rose-600 text-white backdrop-blur-xs transition-colors"
+                        title="Remove image from batch"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+
+                      {/* Status Tag */}
+                      <div className="absolute bottom-2 left-2">
+                        {item.status === 'analyzing' ? (
+                          <span className="px-2 py-0.5 rounded-md bg-amber-500/90 text-white text-[10px] font-semibold flex items-center gap-1 backdrop-blur-xs">
+                            <Sparkles className="w-2.5 h-2.5 animate-spin" />
+                            Analyzing...
+                          </span>
+                        ) : item.confidence ? (
+                          <span className="px-2 py-0.5 rounded-md bg-emerald-600/90 text-white text-[10px] font-semibold backdrop-blur-xs">
+                            {item.confidence}% Match
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-md bg-gray-800/80 text-gray-200 text-[10px] font-semibold backdrop-blur-xs">
+                            Pending AI
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Quick In-Card Editable Fields */}
+                    <div className="space-y-2">
+                      <input
+                        type="text"
+                        value={item.name}
+                        onChange={e => updateBatchItemField(item.id, { name: e.target.value })}
+                        placeholder="Garment Name"
+                        className="w-full px-2 py-1 text-xs font-bold text-gray-900 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                      />
+
+                      <div className="grid grid-cols-2 gap-1.5 text-[11px]">
+                        <select
+                          value={item.category}
+                          onChange={e => updateBatchItemField(item.id, { category: e.target.value as ClothingCategory })}
+                          className="px-1.5 py-1 bg-gray-50 border border-gray-200 rounded-md text-gray-700 focus:outline-none"
+                        >
+                          {CATEGORIES.map(c => (
+                            <option key={c} value={c}>{c}</option>
+                          ))}
+                        </select>
+
+                        <select
+                          value={item.color}
+                          onChange={e => updateBatchItemField(item.id, { color: e.target.value })}
+                          className="px-1.5 py-1 bg-gray-50 border border-gray-200 rounded-md text-gray-700 focus:outline-none"
+                        >
+                          {COLORS.map(c => (
+                            <option key={c} value={c}>{c}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="text-[10px] text-gray-500 flex items-center justify-between pt-1">
+                        <span>Type: <strong className="text-gray-800">{item.type}</strong></span>
+                        <span className="capitalize">{item.formality}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Edit detail button */}
+                  <div className="pt-3 mt-3 border-t border-gray-100 flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedBatchItemForEdit(item)}
+                      className="text-[11px] text-emerald-700 hover:text-emerald-800 font-semibold flex items-center gap-1"
+                    >
+                      <Edit3 className="w-3 h-3" />
+                      More Details
+                    </button>
+                    <span className="text-[10px] text-gray-400 font-mono">#{idx + 1}</span>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Batch Action Footer */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-gray-200">
+              <div className="text-xs text-gray-600">
+                Ready to add <strong className="text-emerald-700">{batchItems.length} pieces</strong> into your personal wardrobe.
+              </div>
+
+              <div className="flex items-center gap-2.5 w-full sm:w-auto">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="md"
+                  onClick={() => setCurrentStep('upload')}
+                  className="rounded-xl flex-1 sm:flex-initial"
+                >
+                  Back
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="md"
+                  isLoading={isBatchSaving}
+                  disabled={batchItems.length === 0}
+                  onClick={handleSaveAllBatchItems}
+                  className="rounded-xl px-6 flex-1 sm:flex-initial"
+                  leftIcon={<CheckCheck className="w-4 h-4" />}
+                >
+                  Save All {batchItems.length} Pieces to Wardrobe
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 2: SINGLE AI IDENTIFICATION CONFIRMATION */}
         {currentStep === 'ai_review' && (
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
               {/* Left Column: Large Image Preview */}
               <div className="md:col-span-5 space-y-3">
-                <div className="relative rounded-3xl overflow-hidden bg-slate-100 dark:bg-white border border-slate-200 dark:border-gray-200 aspect-[3/4] shadow-sm flex items-center justify-center group">
+                <div className="relative rounded-3xl overflow-hidden bg-gray-100 border border-gray-200 aspect-[3/4] shadow-sm flex items-center justify-center group">
                   {imageUrl ? (
                     <img
                       src={imageUrl}
@@ -475,17 +938,17 @@ export function AddClothingModal() {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="text-slate-400 flex flex-col items-center">
+                    <div className="text-gray-400 flex flex-col items-center">
                       <ImageIcon className="w-12 h-12 mb-2 stroke-1" />
                       <span className="text-xs">No image loaded</span>
                     </div>
                   )}
 
                   {isAnalyzing && (
-                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-xs flex flex-col items-center justify-center text-gray-900 p-4 text-center">
-                      <Sparkles className="w-8 h-8 text-indigo-300 animate-spin mb-3" />
+                    <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-xs flex flex-col items-center justify-center text-white p-4 text-center">
+                      <Sparkles className="w-8 h-8 text-amber-300 animate-spin mb-3" />
                       <p className="text-sm font-medium">AI Analyzing Garment...</p>
-                      <p className="text-xs text-slate-300 mt-1">Identifying cut, material, and colorway</p>
+                      <p className="text-xs text-gray-300 mt-1">Identifying cut, material, and colorway</p>
                     </div>
                   )}
                 </div>
@@ -496,7 +959,7 @@ export function AddClothingModal() {
                     onClick={() => {
                       fileInputRef.current?.click();
                     }}
-                    className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
+                    className="text-xs font-medium text-emerald-600 hover:underline"
                   >
                     Change Image
                   </button>
@@ -504,7 +967,7 @@ export function AddClothingModal() {
                     type="button"
                     onClick={() => triggerAIAnalysis()}
                     disabled={isAnalyzing}
-                    className="text-xs font-medium text-slate-500 dark:text-gray-600 hover:text-slate-900 flex items-center gap-1"
+                    className="text-xs font-medium text-gray-600 hover:text-gray-900 flex items-center gap-1"
                   >
                     <Wand2 className="w-3 h-3" />
                     Re-Analyze
@@ -513,19 +976,19 @@ export function AddClothingModal() {
               </div>
 
               {/* Right Column: AI Identification Table */}
-              <div className="md:col-span-7 bg-white dark:bg-white border border-slate-200 dark:border-gray-200 rounded-3xl p-6 shadow-sm space-y-5">
-                <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-gray-200">
+              <div className="md:col-span-7 bg-white border border-gray-200 rounded-3xl p-6 shadow-sm space-y-5">
+                <div className="flex items-center justify-between pb-3 border-b border-gray-200">
                   <div className="flex items-center gap-2">
-                    <span className="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-emerald-500">
+                    <span className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600">
                       <Sparkles className="w-4 h-4" />
                     </span>
-                    <h3 className="text-base font-semibold text-slate-900 dark:text-gray-900">
+                    <h3 className="text-base font-semibold text-gray-900">
                       AI Identification
                     </h3>
                   </div>
 
                   {aiConfidence && (
-                    <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                    <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                       {aiConfidence}% Confidence
                     </span>
                   )}
@@ -533,73 +996,73 @@ export function AddClothingModal() {
 
                 {/* Detected Garment Name */}
                 <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-gray-500">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-gray-500">
                     Garment Name
                   </label>
-                  <div className="text-lg font-bold text-slate-900 dark:text-gray-900 font-editorial mt-0.5">
+                  <div className="text-lg font-bold text-gray-900 font-editorial mt-0.5">
                     {name || 'Classic Denim Shirt'}
                   </div>
                 </div>
 
-                {/* Attributes Grid (Matches Reference Layout) */}
+                {/* Attributes Grid */}
                 <div className="grid grid-cols-2 gap-y-3.5 gap-x-4 text-xs">
                   <div>
-                    <span className="text-slate-400 dark:text-gray-500 font-medium">Category</span>
-                    <div className="font-semibold text-slate-800 dark:text-gray-800 mt-0.5">{category}</div>
+                    <span className="text-gray-500 font-medium">Category</span>
+                    <div className="font-semibold text-gray-800 mt-0.5">{category}</div>
                   </div>
 
                   <div>
-                    <span className="text-slate-400 dark:text-gray-500 font-medium">Type</span>
-                    <div className="font-semibold text-slate-800 dark:text-gray-800 mt-0.5">{type || 'Shirt'}</div>
+                    <span className="text-gray-500 font-medium">Type</span>
+                    <div className="font-semibold text-gray-800 mt-0.5">{type || 'Shirt'}</div>
                   </div>
 
                   <div>
-                    <span className="text-slate-400 dark:text-gray-500 font-medium">Color</span>
-                    <div className="font-semibold text-slate-800 dark:text-gray-800 mt-0.5 flex items-center gap-1.5">
-                      <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 shrink-0" />
+                    <span className="text-gray-500 font-medium">Color</span>
+                    <div className="font-semibold text-gray-800 mt-0.5 flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
                       {color}
                     </div>
                   </div>
 
                   <div>
-                    <span className="text-slate-400 dark:text-gray-500 font-medium">Pattern</span>
-                    <div className="font-semibold text-slate-800 dark:text-gray-800 mt-0.5">{pattern || 'Solid'}</div>
+                    <span className="text-gray-500 font-medium">Pattern</span>
+                    <div className="font-semibold text-gray-800 mt-0.5">{pattern || 'Solid'}</div>
                   </div>
 
                   <div>
-                    <span className="text-slate-400 dark:text-gray-500 font-medium">Material</span>
-                    <div className="font-semibold text-slate-800 dark:text-gray-800 mt-0.5">{material || 'Denim (Likely)'}</div>
+                    <span className="text-gray-500 font-medium">Material</span>
+                    <div className="font-semibold text-gray-800 mt-0.5">{material || 'Denim (Likely)'}</div>
                   </div>
 
                   <div>
-                    <span className="text-slate-400 dark:text-gray-500 font-medium">Style</span>
-                    <div className="font-semibold text-slate-800 dark:text-gray-800 mt-0.5">{style || 'Casual'}</div>
+                    <span className="text-gray-500 font-medium">Style</span>
+                    <div className="font-semibold text-gray-800 mt-0.5">{style || 'Casual'}</div>
                   </div>
 
                   <div>
-                    <span className="text-slate-400 dark:text-gray-500 font-medium">Season</span>
-                    <div className="font-semibold text-slate-800 dark:text-gray-800 mt-0.5">
+                    <span className="text-gray-500 font-medium">Season</span>
+                    <div className="font-semibold text-gray-800 mt-0.5">
                       {selectedSeasons.join(', ')}
                     </div>
                   </div>
 
                   <div>
-                    <span className="text-slate-400 dark:text-gray-500 font-medium">Formality</span>
-                    <div className="font-semibold text-slate-800 dark:text-gray-800 mt-0.5">{formality}</div>
+                    <span className="text-gray-500 font-medium">Formality</span>
+                    <div className="font-semibold text-gray-800 mt-0.5">{formality}</div>
                   </div>
                 </div>
 
                 {/* AI Stylist Note */}
                 {aiStylingNote && (
-                  <div className="p-3 bg-slate-50 dark:bg-gray-100/60 rounded-xl text-xs text-slate-600 dark:text-gray-600 border border-slate-100 dark:border-gray-200">
-                    <span className="font-semibold text-slate-900 dark:text-gray-800">Styling Note: </span>
+                  <div className="p-3 bg-gray-50 rounded-xl text-xs text-gray-600 border border-gray-200">
+                    <span className="font-semibold text-gray-800">Styling Note: </span>
                     {aiStylingNote}
                   </div>
                 )}
 
-                {/* Does this look right? */}
-                <div className="pt-2 border-t border-slate-100 dark:border-gray-200">
-                  <div className="text-xs font-semibold text-slate-700 dark:text-gray-700 mb-3 text-center sm:text-left">
+                {/* Confirm / Edit actions */}
+                <div className="pt-2 border-t border-gray-200">
+                  <div className="text-xs font-semibold text-gray-700 mb-3 text-center sm:text-left">
                     Does this look right?
                   </div>
 
@@ -609,7 +1072,7 @@ export function AddClothingModal() {
                       variant="primary"
                       className="w-full sm:w-auto flex-1 rounded-xl"
                       isLoading={isSubmitting}
-                      onClick={handleSaveToWardrobe}
+                      onClick={handleSaveSinglePiece}
                       leftIcon={<Check className="w-4 h-4" />}
                     >
                       Confirm & Save
@@ -631,17 +1094,17 @@ export function AddClothingModal() {
           </div>
         )}
 
-        {/* STEP 3: FULL EDITABLE DETAILS */}
+        {/* STEP 3: SINGLE PIECE FULL EDITABLE DETAILS */}
         {currentStep === 'edit_details' && (
           <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-gray-200">
-              <span className="text-xs font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-200">
+              <span className="text-xs font-semibold uppercase tracking-wider text-emerald-600">
                 Customizing Metadata
               </span>
               <button
                 type="button"
                 onClick={() => setCurrentStep('ai_review')}
-                className="text-xs text-slate-500 hover:text-slate-900 dark:text-gray-600"
+                className="text-xs text-gray-600 hover:text-gray-900"
               >
                 Back to Preview
               </button>
@@ -765,7 +1228,7 @@ export function AddClothingModal() {
 
             {/* Seasons Selection */}
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-slate-700 dark:text-gray-700">
+              <label className="text-xs font-medium text-gray-700">
                 Season Suitability
               </label>
               <div className="flex flex-wrap gap-2">
@@ -778,8 +1241,8 @@ export function AddClothingModal() {
                       onClick={() => toggleSeason(s)}
                       className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-all ${
                         isSelected
-                          ? 'bg-indigo-50 border-indigo-300 text-indigo-700 dark:bg-indigo-950 dark:border-indigo-800 dark:text-indigo-300 font-semibold'
-                          : 'bg-slate-50 border-slate-200 text-slate-600 dark:bg-gray-50 dark:border-gray-300 dark:text-gray-600 hover:bg-slate-100'
+                          ? 'bg-emerald-50 border-emerald-300 text-emerald-800 font-semibold'
+                          : 'bg-gray-50 border-gray-300 text-gray-600 hover:bg-gray-100'
                       }`}
                     >
                       {s}
@@ -806,7 +1269,7 @@ export function AddClothingModal() {
             </div>
 
             {/* Actions */}
-            <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-gray-200">
+            <div className="flex items-center justify-between pt-4 border-t border-gray-200">
               <Button
                 type="button"
                 variant="ghost"
@@ -819,11 +1282,84 @@ export function AddClothingModal() {
                 type="button"
                 variant="primary"
                 isLoading={isSubmitting}
-                onClick={handleSaveToWardrobe}
+                onClick={handleSaveSinglePiece}
                 className="rounded-xl px-6"
               >
                 Save to Wardrobe
               </Button>
+            </div>
+          </div>
+        )}
+
+        {/* BATCH ITEM DETAIL MODAL (Quick edit single item inside batch) */}
+        {selectedBatchItemForEdit && (
+          <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl p-6 max-w-lg w-full space-y-4 shadow-2xl border border-gray-200 animate-fadeIn">
+              <div className="flex items-center justify-between pb-3 border-b border-gray-200">
+                <h4 className="text-base font-bold text-gray-900">Customize Piece Metadata</h4>
+                <button
+                  type="button"
+                  onClick={() => setSelectedBatchItemForEdit(null)}
+                  className="p-1 rounded-lg text-gray-400 hover:text-gray-700"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-3 text-xs">
+                <Input
+                  label="Name"
+                  value={selectedBatchItemForEdit.name}
+                  onChange={e => updateBatchItemField(selectedBatchItemForEdit.id, { name: e.target.value })}
+                />
+
+                <div className="grid grid-cols-2 gap-3">
+                  <Select
+                    label="Category"
+                    value={selectedBatchItemForEdit.category}
+                    onChange={e => updateBatchItemField(selectedBatchItemForEdit.id, { category: e.target.value as ClothingCategory })}
+                  >
+                    {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  </Select>
+
+                  <Select
+                    label="Color"
+                    value={selectedBatchItemForEdit.color}
+                    onChange={e => updateBatchItemField(selectedBatchItemForEdit.id, { color: e.target.value })}
+                  >
+                    {COLORS.map(c => <option key={c} value={c}>{c}</option>)}
+                  </Select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <Select
+                    label="Clothing Type"
+                    value={selectedBatchItemForEdit.type}
+                    onChange={e => updateBatchItemField(selectedBatchItemForEdit.id, { type: e.target.value })}
+                  >
+                    {CLOTHING_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                  </Select>
+
+                  <Select
+                    label="Formality"
+                    value={selectedBatchItemForEdit.formality}
+                    onChange={e => updateBatchItemField(selectedBatchItemForEdit.id, { formality: e.target.value as ClothingFormality })}
+                  >
+                    {FORMALITIES.map(f => <option key={f} value={f}>{f}</option>)}
+                  </Select>
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-3 border-t border-gray-200">
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="sm"
+                  onClick={() => setSelectedBatchItemForEdit(null)}
+                >
+                  Done Editing
+                </Button>
+              </div>
             </div>
           </div>
         )}

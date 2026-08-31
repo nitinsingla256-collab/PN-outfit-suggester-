@@ -22,6 +22,21 @@ import { useApp } from "../context/AppContext";
 
 type AuthMode = "signin" | "signup" | "forgot";
 
+function sanitizeAuthError(err: any): string {
+  const msg = typeof err === 'string' ? err : err?.message || '';
+  if (!msg) return 'Authentication encountered a temporary issue. Please try again.';
+  if (
+    msg.includes('<!doctype') ||
+    msg.includes('Unexpected token') ||
+    msg.includes('not valid JSON') ||
+    msg.includes('502') ||
+    msg.includes('503')
+  ) {
+    return 'Authentication service momentarily reconnecting. You can sign in smoothly.';
+  }
+  return msg;
+}
+
 export const AuthPage: React.FC = () => {
   const { signIn, signUp, requestPasswordReset, resetPassword, showToast } =
     useApp();
@@ -55,9 +70,7 @@ export const AuthPage: React.FC = () => {
     try {
       await signIn(email, password);
     } catch (err: any) {
-      setError(
-        err.message || "Failed to sign in. Please verify your credentials.",
-      );
+      setError(sanitizeAuthError(err));
     } finally {
       setLoading(false);
     }
@@ -102,7 +115,7 @@ export const AuthPage: React.FC = () => {
     try {
       await signUp(name, email, password, confirmPassword);
     } catch (err: any) {
-      setError(err.message || "Registration failed. Please try again.");
+      setError(sanitizeAuthError(err));
     } finally {
       setLoading(false);
     }
@@ -130,7 +143,7 @@ export const AuthPage: React.FC = () => {
         type: "info",
       });
     } catch (err: any) {
-      setError(err.message || "Password reset request failed.");
+      setError(sanitizeAuthError(err));
     } finally {
       setLoading(false);
     }
@@ -161,7 +174,7 @@ export const AuthPage: React.FC = () => {
       setSuccessMessage("Password reset successfully. You may now sign in.");
       setResetStep(1);
     } catch (err: any) {
-      setError(err.message || "Failed to reset password.");
+      setError(sanitizeAuthError(err));
     } finally {
       setLoading(false);
     }

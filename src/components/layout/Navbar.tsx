@@ -13,6 +13,8 @@ import {
   Menu,
   X,
   LogOut,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Button } from '../ui/Button';
@@ -21,7 +23,7 @@ import { NavigationRoute } from '../../types';
 import { BrandLogo } from '../ui/BrandLogo';
 
 export function Navbar() {
-  const { currentRoute, navigateTo, setIsAddClothingModalOpen, user, signOut } = useApp();
+  const { currentRoute, navigateTo, setIsAddClothingModalOpen, user, signOut, theme, toggleTheme } = useApp();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
 
@@ -114,6 +116,20 @@ export function Navbar() {
           Add Piece
         </Button>
 
+        {/* Theme Toggle Button */}
+        <button
+          onClick={toggleTheme}
+          title={`Switch to ${theme === 'Light Atelier' ? 'Midnight Luxury' : 'Light Atelier'}`}
+          aria-label="Toggle Theme"
+          className="w-9 h-9 rounded-xl bg-white border border-gray-200 hover:border-gray-300 flex items-center justify-center text-gray-600 hover:text-gray-900 transition-colors relative"
+        >
+          {theme === 'Midnight Luxury' ? (
+            <Sun className="w-4 h-4 text-amber-400" />
+          ) : (
+            <Moon className="w-4 h-4 text-indigo-500" />
+          )}
+        </button>
+
         {/* Notification Bell */}
         <div className="relative">
           <button
@@ -126,7 +142,7 @@ export function Navbar() {
 
           {/* Simple Notification Dropdown */}
           {showNotifications && (
-            <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-2xl p-4 shadow-[0_10px_40px_rgba(0,0,0,0.8)] z-50">
+            <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-2xl p-4 shadow-xl z-50">
               <div className="flex items-center justify-between pb-2 border-b border-gray-200 mb-3">
                 <span className="text-xs font-semibold uppercase tracking-wider text-gray-700">
                   Styling Alerts

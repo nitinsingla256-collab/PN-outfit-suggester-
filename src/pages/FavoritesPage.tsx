@@ -124,7 +124,7 @@ export function FavoritesPage() {
                       <Heart className="w-3.5 h-3.5 fill-current" />
                     </button>
                     <div className="absolute bottom-2 left-2 flex flex-wrap gap-1">
-                      <span className="text-[10px] px-2 py-0.5 rounded-md bg-black/70 backdrop-blur-sm text-gray-800 font-medium">
+                      <span className="text-[10px] px-2 py-0.5 rounded-md bg-black/75 backdrop-blur-sm text-white font-medium">
                         {item.color}
                       </span>
                     </div>

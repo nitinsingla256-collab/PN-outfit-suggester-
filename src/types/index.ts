@@ -5,6 +5,7 @@
 
 export type NavigationRoute = 
   | '/' 
+  | '/home'
   | '/wardrobe' 
   | '/stylist' 
   | '/outfits' 
@@ -193,13 +194,15 @@ export interface PlannedOutfit {
   createdAt: string;
 }
 
+export type ThemeMode = 'Light Atelier' | 'Midnight Luxury';
+
 export interface UserPreferences {
   styleVibes: StyleVibe[];
   favoriteColors: ClothingColor[];
   dislikedColors: ClothingColor[];
   preferredFits: ClothingFit[];
   temperatureUnit: 'Celsius' | 'Fahrenheit';
-  theme: 'Dark' | 'Light' | 'System';
+  theme: 'Dark' | 'Light' | 'System' | ThemeMode;
   notifications: {
     dailySuggestions: boolean;
     plannerReminders: boolean;
@@ -222,6 +225,17 @@ export interface UserPreferences {
   };
 }
 
+export type HeightUnit = 'cm' | 'm' | 'ft_in' | 'in';
+export type WeightUnit = 'kg' | 'lbs';
+
+export interface UserMeasurements {
+  heightCm?: number;
+  heightUnit?: HeightUnit;
+  weightKg?: number;
+  weightUnit?: WeightUnit;
+  hasCompletedFirstLoginMeasurements?: boolean;
+}
+
 export interface User {
   id: string;
   name: string;
@@ -235,6 +249,7 @@ export interface User {
   status: 'Active' | 'Suspended' | 'Pending';
   preferences: UserPreferences;
   role: 'user' | 'admin' | 'supervisor';
+  measurements?: UserMeasurements;
 }
 
 export interface AIStylistRequest {
@@ -322,4 +337,70 @@ export interface ToastMessage {
   description?: string;
   type: 'success' | 'info' | 'warning' | 'error';
   durationMs?: number;
+}
+
+export interface GroundingSource {
+  title: string;
+  uri: string;
+}
+
+export interface WardrobeClusterGroup {
+  id: string;
+  name: string; // e.g. "Monochrome Tailoring", "Warm Earth Tones & Neutrals", "Indigo Denim & Casual Staples", "Luminous Whites & Minimal Silhouettes"
+  themeType: 'color' | 'style' | 'aesthetic_harmony';
+  primaryColorPalette: string[];
+  styleVibe: string;
+  itemIds: string[];
+  aestheticDescription: string;
+  stylingTip: string;
+}
+
+export interface WardrobeAutoOrganizeResult {
+  organizedAt: string;
+  clusters: WardrobeClusterGroup[];
+  paletteBreakdown: {
+    colorName: string;
+    hex: string;
+    itemCount: number;
+    percentage: number;
+  }[];
+  styleDistribution: {
+    styleName: string;
+    itemCount: number;
+    percentage: number;
+  }[];
+  capsuleHarmonyScore: number;
+  executiveAestheticSummary: string;
+}
+
+export interface FashionTrendColor {
+  name: string;
+  hex: string;
+}
+
+export interface FashionTrend {
+  id: string;
+  title: string;
+  category: 'Key Silhouettes' | 'Color Palettes' | 'Fabrics & Textures' | 'Accessories & Footwear' | 'Occasion & Vibe' | 'Trending Now';
+  season: string;
+  headline: string;
+  summary: string;
+  keyElements: string[];
+  colorPalette: FashionTrendColor[];
+  howToStyle: string;
+  matchingCategories: ClothingCategory[];
+  sources?: GroundingSource[];
+  imageUrl?: string;
+  tag: string;
+  popularityScore?: number;
+}
+
+export interface FashionTrendsReport {
+  season: string;
+  lastUpdated: string;
+  headlineSummary: string;
+  keyTakeaways: string[];
+  trends: FashionTrend[];
+  searchQueries?: string[];
+  sources: GroundingSource[];
 }

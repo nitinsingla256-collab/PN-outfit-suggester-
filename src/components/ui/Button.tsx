@@ -6,7 +6,7 @@
 import React, { ButtonHTMLAttributes, forwardRef } from 'react';
 import { Loader2 } from 'lucide-react';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'destructive' | 'gold-outline';
+export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'destructive' | 'gold-outline' | 'luxury-dark';
 export type ButtonSize = 'sm' | 'md' | 'lg' | 'icon';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -32,22 +32,31 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     },
     ref
   ) => {
-    const baseStyles = 'inline-flex items-center justify-center font-medium transition-all duration-200 select-none cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white';
+    const baseStyles =
+      'inline-flex items-center justify-center font-medium transition-all duration-200 select-none cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 tracking-tight';
 
     const variantStyles: Record<ButtonVariant, string> = {
-      primary: 'bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-semibold shadow-sm hover:shadow-[0_0_15px_rgba(16,185,129,0.25)]',
-      secondary: 'bg-white hover:bg-gray-100 active:bg-gray-50 text-gray-900 border border-gray-200/90 hover:border-gray-300',
-      outline: 'bg-transparent hover:bg-white active:bg-gray-50 text-gray-800 border border-gray-300/80 hover:border-zinc-500',
-      'gold-outline': 'bg-transparent hover:bg-emerald-500/10 text-emerald-600 border border-emerald-500/40 hover:border-emerald-500',
-      ghost: 'bg-transparent hover:bg-gray-50 text-gray-700 hover:text-gray-900',
-      destructive: 'bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-800/50',
+      primary:
+        'bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-semibold shadow-md shadow-emerald-600/20 hover:shadow-lg hover:shadow-emerald-600/30 border border-emerald-500/40',
+      'luxury-dark':
+        'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 text-white hover:from-slate-800 hover:to-slate-900 border border-slate-700/80 shadow-md',
+      secondary:
+        'bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-800 border border-slate-200/90 shadow-2xs hover:border-slate-300',
+      outline:
+        'bg-transparent hover:bg-white text-slate-800 border border-slate-300 hover:border-slate-400 hover:shadow-2xs',
+      'gold-outline':
+        'bg-emerald-500/5 hover:bg-emerald-500/15 text-emerald-800 border border-emerald-500/30 hover:border-emerald-500/60 font-semibold',
+      ghost:
+        'bg-transparent hover:bg-slate-100/70 text-slate-700 hover:text-slate-900',
+      destructive:
+        'bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-semibold',
     };
 
     const sizeStyles: Record<ButtonSize, string> = {
-      sm: 'text-xs h-8 px-3 rounded-lg gap-1.5',
-      md: 'text-sm h-10 px-4 rounded-xl gap-2',
-      lg: 'text-base h-12 px-6 rounded-xl gap-2.5 font-medium',
-      icon: 'h-9 w-9 p-0 rounded-lg',
+      sm: 'text-xs h-8 px-3.5 rounded-xl gap-1.5',
+      md: 'text-xs sm:text-sm h-10 px-4.5 rounded-xl gap-2',
+      lg: 'text-sm sm:text-base h-12 px-6 rounded-2xl gap-2.5 font-semibold',
+      icon: 'h-9 w-9 p-0 rounded-xl',
     };
 
     return (

@@ -12,6 +12,7 @@ import {
   PlannedOutfit,
   ToastMessage,
   OccasionType,
+  ThemeMode,
 } from '../types';
 import { INITIAL_USER } from '../data/seedData';
 import { wardrobeService } from '../services/wardrobeService';
@@ -23,6 +24,11 @@ interface AppContextType {
   // Routing
   currentRoute: NavigationRoute;
   navigateTo: (route: NavigationRoute) => void;
+
+  // Theme & Aesthetics
+  theme: ThemeMode;
+  setTheme: (theme: ThemeMode) => void;
+  toggleTheme: () => void;
 
   // Auth State & Actions
   isAuthenticated: boolean;
@@ -44,6 +50,9 @@ interface AppContextType {
   addWardrobeItem: (item: Omit<WardrobeItem, 'id' | 'createdAt' | 'updatedAt' | 'timesWorn'>) => Promise<WardrobeItem>;
   updateWardrobeItem: (id: string, updates: Partial<WardrobeItem>) => Promise<void>;
   deleteWardrobeItem: (id: string) => Promise<void>;
+  deleteMultipleWardrobeItems: (ids: string[]) => Promise<void>;
+  clearWardrobe: () => Promise<void>;
+  resetToSampleWardrobe: () => Promise<void>;
   toggleWardrobeFavorite: (id: string) => Promise<void>;
   recordWearItem: (id: string) => Promise<void>;
   reloadWardrobe: () => Promise<void>;
@@ -53,6 +62,8 @@ interface AppContextType {
   isLoadingOutfits: boolean;
   addOutfit: (outfit: Omit<Outfit, 'id' | 'createdAt' | 'updatedAt' | 'timesWorn'>) => Promise<Outfit>;
   deleteOutfit: (id: string) => Promise<void>;
+  deleteMultipleOutfits: (ids: string[]) => Promise<void>;
+  clearOutfits: () => Promise<void>;
   toggleOutfitFavorite: (id: string) => Promise<void>;
   recordWearOutfit: (id: string) => Promise<void>;
 
@@ -75,6 +86,9 @@ interface AppContextType {
   setIsCreateLookModalOpen: (open: boolean) => void;
   isPlanModalOpen: boolean;
   setIsPlanModalOpen: (open: boolean) => void;
+  isFirstLoginMeasurementsModalOpen: boolean;
+  setIsFirstLoginMeasurementsModalOpen: (open: boolean) => void;
+  openMeasurementsModal: () => void;
   selectedWardrobeItemForDetail: WardrobeItem | null;
   setSelectedWardrobeItemForDetail: (item: WardrobeItem | null) => void;
   quickOccasionForStylist: OccasionType | null;
@@ -86,24 +100,88 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Navigation State with browser history sync
   const [currentRoute, setCurrentRoute] = useState<NavigationRoute>(() => {
-    const path = window.location.pathname as NavigationRoute;
-    const validRoutes: NavigationRoute[] = [
-      '/',
-      '/wardrobe',
-      '/stylist',
-      '/outfits',
-      '/planner',
-      '/favorites',
-      '/profile',
-      '/settings',
-      '/admin',
-    ];
-    return validRoutes.includes(path) ? path : '/';
+    try {
+      const path = (window.location.pathname || '/') as NavigationRoute;
+      const validRoutes: NavigationRoute[] = [
+        '/',
+        '/home',
+        '/wardrobe',
+        '/stylist',
+        '/outfits',
+        '/planner',
+        '/favorites',
+        '/profile',
+        '/settings',
+        '/admin',
+      ];
+      if (path === '/home') return '/';
+      return validRoutes.includes(path) ? path : '/';
+    } catch {
+      return '/';
+    }
   });
 
   const [user, setUser] = useState<User>(INITIAL_USER);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [authLoading, setAuthLoading] = useState<boolean>(true);
+
+  // Visual Theme State ('Light Atelier' | 'Midnight Luxury')
+  const [theme, setThemeState] = useState<ThemeMode>(() => {
+    try {
+      const savedTheme = localStorage.getItem('pn_theme') as ThemeMode;
+      if (savedTheme === 'Midnight Luxury' || savedTheme === 'Light Atelier') {
+        return savedTheme;
+      }
+    } catch {
+      // ignore
+    }
+    return 'Light Atelier';
+  });
+
+  // Apply theme to DOM documentElement
+  useEffect(() => {
+    try {
+      if (theme === 'Midnight Luxury') {
+        document.documentElement.classList.add('dark');
+        document.documentElement.setAttribute('data-theme', 'midnight');
+      } else {
+        document.documentElement.classList.remove('dark');
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+      localStorage.setItem('pn_theme', theme);
+    } catch (e) {
+      console.warn('Could not persist theme to localStorage', e);
+    }
+  }, [theme]);
+
+  const setTheme = useCallback((newTheme: ThemeMode) => {
+    setThemeState(newTheme);
+    try {
+      if (newTheme === 'Midnight Luxury') {
+        document.documentElement.classList.add('dark');
+        document.documentElement.setAttribute('data-theme', 'midnight');
+      } else {
+        document.documentElement.classList.remove('dark');
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+      localStorage.setItem('pn_theme', newTheme);
+    } catch (e) {
+      console.warn('Theme update storage error:', e);
+    }
+
+    setUser(prev => ({
+      ...prev,
+      preferences: {
+        ...prev.preferences,
+        theme: newTheme === 'Midnight Luxury' ? 'Dark' : 'Light',
+      },
+    }));
+  }, []);
+
+  const toggleTheme = useCallback(() => {
+    const nextTheme: ThemeMode = theme === 'Light Atelier' ? 'Midnight Luxury' : 'Light Atelier';
+    setTheme(nextTheme);
+  }, [theme, setTheme]);
 
   const [wardrobe, setWardrobe] = useState<WardrobeItem[]>([]);
   const [outfits, setOutfits] = useState<Outfit[]>([]);
@@ -118,38 +196,76 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isAddClothingModalOpen, setIsAddClothingModalOpen] = useState(false);
   const [isCreateLookModalOpen, setIsCreateLookModalOpen] = useState(false);
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
+  const [isFirstLoginMeasurementsModalOpen, setIsFirstLoginMeasurementsModalOpen] = useState(false);
   const [selectedWardrobeItemForDetail, setSelectedWardrobeItemForDetail] = useState<WardrobeItem | null>(null);
   const [quickOccasionForStylist, setQuickOccasionForStylist] = useState<OccasionType | null>(null);
 
-  // Sync route with window.location
-  const navigateTo = useCallback((route: NavigationRoute) => {
-    setCurrentRoute(route);
-    try {
-      window.history.pushState({}, '', route);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    } catch (err) {
-      console.warn('Navigation history update failed in iframe:', err);
-    }
+  const openMeasurementsModal = useCallback(() => {
+    setIsFirstLoginMeasurementsModalOpen(true);
   }, []);
 
+  // Sync route with window.location safely inside iframes and PWA
+  const navigateTo = useCallback((route: NavigationRoute) => {
+    const targetRoute = route === '/home' ? '/' : route;
+    setCurrentRoute(prev => {
+      if (prev !== targetRoute) {
+        console.log(`[PN Router] Navigation: ${prev} -> ${targetRoute}`);
+      }
+      return targetRoute;
+    });
+
+    try {
+      if (typeof window !== 'undefined' && window.history && typeof window.history.pushState === 'function') {
+        const currentUrl = new URL(window.location.href);
+        if (currentUrl.pathname !== targetRoute) {
+          window.history.pushState({ route: targetRoute }, '', targetRoute + currentUrl.search);
+        }
+      }
+    } catch (e) {
+      console.warn('[PN Router] pushState warning (restricted iframe):', e);
+    }
+    try {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    } catch {}
+  }, []);
+
+  // Initialize initial history state and handle back/forward navigation
   useEffect(() => {
-    const handlePopState = () => {
-      const path = window.location.pathname as NavigationRoute;
-      const validRoutes: NavigationRoute[] = [
-        '/',
-        '/wardrobe',
-        '/stylist',
-        '/outfits',
-        '/planner',
-        '/favorites',
-        '/profile',
-        '/settings',
-        '/admin',
-      ];
-      if (validRoutes.includes(path)) {
-        setCurrentRoute(path);
+    try {
+      if (typeof window !== 'undefined' && window.history && typeof window.history.replaceState === 'function') {
+        const path = (window.location.pathname || '/') as NavigationRoute;
+        window.history.replaceState({ route: path === '/home' ? '/' : path }, '', window.location.href);
+      }
+    } catch {}
+
+    const handlePopState = (event: PopStateEvent) => {
+      try {
+        let path = (window.location.pathname || '/') as NavigationRoute;
+        if (event.state && event.state.route) {
+          path = event.state.route;
+        }
+        if (path === '/home') path = '/';
+
+        const validRoutes: NavigationRoute[] = [
+          '/',
+          '/wardrobe',
+          '/stylist',
+          '/outfits',
+          '/planner',
+          '/favorites',
+          '/profile',
+          '/settings',
+          '/admin',
+        ];
+
+        const targetRoute = validRoutes.includes(path) ? path : '/';
+        console.log(`[PN Router] PopState Event -> Route: ${targetRoute}`);
+        setCurrentRoute(targetRoute);
+      } catch (err) {
+        console.warn('[PN Router] PopState warning:', err);
       }
     };
+
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
@@ -209,6 +325,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setUser(session.user);
           setIsAuthenticated(true);
           await loadUserData();
+
+          // If user hasn't completed first-login height/weight calibration, show onboarding prompt
+          if (!session.user.measurements?.hasCompletedFirstLoginMeasurements) {
+            setIsFirstLoginMeasurementsModalOpen(true);
+          }
         } else {
           setIsAuthenticated(false);
           setWardrobe([]);
@@ -233,6 +354,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setUser(authedUser);
       setIsAuthenticated(true);
       await loadUserData();
+
+      // Check if user should be asked height & weight
+      if (!authedUser.measurements?.hasCompletedFirstLoginMeasurements) {
+        setIsFirstLoginMeasurementsModalOpen(true);
+      }
+
       showToast({
         title: 'Welcome to PN',
         description: `Signed in as ${authedUser.name}.`,
@@ -256,6 +383,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setWardrobe([]);
       setOutfits([]);
       setPlans([]);
+
+      // Prompt new users for height and weight immediately after account creation
+      setIsFirstLoginMeasurementsModalOpen(true);
+
       showToast({
         title: 'Account Created',
         description: `Welcome to PN Outfit Suggester, ${newUser.name}. Your digital wardrobe is ready.`,
@@ -355,6 +486,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
+  const deleteMultipleWardrobeItems = async (ids: string[]) => {
+    if (ids.length === 0) return;
+    await wardrobeService.deleteMany(ids);
+    const idSet = new Set(ids);
+    setWardrobe(prev => prev.filter(item => !idSet.has(item.id)));
+    showToast({
+      title: 'Items Removed',
+      description: `${ids.length} pieces removed from your digital wardrobe.`,
+      type: 'info',
+    });
+  };
+
+  const clearWardrobe = async () => {
+    await wardrobeService.clearAll();
+    setWardrobe([]);
+    showToast({
+      title: 'Wardrobe Emptied',
+      description: 'All pieces have been removed from your wardrobe.',
+      type: 'info',
+    });
+  };
+
+  const resetToSampleWardrobe = async () => {
+    const samples = await wardrobeService.resetToDemoItems();
+    setWardrobe(samples);
+    showToast({
+      title: 'Sample Wardrobe Loaded',
+      description: 'Editorial sample items have been restored.',
+      type: 'success',
+    });
+  };
+
   const toggleWardrobeFavorite = async (id: string) => {
     const updated = await wardrobeService.toggleFavorite(id);
     setWardrobe(prev => prev.map(item => (item.id === id ? updated : item)));
@@ -402,6 +565,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast({
       title: 'Lookbook Updated',
       description: 'Outfit removed from your collection.',
+      type: 'info',
+    });
+  };
+
+  const deleteMultipleOutfits = async (ids: string[]) => {
+    if (ids.length === 0) return;
+    await outfitService.deleteMany(ids);
+    const idSet = new Set(ids);
+    setOutfits(prev => prev.filter(o => !idSet.has(o.id)));
+    showToast({
+      title: 'Looks Removed',
+      description: `${ids.length} outfits removed from your lookbook.`,
+      type: 'info',
+    });
+  };
+
+  const clearOutfits = async () => {
+    await outfitService.clearAll();
+    setOutfits([]);
+    showToast({
+      title: 'Lookbook Cleared',
+      description: 'All saved outfits have been removed.',
       type: 'info',
     });
   };
@@ -473,6 +658,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       value={{
         currentRoute,
         navigateTo,
+        theme,
+        setTheme,
+        toggleTheme,
         isAuthenticated,
         authLoading,
         user,
@@ -490,6 +678,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addWardrobeItem,
         updateWardrobeItem,
         deleteWardrobeItem,
+        deleteMultipleWardrobeItems,
+        clearWardrobe,
+        resetToSampleWardrobe,
         toggleWardrobeFavorite,
         recordWearItem,
         reloadWardrobe,
@@ -497,6 +688,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isLoadingOutfits,
         addOutfit,
         deleteOutfit,
+        deleteMultipleOutfits,
+        clearOutfits,
         toggleOutfitFavorite,
         recordWearOutfit,
         plans,
@@ -513,6 +706,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setIsCreateLookModalOpen,
         isPlanModalOpen,
         setIsPlanModalOpen,
+        isFirstLoginMeasurementsModalOpen,
+        setIsFirstLoginMeasurementsModalOpen,
+        openMeasurementsModal,
         selectedWardrobeItemForDetail,
         setSelectedWardrobeItemForDetail,
         quickOccasionForStylist,

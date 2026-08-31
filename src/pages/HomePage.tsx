@@ -13,6 +13,7 @@ import { Button } from "../components/ui/Button";
 import { Badge } from "../components/ui/Badge";
 import { EmptyState } from "../components/ui/EmptyState";
 import { WeatherWidget } from "../components/ui/WeatherWidget";
+import { SeasonalTrendsSection } from "../components/home/SeasonalTrendsSection";
 import { motion } from "motion/react";
 import {
   Sparkles,
@@ -23,9 +24,9 @@ import {
   Shirt,
   ArrowRight,
   TrendingUp,
-  CloudSun,
   MapPin,
   UploadCloud,
+  ChevronRight,
 } from "lucide-react";
 
 export function HomePage() {
@@ -41,9 +42,7 @@ export function HomePage() {
     setSelectedWardrobeItemForDetail,
   } = useApp();
 
-  const [dailyOutfit, setDailyOutfit] = useState<AIStylistResponse | null>(
-    null,
-  );
+  const [dailyOutfit, setDailyOutfit] = useState<AIStylistResponse | null>(null);
   const [isGeneratingDaily, setIsGeneratingDaily] = useState(false);
 
   useEffect(() => {
@@ -60,7 +59,7 @@ export function HomePage() {
 
       setIsGeneratingDaily(true);
       try {
-        let weatherDesc = "Unknown Weather";
+        let weatherDesc = "Clear, 20°C";
         let temp = 20;
         try {
           const weatherData = await weatherService.getAutoLocationWeather(
@@ -75,11 +74,10 @@ export function HomePage() {
         const response = await aiStylistService.generateOutfitRecommendation(
           {
             occasion: "Daily Wear",
-            stylePreference:
-              user.preferences?.styleVibes?.[0] || "Smart Casual",
+            stylePreference: user.preferences?.styleVibes?.[0] || "Smart Casual",
             weatherDescription: weatherDesc,
             temperatureCelsius: temp,
-            additionalNotes: `Create a versatile daily look from the wardrobe appropriate for the current weather (${weatherDesc}).`,
+            additionalNotes: `Create a refined daily look tailored for current weather (${weatherDesc}).`,
           },
           wardrobe,
         );
@@ -116,110 +114,121 @@ export function HomePage() {
   const userDisplayName = user.name ? user.name.split(" ")[0] : "Client";
 
   return (
-    <div className="space-y-8">
-      {/* 1. Personalized Greeting & Hero Headline */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-2 border-b border-gray-200">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs font-medium uppercase tracking-widest text-emerald-500">
-              PN Outfit Suggester Intelligence
-            </span>
-            <span className="text-gray-400">·</span>
-            <span className="text-xs text-gray-600 font-mono">
-              Personal Wardrobe
-            </span>
-          </div>
-          <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-gray-900 font-editorial">
-            {greeting}, {userDisplayName}
-          </h2>
-          <p className="text-xs sm:text-sm text-gray-600 mt-1 max-w-xl leading-relaxed">
-            {wardrobe.length === 0
-              ? "Your PN digital wardrobe is ready. Upload and catalogue your first clothing pieces to unlock AI styling recommendations."
-              : `Your digital wardrobe has ${wardrobe.length} active pieces. Review today's styling recommendations, planned engagements, and wardrobe statistics.`}
-          </p>
-        </div>
+    <div className="space-y-10">
+      {/* 1. Personalized Editorial Header */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 text-white rounded-3xl p-6 sm:p-8 shadow-xl border border-slate-700/50">
+        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/3 -mb-20 w-72 h-72 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        {/* Quick Top Actions */}
-        <div className="flex items-center gap-2.5 shrink-0">
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setIsAddClothingModalOpen(true)}
-            leftIcon={<Plus className="w-3.5 h-3.5" />}
-          >
-            Add Piece
-          </Button>
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => navigateTo("/stylist")}
-            leftIcon={<Sparkles className="w-3.5 h-3.5" />}
-          >
-            Ask Stylist
-          </Button>
+        <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-widest bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                Atelier Intelligence
+              </span>
+              <span className="text-slate-500">·</span>
+              <span className="text-xs text-slate-300 font-mono">
+                {wardrobe.length} Active {wardrobe.length === 1 ? 'Garment' : 'Garments'}
+              </span>
+            </div>
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-white font-editorial">
+              {greeting}, {userDisplayName}
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-300 mt-2 max-w-xl leading-relaxed">
+              {wardrobe.length === 0
+                ? "Your digital atelier is ready. Upload and catalogue your garments to unlock tailored AI outfit formulas and intelligent styling."
+                : `Your wardrobe capsule has ${wardrobe.length} digitized pieces. Review today's daily recommendation, scheduled engagements, and styling metrics.`}
+            </p>
+          </div>
+
+          {/* Quick Top Actions */}
+          <div className="flex items-center gap-2.5 shrink-0">
+            <Button
+              variant="secondary"
+              size="sm"
+              className="rounded-xl px-4 py-2"
+              onClick={() => setIsAddClothingModalOpen(true)}
+              leftIcon={<Plus className="w-3.5 h-3.5" />}
+            >
+              Add Piece
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              className="rounded-xl px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold shadow-lg shadow-emerald-500/20"
+              onClick={() => navigateTo("/stylist")}
+              leftIcon={<Sparkles className="w-3.5 h-3.5" />}
+            >
+              Ask Stylist
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* 2. Today's Styling Focus & Atmosphere Banner */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 relative">
-        <motion.div
-          animate={{ scale: [1, 1.02, 1] }}
-          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute -top-10 -left-10 w-64 h-64 bg-emerald-400/10 rounded-full blur-[80px] pointer-events-none"
-        />
-        {/* Curated Styling / Getting Started Card */}
-        <div className="lg:col-span-2 relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#141720] via-[#111318] to-[#0D0E12] border border-emerald-500/30 p-6 shadow-[0_8px_30px_rgba(0,0,0,0.5)] group">
-          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10 pointer-events-none group-hover:opacity-20 transition-opacity"></div>
+      {/* 2. Today's Styling Focus & Atmospheric Weather Banner */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Curated Daily Recommendation Card */}
+        <div className="lg:col-span-2 relative overflow-hidden rounded-3xl bg-white border border-slate-200/90 p-6 sm:p-7 shadow-xs flex flex-col justify-between">
           {wardrobe.length > 0 ? (
             <>
               {dailyOutfit ? (
-                <div className="relative z-10 flex flex-col h-full justify-between">
+                <div className="flex flex-col h-full justify-between space-y-5">
                   <div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <Badge variant="gold" size="sm">
-                        Daily Suggestion
-                      </Badge>
-                      <span className="text-xs text-gray-400 font-mono flex items-center gap-1">
-                        <Sparkles className="w-3 h-3 text-emerald-400" />{" "}
-                        Powered by Gemini
-                      </span>
+                    <div className="flex items-center justify-between gap-3 mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-200">
+                          Today&apos;s Signature Look
+                        </span>
+                        <span className="text-xs text-slate-400 font-mono flex items-center gap-1">
+                          <Sparkles className="w-3 h-3 text-emerald-600" /> AI Styled
+                        </span>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs text-emerald-700 hover:text-emerald-800"
+                        onClick={() => navigateTo("/stylist")}
+                        rightIcon={<ChevronRight className="w-3.5 h-3.5" />}
+                      >
+                        Open Studio
+                      </Button>
                     </div>
-                    <h3 className="text-lg sm:text-xl font-semibold text-white mt-1 font-editorial leading-tight">
+
+                    <h3 className="text-xl sm:text-2xl font-bold text-slate-900 font-editorial leading-tight">
                       {dailyOutfit.outfitName}
                     </h3>
-                    <p className="text-xs sm:text-sm text-gray-400 mt-2 line-clamp-2">
+                    <p className="text-xs sm:text-sm text-slate-600 mt-2 leading-relaxed">
                       {dailyOutfit.summary}
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 mt-4 border-t border-emerald-500/20">
+                  {/* Outfit Pieces Gallery */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 border-t border-slate-100">
                     {dailyOutfit.pieces.slice(0, 4).map((piece, idx) => (
                       <div
                         key={idx}
-                        onClick={() =>
-                          piece.item &&
-                          setSelectedWardrobeItemForDetail(piece.item)
-                        }
-                        className="p-2 rounded-xl bg-white/5 border border-white/10 hover:border-emerald-500/50 cursor-pointer transition-colors flex items-center gap-2.5"
+                        onClick={() => piece.item && setSelectedWardrobeItemForDetail(piece.item)}
+                        className="group p-2.5 rounded-2xl bg-slate-50 border border-slate-200/70 hover:border-emerald-400 hover:bg-white cursor-pointer transition-all flex items-center gap-2.5"
                       >
-                        <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 bg-gray-900 border border-gray-800">
+                        <div className="w-11 h-11 rounded-xl overflow-hidden shrink-0 bg-slate-200 border border-slate-300/60">
                           {piece.item?.imageUrl ? (
                             <img
                               src={piece.item.imageUrl}
                               alt={piece.item.name}
-                              className="w-full h-full object-cover"
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                              referrerPolicy="no-referrer"
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-gray-700">
+                            <div className="w-full h-full flex items-center justify-center text-slate-400">
                               <Shirt className="w-4 h-4" />
                             </div>
                           )}
                         </div>
                         <div className="min-w-0">
-                          <p className="text-[10px] font-medium text-gray-300 truncate">
+                          <p className="text-xs font-semibold text-slate-800 truncate">
                             {piece.item ? piece.item.name : piece.category}
                           </p>
-                          <p className="text-[9px] text-gray-500 truncate">
+                          <p className="text-[10px] text-slate-500 uppercase tracking-wider font-medium truncate">
                             {piece.role}
                           </p>
                         </div>
@@ -228,36 +237,41 @@ export function HomePage() {
                   </div>
                 </div>
               ) : isGeneratingDaily ? (
-                <div className="flex flex-col items-center justify-center h-full space-y-4 py-8 relative z-10">
-                  <div className="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center animate-pulse">
-                    <Sparkles className="w-6 h-6 text-emerald-400 animate-spin-slow" />
+                <div className="flex flex-col items-center justify-center h-full space-y-4 py-12">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center">
+                    <Sparkles className="w-6 h-6 text-emerald-600 animate-spin" />
                   </div>
-                  <p className="text-sm font-medium text-emerald-400">
-                    Curating your daily look...
-                  </p>
+                  <div className="text-center">
+                    <p className="text-sm font-semibold text-slate-800 font-editorial">
+                      Curating Daily Ensemble...
+                    </p>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Synthesizing weather conditions and aesthetic preferences
+                    </p>
+                  </div>
                 </div>
               ) : (
-                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4 relative z-10">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                   <div>
                     <div className="flex items-center gap-2">
-                      <Badge variant="gold" size="sm">
+                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-200">
                         Active Capsule
-                      </Badge>
-                      <span className="text-xs text-gray-400 font-mono">
+                      </span>
+                      <span className="text-xs text-slate-500 font-mono">
                         {wardrobe.length} Pieces Catalogued
                       </span>
                     </div>
-                    <h3 className="text-lg sm:text-xl font-semibold text-white mt-2 font-editorial">
+                    <h3 className="text-xl font-bold text-slate-900 mt-2 font-editorial">
                       Personalized Wardrobe Composition
                     </h3>
-                    <p className="text-xs sm:text-sm text-gray-400 mt-1 max-w-md">
-                      Explore curated pairings and generate occasion-ready looks
-                      from your catalogued pieces.
+                    <p className="text-xs sm:text-sm text-slate-600 mt-1 max-w-md">
+                      Explore curated pairings and generate occasion-ready looks from your catalogued pieces.
                     </p>
                   </div>
                   <Button
-                    variant="gold-outline"
+                    variant="primary"
                     size="sm"
+                    className="rounded-xl"
                     onClick={() => navigateTo("/stylist")}
                     rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
                   >
@@ -267,19 +281,17 @@ export function HomePage() {
               )}
             </>
           ) : (
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-6 py-2">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-6 py-4">
               <div className="space-y-2 text-center sm:text-left">
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-xs text-emerald-500 font-medium">
-                  <Sparkles className="w-3.5 h-3.5" />
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 font-semibold">
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
                   <span>Atelier Initialized</span>
-                </div>
-                <h3 className="text-xl font-semibold text-white font-editorial relative z-10">
+                </span>
+                <h3 className="text-xl font-bold text-slate-900 font-editorial">
                   Start Your Digital Wardrobe
                 </h3>
-                <p className="text-xs sm:text-sm text-gray-400 max-w-md leading-relaxed relative z-10">
-                  Add coats, tops, bottoms, and accessories. PN&apos;s
-                  Gemini AI will automatically recognize fabric textures, cuts,
-                  and colorways to build tailored outfit formulas.
+                <p className="text-xs sm:text-sm text-slate-600 max-w-md leading-relaxed">
+                  Add coats, tops, bottoms, and accessories. PN&apos;s AI recognizes cuts, materials, and color harmonies to build tailored outfit formulas.
                 </p>
               </div>
 
@@ -288,7 +300,7 @@ export function HomePage() {
                 size="md"
                 onClick={() => setIsAddClothingModalOpen(true)}
                 leftIcon={<UploadCloud className="w-4 h-4" />}
-                className="shrink-0 shadow-[0_0_20px_rgba(226,199,153,0.2)]"
+                className="shrink-0 rounded-2xl px-5"
               >
                 Upload First Piece
               </Button>
@@ -300,70 +312,69 @@ export function HomePage() {
         <WeatherWidget className="h-full" />
       </div>
 
-      {/* 3. Wardrobe Overview Statistics */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-        <Card className="p-4 sm:p-5">
-          <div className="flex items-center justify-between text-gray-600 text-xs">
-            <span>Total Pieces</span>
-            <Shirt className="w-4 h-4 text-emerald-500" />
+      {/* 3. Wardrobe Overview Metrics */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-2xs">
+          <div className="flex items-center justify-between text-slate-500 text-xs font-semibold uppercase tracking-wider">
+            <span>Garments</span>
+            <Shirt className="w-4 h-4 text-emerald-600" />
           </div>
-          <div className="text-xl sm:text-2xl font-bold text-gray-900 mt-2 font-mono">
+          <div className="text-2xl sm:text-3xl font-bold text-slate-900 mt-2 font-editorial">
             {wardrobe.length}
           </div>
-          <p className="text-[10px] sm:text-[11px] text-gray-500 mt-1">
+          <p className="text-[11px] text-slate-500 mt-1">
             Active in capsule
           </p>
-        </Card>
+        </div>
 
-        <Card className="p-4 sm:p-5">
-          <div className="flex items-center justify-between text-gray-600 text-xs">
-            <span>Lookbook Outfits</span>
-            <Layers className="w-4 h-4 text-emerald-500" />
+        <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-2xs">
+          <div className="flex items-center justify-between text-slate-500 text-xs font-semibold uppercase tracking-wider">
+            <span>Lookbook</span>
+            <Layers className="w-4 h-4 text-emerald-600" />
           </div>
-          <div className="text-xl sm:text-2xl font-bold text-gray-900 mt-2 font-mono">
+          <div className="text-2xl sm:text-3xl font-bold text-slate-900 mt-2 font-editorial">
             {outfits.length}
           </div>
-          <p className="text-[10px] sm:text-[11px] text-gray-500 mt-1">
+          <p className="text-[11px] text-slate-500 mt-1">
             Composed styles
           </p>
-        </Card>
+        </div>
 
-        <Card className="p-4 sm:p-5">
-          <div className="flex items-center justify-between text-gray-600 text-xs">
+        <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-2xs">
+          <div className="flex items-center justify-between text-slate-500 text-xs font-semibold uppercase tracking-wider">
             <span>Favorites</span>
-            <Heart className="w-4 h-4 text-emerald-500" />
+            <Heart className="w-4 h-4 text-rose-500" />
           </div>
-          <div className="text-xl sm:text-2xl font-bold text-gray-900 mt-2 font-mono">
+          <div className="text-2xl sm:text-3xl font-bold text-slate-900 mt-2 font-editorial">
             {favoritePieces.length}
           </div>
-          <p className="text-[10px] sm:text-[11px] text-gray-500 mt-1">
-            Signature garments
+          <p className="text-[11px] text-slate-500 mt-1">
+            Signature pieces
           </p>
-        </Card>
+        </div>
 
-        <Card className="p-4 sm:p-5">
-          <div className="flex items-center justify-between text-gray-600 text-xs">
+        <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-2xs">
+          <div className="flex items-center justify-between text-slate-500 text-xs font-semibold uppercase tracking-wider">
             <span>Wear Cycles</span>
-            <TrendingUp className="w-4 h-4 text-emerald-500" />
+            <TrendingUp className="w-4 h-4 text-emerald-600" />
           </div>
-          <div className="text-xl sm:text-2xl font-bold text-gray-900 mt-2 font-mono">
+          <div className="text-2xl sm:text-3xl font-bold text-slate-900 mt-2 font-editorial">
             {totalWears}
           </div>
-          <p className="text-[10px] sm:text-[11px] text-gray-500 mt-1">
+          <p className="text-[11px] text-slate-500 mt-1">
             Logged wears
           </p>
-        </Card>
+        </div>
       </div>
 
-      {/* 4. Upcoming Planned Outfits & Quick Planner */}
-      <div className="space-y-4 relative">
-        <div className="absolute top-10 right-0 w-80 h-80 bg-rose-200/20 rounded-full blur-[100px] pointer-events-none"></div>
-        <div className="flex items-center justify-between relative z-10">
+      {/* 4. Upcoming Scheduled Outfits & Quick Planner */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900 tracking-tight">
+            <h3 className="text-lg sm:text-xl font-bold text-slate-900 font-editorial tracking-tight">
               Upcoming Scheduled Outfits
             </h3>
-            <p className="text-xs text-gray-600">
+            <p className="text-xs text-slate-500">
               Wardrobe calendar reservations and destination styling.
             </p>
           </div>
@@ -378,47 +389,47 @@ export function HomePage() {
         </div>
 
         {upcomingPlans.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {upcomingPlans.map((plan) => (
               <Card
                 key={plan.id}
                 hoverEffect
-                className="flex flex-col justify-between"
+                className="flex flex-col justify-between rounded-3xl border-slate-200/80"
               >
                 <div>
-                  <div className="flex items-center justify-between pb-2 border-b border-gray-200">
-                    <div className="flex items-center gap-1.5 text-xs text-emerald-500 font-mono">
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                    <div className="flex items-center gap-1.5 text-xs text-emerald-700 font-semibold">
                       <Calendar className="w-3.5 h-3.5" />
                       <span>{plan.date}</span>
                       {plan.time && (
-                        <span className="text-gray-500">· {plan.time}</span>
+                        <span className="text-slate-400 font-normal">· {plan.time}</span>
                       )}
                     </div>
                     <Badge variant="subtle" size="sm">
                       {plan.occasion}
                     </Badge>
                   </div>
-                  <h4 className="text-sm font-semibold text-gray-800 mt-3">
+                  <h4 className="text-sm font-bold text-slate-900 mt-3 font-editorial">
                     {plan.title}
                   </h4>
                   {plan.location && (
-                    <p className="text-xs text-gray-600 mt-1 flex items-center gap-1">
-                      <MapPin className="w-3 h-3 text-gray-500" />
+                    <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                      <MapPin className="w-3 h-3 text-slate-400" />
                       {plan.location}
                     </p>
                   )}
                   {plan.notes && (
-                    <p className="text-xs text-gray-500 mt-2 italic line-clamp-2">
+                    <p className="text-xs text-slate-500 mt-2 italic line-clamp-2">
                       &ldquo;{plan.notes}&rdquo;
                     </p>
                   )}
                 </div>
 
-                <div className="pt-3 mt-4 border-t border-gray-200 flex items-center justify-between text-xs">
-                  <span className="text-gray-600">
+                <div className="pt-3 mt-4 border-t border-slate-100 flex items-center justify-between text-xs">
+                  <span className="text-slate-600 font-medium">
                     {plan.outfit ? plan.outfit.name : "Look TBD"}
                   </span>
-                  <span className="text-emerald-500 font-medium text-[11px]">
+                  <span className="text-emerald-700 font-semibold text-[11px] uppercase tracking-wider">
                     Scheduled
                   </span>
                 </div>
@@ -427,7 +438,7 @@ export function HomePage() {
           </div>
         ) : (
           <EmptyState
-            icon={<Calendar className="w-6 h-6 text-gray-600" />}
+            icon={<Calendar className="w-6 h-6 text-slate-600" />}
             title="No Scheduled Outfits"
             description="Organize your upcoming events, gallery dinners, or business travel in your personal style planner."
             primaryAction={{
@@ -442,10 +453,10 @@ export function HomePage() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900 tracking-tight">
+            <h3 className="text-lg sm:text-xl font-bold text-slate-900 font-editorial tracking-tight">
               Lookbook Highlights
             </h3>
-            <p className="text-xs text-gray-600">
+            <p className="text-xs text-slate-500">
               Curated compositions ready for wear.
             </p>
           </div>
@@ -460,44 +471,45 @@ export function HomePage() {
         </div>
 
         {outfits.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {outfits.slice(0, 3).map((outfit) => (
               <Card
                 key={outfit.id}
                 hoverEffect
-                className="flex flex-col justify-between"
+                className="flex flex-col justify-between rounded-3xl"
               >
                 <div>
                   {outfit.imageUrl && (
-                    <div className="relative aspect-[16/9] rounded-xl overflow-hidden mb-3 bg-white border border-gray-200">
+                    <div className="relative aspect-[16/9] rounded-2xl overflow-hidden mb-3.5 bg-slate-100 border border-slate-200">
                       <img
                         src={outfit.imageUrl}
                         alt={outfit.name}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                        referrerPolicy="no-referrer"
                       />
-                      <div className="absolute top-2 right-2">
-                        <Badge variant="gold" size="sm">
+                      <div className="absolute top-2.5 right-2.5">
+                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-white/95 text-slate-900 backdrop-blur-md shadow-xs">
                           {outfit.occasion}
-                        </Badge>
+                        </span>
                       </div>
                     </div>
                   )}
-                  <h4 className="text-sm font-semibold text-gray-900">
+                  <h4 className="text-base font-bold text-slate-900 font-editorial">
                     {outfit.name}
                   </h4>
-                  <p className="text-xs text-gray-600 mt-1 line-clamp-2 leading-relaxed">
+                  <p className="text-xs text-slate-600 mt-1 line-clamp-2 leading-relaxed">
                     {outfit.description}
                   </p>
                 </div>
 
-                <div className="pt-3 mt-4 border-t border-gray-200 flex items-center justify-between">
-                  <span className="text-[11px] text-gray-500 font-mono">
+                <div className="pt-3 mt-4 border-t border-slate-100 flex items-center justify-between">
+                  <span className="text-[11px] text-slate-500 font-mono">
                     {outfit.items.length} pieces
                   </span>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-xs text-emerald-500"
+                    className="text-xs text-emerald-700 font-semibold"
                     onClick={() => navigateTo("/outfits")}
                   >
                     Inspect Look
@@ -508,7 +520,7 @@ export function HomePage() {
           </div>
         ) : (
           <EmptyState
-            icon={<Layers className="w-6 h-6 text-gray-600" />}
+            icon={<Layers className="w-6 h-6 text-slate-600" />}
             title="No outfits composed yet"
             description="Build a look by hand, or ask your personal AI stylist to compose one from your wardrobe."
             primaryAction={{
@@ -524,28 +536,31 @@ export function HomePage() {
         )}
       </div>
 
-      {/* 6. AI Stylist Call to Action */}
-      <div className="rounded-2xl border border-emerald-500/30 bg-gradient-to-r from-[#12141A] to-[#181B22] p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-[0_8px_30px_rgba(0,0,0,0.6)]">
-        <div className="space-y-2 text-center sm:text-left">
+      {/* 6. Seasonal Trends Section (Google Search Grounded) */}
+      <SeasonalTrendsSection />
+
+      {/* 7. AI Stylist Call to Action */}
+      <div className="rounded-3xl border border-slate-700/60 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 text-white p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-xl relative overflow-hidden">
+        <div className="absolute right-0 bottom-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="space-y-2 text-center sm:text-left relative z-10">
           <div className="flex items-center justify-center sm:justify-start gap-2">
-            <Sparkles className="w-4 h-4 text-emerald-500" />
-            <span className="text-xs uppercase font-semibold tracking-wider text-emerald-500">
-              PN Intelligent Outfit Generator
+            <Sparkles className="w-4 h-4 text-emerald-400" />
+            <span className="text-xs uppercase font-semibold tracking-widest text-emerald-400">
+              PN Intelligent Outfit Studio
             </span>
           </div>
-          <h3 className="text-lg sm:text-xl font-semibold text-gray-900 font-editorial">
+          <h3 className="text-xl sm:text-2xl font-bold text-white font-editorial">
             Prepare Your Next Signature Look
           </h3>
-          <p className="text-xs sm:text-sm text-gray-600 max-w-xl leading-relaxed">
-            Specify your destination, occasion, and dress code. The AI Stylist
-            composes calibrated silhouettes from your own wardrobe items.
+          <p className="text-xs sm:text-sm text-slate-300 max-w-xl leading-relaxed">
+            Specify your destination, occasion, and dress code. The AI Stylist composes calibrated silhouettes from your own wardrobe items.
           </p>
         </div>
 
         <Button
           variant="primary"
           size="lg"
-          className="shrink-0"
+          className="shrink-0 rounded-2xl px-6 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold shadow-lg shadow-emerald-500/20 relative z-10"
           onClick={() => navigateTo("/stylist")}
           leftIcon={<Sparkles className="w-4 h-4" />}
         >

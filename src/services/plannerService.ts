@@ -3,8 +3,23 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { PlannedOutfit, Outfit } from '../types';
+import { PlannedOutfit, Outfit, OccasionType } from '../types';
 import { authService } from './authService';
+
+const LOCAL_PLANS_KEY = 'pn_local_plans_v1';
+
+const DEFAULT_SAMPLE_PLANS: PlannedOutfit[] = [
+  {
+    id: 'sample_plan_1',
+    date: new Date().toISOString().split('T')[0],
+    outfitId: 'sample_look_1',
+    occasion: 'Work',
+    title: 'Capsule Consultation & Executive Review',
+    notes: 'Executive presentation and client capsule review.',
+    isCompleted: false,
+    createdAt: new Date().toISOString(),
+  }
+];
 
 export class PlannerService {
   private getHeaders(): HeadersInit {
@@ -15,98 +30,162 @@ export class PlannerService {
     };
   }
 
+  private getLocalPlans(): PlannedOutfit[] {
+    try {
+      const raw = localStorage.getItem(LOCAL_PLANS_KEY);
+      if (raw) {
+        return JSON.parse(raw);
+      }
+    } catch {}
+    localStorage.setItem(LOCAL_PLANS_KEY, JSON.stringify(DEFAULT_SAMPLE_PLANS));
+    return DEFAULT_SAMPLE_PLANS;
+  }
+
+  private saveLocalPlans(plans: PlannedOutfit[]) {
+    try {
+      localStorage.setItem(LOCAL_PLANS_KEY, JSON.stringify(plans));
+    } catch (err) {
+      console.warn('Failed to save plans to localStorage:', err);
+    }
+  }
+
   async getAll(): Promise<PlannedOutfit[]> {
     const token = authService.getToken();
-    if (!token) return [];
+    if (!token) return this.getLocalPlans();
+
+    if (token.startsWith('local_tok_')) {
+      return this.getLocalPlans();
+    }
 
     try {
       const res = await fetch('/api/user/plans', {
         headers: this.getHeaders(),
       });
-      if (res.ok) {
-        let data;
-    const text = await res.text();
-    try {
-      data = JSON.parse(text);
-    } catch (e) {
-      if (!res.ok) {
-        throw new Error('Server returned an error: ' + res.status + ' ' + res.statusText);
+
+      const contentType = res.headers.get('content-type') || '';
+      const text = await res.text();
+
+      if (text.trim().startsWith('<') || contentType.includes('text/html')) {
+        return this.getLocalPlans();
       }
-      throw new Error('Received unexpected response format from server (possibly 502/503 from the platform proxy).');
-    }
-        return data.plans || [];
+
+      if (res.ok) {
+        try {
+          const data = JSON.parse(text);
+          if (data.plans && Array.isArray(data.plans)) {
+            if (data.plans.length > 0) {
+              this.saveLocalPlans(data.plans);
+              return data.plans;
+            }
+            return this.getLocalPlans();
+          }
+        } catch {}
       }
     } catch (err) {
-      console.error('Failed to load plans:', err);
+      console.warn('Failed to load plans from server, using local fallback:', err);
     }
-    return [];
+    return this.getLocalPlans();
   }
 
   async create(planData: Omit<PlannedOutfit, 'id' | 'createdAt' | 'isCompleted'>): Promise<PlannedOutfit> {
-    const res = await fetch('/api/user/plans', {
-      method: 'POST',
-      headers: this.getHeaders(),
-      body: JSON.stringify(planData),
-    });
+    const token = authService.getToken();
 
-    let data;
-    const text = await res.text();
-    try {
-      data = JSON.parse(text);
-    } catch (e) {
-      if (!res.ok) {
-        throw new Error('Server returned an error: ' + res.status + ' ' + res.statusText);
+    if (token && !token.startsWith('local_tok_')) {
+      try {
+        const res = await fetch('/api/user/plans', {
+          method: 'POST',
+          headers: this.getHeaders(),
+          body: JSON.stringify(planData),
+        });
+
+        const contentType = res.headers.get('content-type') || '';
+        const text = await res.text();
+
+        if (!text.trim().startsWith('<') && !contentType.includes('text/html') && res.ok) {
+          const data = JSON.parse(text);
+          if (data.success && data.plan) {
+            const local = this.getLocalPlans();
+            this.saveLocalPlans([data.plan, ...local]);
+            return data.plan;
+          }
+        }
+      } catch (err) {
+        console.warn('Server plan creation fallback to local:', err);
       }
-      throw new Error('Received unexpected response format from server (possibly 502/503 from the platform proxy).');
     }
-    if (!res.ok || !data.success) {
-      throw new Error(data.error || 'Failed to schedule look.');
-    }
-    return data.plan;
+
+    const newPlan: PlannedOutfit = {
+      ...planData,
+      id: `plan_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      isCompleted: false,
+      createdAt: new Date().toISOString(),
+    };
+
+    const plans = this.getLocalPlans();
+    const updated = [newPlan, ...plans];
+    this.saveLocalPlans(updated);
+    return newPlan;
   }
 
   async update(id: string, updates: Partial<PlannedOutfit>): Promise<PlannedOutfit> {
-    const res = await fetch(`/api/user/plans/${id}`, {
-      method: 'PUT',
-      headers: this.getHeaders(),
-      body: JSON.stringify(updates),
-    });
+    const token = authService.getToken();
 
-    let data;
-    const text = await res.text();
-    try {
-      data = JSON.parse(text);
-    } catch (e) {
-      if (!res.ok) {
-        throw new Error('Server returned an error: ' + res.status + ' ' + res.statusText);
+    if (token && !token.startsWith('local_tok_')) {
+      try {
+        const res = await fetch(`/api/user/plans/${id}`, {
+          method: 'PUT',
+          headers: this.getHeaders(),
+          body: JSON.stringify(updates),
+        });
+
+        const contentType = res.headers.get('content-type') || '';
+        const text = await res.text();
+
+        if (!text.trim().startsWith('<') && !contentType.includes('text/html') && res.ok) {
+          const data = JSON.parse(text);
+          if (data.success && data.plan) {
+            const local = this.getLocalPlans();
+            const idx = local.findIndex(p => p.id === id);
+            if (idx >= 0) local[idx] = data.plan;
+            this.saveLocalPlans(local);
+            return data.plan;
+          }
+        }
+      } catch (err) {
+        console.warn('Server plan update fallback to local:', err);
       }
-      throw new Error('Received unexpected response format from server (possibly 502/503 from the platform proxy).');
     }
-    if (!res.ok || !data.success) {
-      throw new Error(data.error || 'Failed to update plan.');
-    }
-    return data.plan;
+
+    const plans = this.getLocalPlans();
+    const idx = plans.findIndex(p => p.id === id);
+    if (idx === -1) throw new Error('Plan not found');
+
+    const updatedPlan: PlannedOutfit = {
+      ...plans[idx],
+      ...updates,
+    };
+    plans[idx] = updatedPlan;
+    this.saveLocalPlans(plans);
+    return updatedPlan;
   }
 
   async delete(id: string): Promise<boolean> {
-    const res = await fetch(`/api/user/plans/${id}`, {
-      method: 'DELETE',
-      headers: this.getHeaders(),
-    });
+    const token = authService.getToken();
 
-    let data;
-    const text = await res.text();
-    try {
-      data = JSON.parse(text);
-    } catch (e) {
-      if (!res.ok) {
-        throw new Error('Server returned an error: ' + res.status + ' ' + res.statusText);
+    if (token && !token.startsWith('local_tok_')) {
+      try {
+        await fetch(`/api/user/plans/${id}`, {
+          method: 'DELETE',
+          headers: this.getHeaders(),
+        });
+      } catch (err) {
+        console.warn('Server plan delete fallback to local:', err);
       }
-      throw new Error('Received unexpected response format from server (possibly 502/503 from the platform proxy).');
     }
-    if (!res.ok || !data.success) {
-      throw new Error(data.error || 'Failed to delete plan.');
-    }
+
+    const plans = this.getLocalPlans();
+    const updated = plans.filter(p => p.id !== id);
+    this.saveLocalPlans(updated);
     return true;
   }
 

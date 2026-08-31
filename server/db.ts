@@ -54,6 +54,13 @@ export interface StoredUser {
       autoTagNewItems: boolean;
     };
   };
+  measurements?: {
+    heightCm?: number;
+    heightUnit?: 'cm' | 'm' | 'ft_in' | 'in';
+    weightKg?: number;
+    weightUnit?: 'kg' | 'lbs';
+    hasCompletedFirstLoginMeasurements?: boolean;
+  };
 }
 
 export interface StoredSession {
@@ -468,6 +475,12 @@ class PaurviDatabase {
     if (updates.bio) user.bio = updates.bio;
     if (updates.location) user.location = updates.location;
     if (updates.avatarUrl) user.avatarUrl = updates.avatarUrl;
+    if (updates.measurements) {
+      user.measurements = {
+        ...user.measurements,
+        ...updates.measurements,
+      };
+    }
     if (updates.preferences) {
       user.preferences = {
         ...user.preferences,

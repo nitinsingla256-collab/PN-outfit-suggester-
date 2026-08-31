@@ -5,6 +5,7 @@ import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { Select } from "../components/ui/Select";
 import { Badge } from "../components/ui/Badge";
+import { ErrorBoundary } from "../components/ui/ErrorBoundary";
 import {
   OccasionType,
   StyleVibe,
@@ -85,7 +86,8 @@ const STYLES: StyleVibe[] = [
   "Edgy",
   "Romantic",
 ];
-export function StylistPage() {
+
+function StylistPageContent() {
   const {
     wardrobe,
     outfits,
@@ -120,27 +122,43 @@ export function StylistPage() {
   const [showAdvancedInputs, setShowAdvancedInputs] =
     useState(false); /* Result & Active Look Option */
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generationError, setGenerationError] = useState<string | null>(null);
+  const [lastUsedPrompt, setLastUsedPrompt] = useState<string | undefined>(undefined);
   const [generationResult, setGenerationResult] =
     useState<AIStylistResponse | null>(null);
   const [selectedLookIndex, setSelectedLookIndex] = useState<number>(0);
   const [savedLookIds, setSavedLookIds] = useState<Record<string, string>>({});
-  const [wornLookIds, setWornLookIds] = useState<Record<string, boolean>>(
-    {},
-  ); /* Concierge Chat State */
-  const [chatMessages, setChatMessages] = useState<
-    { role: "user" | "assistant"; content: string; time: string }[]
-  >([
-    {
-      role: "assistant",
-      content:
-        wardrobe.length === 0
-          ? `Welcome to PN Outfit Suggester, ${user.name}. Your digital wardrobe currently has 0 items. You can upload photos of your garments or ask me for advice on color coordination and capsule building.`
-          : `Hello ${user.name}. I am your PN AI Stylist. I have access to your ${wardrobe.length} catalogued pieces and can compose safe, modern, or statement ensembles for any occasion.`,
-      time: "Just now",
-    },
-  ]);
+  const [wornLookIds, setWornLookIds] = useState<Record<string, boolean>>({});
+
+  /* Concierge Chat State - messages array tracking conversation history */
+  const [messages, setMessages] = useState<
+    { role: "user" | "assistant"; content: string; time: string; isError?: boolean; retryPrompt?: string }[]
+  >(() => {
+    return [
+      {
+        role: "assistant",
+        content:
+          wardrobe.length === 0
+            ? `Welcome to PN Outfit Suggester, ${user.name}. Your digital wardrobe currently has 0 items. You can upload photos of your garments or ask me for advice on color coordination, capsule building, or general styling.`
+            : `Hello ${user.name}. I am your PN AI Stylist. I have access to your ${wardrobe.length} catalogued pieces and environmental conditions. You can ask for personalized outfit recommendations (which I will format with exact pieces) or general styling advice, and we can interactively refine looks together.`,
+        time: "Just now",
+      },
+    ];
+  });
   const [chatInput, setChatInput] = useState("");
   const [isChatLoading, setIsChatLoading] = useState(false);
+  const [chatError, setChatError] = useState<string | null>(null);
+
+  const handleResetChat = () => {
+    setChatError(null);
+    setMessages([
+      {
+        role: "assistant",
+        content: `Conversation reset. How can I assist with your styling or wardrobe today, ${user.name}?`,
+        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      },
+    ]);
+  };
   const toggleMustInclude = (itemId: string) => {
     if (mustIncludeItemIds.includes(itemId)) {
       setMustIncludeItemIds(mustIncludeItemIds.filter((id) => id !== itemId));
@@ -196,10 +214,12 @@ export function StylistPage() {
     overridePrompt?: string,
   ) => {
     if (e) e.preventDefault();
+    const promptToUse = overridePrompt !== undefined ? overridePrompt : naturalQuery;
+    setLastUsedPrompt(promptToUse);
+    setGenerationError(null);
     try {
       setIsGenerating(true);
       setSelectedLookIndex(0);
-      const promptToUse = overridePrompt || naturalQuery;
       const request: AIStylistRequest = {
         naturalQuery: promptToUse || undefined,
         occasion: occasion as OccasionType,
@@ -221,15 +241,19 @@ export function StylistPage() {
         wardrobe,
       );
       setGenerationResult(result);
+      setGenerationError(null);
       showToast({
         title: "Outfits Synthesized",
         description: `Generated tailored looks with ${result.confidenceScore || 96}% styling score.`,
         type: "success",
       });
     } catch (err: any) {
+      console.error("AI Stylist generation failed:", err);
+      const errorMsg = err.message || "Stylist temporarily unavailable. Please verify your connection or try again.";
+      setGenerationError(errorMsg);
       showToast({
-        title: "Styling Error",
-        description: err.message || "Unable to generate outfit looks.",
+        title: "Stylist temporarily unavailable",
+        description: "Encountered a temporary issue connecting to the styling engine. Click retry to attempt again.",
         type: "error",
       });
     } finally {
@@ -357,6 +381,7 @@ export function StylistPage() {
     }
     const userText = typeof e === "string" ? e : chatInput.trim();
     if (!userText || isChatLoading) return;
+    setChatError(null);
     const newMsg = {
       role: "user" as const,
       content: userText,
@@ -365,13 +390,14 @@ export function StylistPage() {
         minute: "2-digit",
       }),
     };
-    setChatMessages((prev) => [...prev, newMsg]);
+    const updatedMessages = [...messages, newMsg];
+    setMessages(updatedMessages);
     setChatInput("");
     setIsChatLoading(true);
     try {
       const reply = await aiStylistService.chatConcierge({
         message: userText,
-        conversationHistory: chatMessages.map((m) => ({
+        conversationHistory: updatedMessages.map((m) => ({
           role: m.role,
           content: m.content,
         })),
@@ -381,7 +407,8 @@ export function StylistPage() {
         time: time || new Date().toLocaleTimeString(),
         date: date || new Date().toLocaleDateString(),
       });
-      setChatMessages((prev) => [
+      setChatError(null);
+      setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
@@ -392,17 +419,21 @@ export function StylistPage() {
           }),
         },
       ]);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      setChatMessages((prev) => [
+      const errMsg = error.message || "Stylist temporarily unavailable";
+      setChatError(errMsg);
+      setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content: "Your stylist is temporarily unavailable. Please try again.",
+          content: "Stylist temporarily unavailable. We encountered a connection issue with the AI stylist engine. Please try again.",
           time: new Date().toLocaleTimeString([], {
             hour: "2-digit",
             minute: "2-digit",
           }),
+          isError: true,
+          retryPrompt: userText,
         },
       ]);
     } finally {
@@ -783,25 +814,52 @@ export function StylistPage() {
                 </Button>{" "}
               </div>{" "}
             </form>{" "}
-            {/* Right Column: 3 Looks Display & Details (8 cols) */}{" "}
+            {/* Right Column: 3 Looks Display & Details (8 cols) */}
             <div className="lg:col-span-8 space-y-6">
-              {" "}
               {isGenerating ? (
                 <div className="bg-white rounded-3xl border border-gray-200 p-12 text-center shadow-sm space-y-4">
-                  {" "}
                   <div className="w-16 h-16 rounded-3xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto animate-pulse">
-                    {" "}
-                    <Sparkles className="w-8 h-8 animate-spin" />{" "}
-                  </div>{" "}
-                  <h3 className="text-lg font-bold text-gray-900 ">
-                    {" "}
-                    Styling Your Looks...{" "}
-                  </h3>{" "}
+                    <Sparkles className="w-8 h-8 animate-spin" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900 font-editorial">
+                    Styling Your Looks...
+                  </h3>
                   <p className="text-xs sm:text-sm text-gray-500 max-w-md mx-auto">
-                    {" "}
                     Analyzing silhouette proportions, textile harmonies, and
-                    occasion criteria across your catalogued wardrobe.{" "}
-                  </p>{" "}
+                    occasion criteria across your catalogued wardrobe.
+                  </p>
+                </div>
+              ) : generationError ? (
+                /* User-Friendly Error State */
+                <div className="bg-white rounded-3xl border border-rose-100 p-10 sm:p-12 text-center shadow-sm space-y-5 bg-gradient-to-b from-white to-rose-50/20">
+                  <div className="w-16 h-16 rounded-3xl bg-rose-50 border border-rose-100 text-rose-500 flex items-center justify-center mx-auto shadow-sm">
+                    <AlertCircle className="w-8 h-8" />
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="text-lg sm:text-xl font-bold text-gray-900 font-editorial">
+                      Stylist temporarily unavailable
+                    </h3>
+                    <p className="text-xs sm:text-sm text-gray-600 max-w-md mx-auto leading-relaxed">
+                      {generationError || "We were unable to connect to the AI styling engine to generate your outfits. Your digital wardrobe is safe."}
+                    </p>
+                  </div>
+                  <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
+                    <Button
+                      variant="primary"
+                      onClick={() => handleGenerate(undefined, lastUsedPrompt)}
+                      className="rounded-2xl px-6"
+                      leftIcon={<RotateCcw className="w-4 h-4" />}
+                    >
+                      Retry Styling
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setGenerationError(null)}
+                      className="rounded-2xl px-5 text-xs text-gray-600"
+                    >
+                      Dismiss
+                    </Button>
+                  </div>
                 </div>
               ) : !generationResult ? (
                 /* Initial State */ <div className="bg-white rounded-3xl border border-gray-200 p-10 text-center shadow-sm space-y-4">
@@ -1391,75 +1449,134 @@ export function StylistPage() {
           )}{" "}
         </div>
       )}{" "}
-      {/* ========================================== */}{" "}
-      {/* TAB 3: CONCIERGE CHAT */}{" "}
-      {/* ========================================== */}{" "}
+      {/* ========================================== */}
+      {/* TAB 3: CONCIERGE CHAT */}
+      {/* ========================================== */}
       {activeTab === "concierge" && (
-        <div className="bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden flex flex-col h-[600px]">
-          {" "}
-          {/* Chat Messages Log */}{" "}
+        <div className="bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden flex flex-col h-[650px]">
+          {/* Concierge Chat Header */}
+          <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-2xl bg-emerald-600 flex items-center justify-center text-white font-semibold text-xs tracking-wider">
+                PN
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-gray-900 font-editorial">
+                    PN AI Stylist Concierge
+                  </h3>
+                  <Badge variant="gold" size="sm">
+                    Interactive Buffer
+                  </Badge>
+                </div>
+                <p className="text-[11px] text-gray-500">
+                  Dual-Mode: General Styling + Wardrobe-Specific Recommendations
+                </p>
+              </div>
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleResetChat}
+              leftIcon={<RotateCcw className="w-3.5 h-3.5" />}
+              title="Reset conversation buffer"
+            >
+              Reset Chat
+            </Button>
+          </div>
+
+          {/* Chat Messages Log */}
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
-            {" "}
-            {chatMessages.map((msg, i) => (
+            {messages.map((msg, i) => (
               <div
                 key={i}
-                className={`flex gap-3 max-w-xl ${msg.role === "user" ? "ml-auto flex-row-reverse" : ""}`}
+                className={`flex gap-3 max-w-2xl ${msg.role === "user" ? "ml-auto flex-row-reverse" : ""}`}
               >
-                {" "}
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${msg.role === "user" ? "bg-gray-900 text-white " : "bg-emerald-50 text-emerald-600 "}`}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${msg.role === "user" ? "bg-gray-900 text-white " : "bg-emerald-50 text-emerald-600 font-semibold text-xs "}`}
                 >
-                  {" "}
                   {msg.role === "user" ? (
                     <User className="w-4 h-4" />
                   ) : (
-                    <Sparkles className="w-4 h-4" />
-                  )}{" "}
-                </div>{" "}
+                    "PN"
+                  )}
+                </div>
                 <div
-                  className={`rounded-2xl p-4 text-xs leading-relaxed ${msg.role === "user" ? "bg-emerald-600 text-white" : "bg-gray-50 text-gray-800 border border-gray-200/60 "}`}
+                  className={`rounded-2xl p-4 text-xs leading-relaxed ${
+                    msg.role === "user"
+                      ? "bg-emerald-600 text-white"
+                      : msg.isError
+                        ? "bg-rose-50/80 text-rose-900 border border-rose-200"
+                        : "bg-gray-50 text-gray-800 border border-gray-200/60 "
+                  }`}
                 >
-                  {" "}
                   {msg.role === "assistant" ? (
-                    <div className="markdown-body prose prose-sm max-w-none">
-                      <Markdown>{msg.content}</Markdown>
+                    <div className="space-y-2">
+                      <div className="markdown-body prose prose-sm max-w-none">
+                        <Markdown>{msg.content}</Markdown>
+                      </div>
+                      {msg.isError && msg.retryPrompt && (
+                        <div className="pt-2">
+                          <button
+                            type="button"
+                            onClick={() => handleSendChatMessage(msg.retryPrompt!)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-600 text-white hover:bg-rose-700 text-[11px] font-medium transition shadow-sm"
+                          >
+                            <RotateCcw className="w-3.5 h-3.5" />
+                            <span>Retry Request</span>
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <p className="whitespace-pre-line">{msg.content}</p>
-                  )}{" "}
+                  )}
                   <span
-                    className={`block text-[10px] mt-2 ${msg.role === "user" ? "text-emerald-200" : "text-gray-400 "}`}
+                    className={`block text-[10px] mt-2 ${
+                      msg.role === "user"
+                        ? "text-emerald-200"
+                        : msg.isError
+                          ? "text-rose-400"
+                          : "text-gray-400 "
+                    }`}
                   >
-                    {" "}
-                    {msg.time}{" "}
-                  </span>{" "}
-                </div>{" "}
+                    {msg.time}
+                  </span>
+                </div>
               </div>
-            ))}{" "}
+            ))}
             {isChatLoading && (
               <div className="flex gap-3 max-w-xl">
-                {" "}
                 <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                  {" "}
-                  <Sparkles className="w-4 h-4 animate-spin" />{" "}
-                </div>{" "}
+                  <Sparkles className="w-4 h-4 animate-spin" />
+                </div>
                 <div className="rounded-2xl p-4 bg-gray-50 border border-gray-200/60 text-xs text-gray-500 flex items-center gap-2">
-                  {" "}
-                  <span>Concierge is thinking...</span>{" "}
-                </div>{" "}
+                  <span>Concierge is crafting structured recommendation...</span>
+                </div>
               </div>
-            )}{" "}
-          </div>{" "}
-          {/* Suggested Chat Prompts */}
+            )}
+          </div>
+          {/* Suggested Chat Prompts & Follow-Up Refinements */}
           <div className="px-6 pb-2">
             <div className="flex flex-wrap items-center gap-2">
-              {[
-                "Style me for tonight",
-                "What should I wear today?",
-                "Make this outfit more formal",
-                "What goes with navy trousers?",
-                "Help me choose colours",
-              ].map((prompt, i) => (
+              {(messages.length > 2
+                ? [
+                    "Make this outfit more formal",
+                    "Make it more casual",
+                    "Swap the footwear",
+                    "Add an outerwear layer",
+                    "Give me an alternative look",
+                    "What accessories would elevate this?",
+                  ]
+                : [
+                    "Style me for tonight",
+                    "What should I wear today?",
+                    "Make this outfit more formal",
+                    "What goes with navy trousers?",
+                    "Help me choose colours",
+                  ]
+              ).map((prompt, i) => (
                 <button
                   key={i}
                   type="button"
@@ -1471,30 +1588,40 @@ export function StylistPage() {
               ))}
             </div>
           </div>
-          {/* Chat Input Bar */}{" "}
+          {/* Chat Input Bar */}
           <form
             onSubmit={handleSendChatMessage}
             className="p-4 border-t border-gray-100 bg-gray-50/50 flex gap-2"
           >
-            {" "}
             <Input
               placeholder="Ask anything about styling, colors, fabric pairing, or specific pieces..."
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
               className="flex-1"
-            />{" "}
+            />
             <Button
               type="submit"
               variant="primary"
               disabled={!chatInput.trim() || isChatLoading}
               leftIcon={<Send className="w-4 h-4" />}
             >
-              {" "}
-              Send{" "}
-            </Button>{" "}
-          </form>{" "}
+              Send
+            </Button>
+          </form>
         </div>
-      )}{" "}
+      )}
     </div>
   );
 }
+
+export function StylistPage() {
+  return (
+    <ErrorBoundary
+      fallbackTitle="Stylist temporarily unavailable"
+      fallbackMessage="We encountered an unexpected issue while loading the AI Stylist workspace. Your wardrobe catalog and saved outfits remain safe. Please click retry to reload."
+    >
+      <StylistPageContent />
+    </ErrorBoundary>
+  );
+}
+

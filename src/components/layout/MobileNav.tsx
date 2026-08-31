@@ -77,7 +77,11 @@ export function MobileNav() {
                 return (
                   <button
                     key={tab.route}
-                    onClick={() => handleMoreNavigation(tab.route)}
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleMoreNavigation(tab.route);
+                    }}
                     className={`flex items-center gap-3 p-3.5 rounded-2xl border text-left text-xs font-medium transition-all ${
                       isActive
                         ? 'bg-gray-100 text-gray-900 border-emerald-500/40'
@@ -107,7 +111,11 @@ export function MobileNav() {
           return (
             <button
               key={tab.route}
-              onClick={() => navigateTo(tab.route)}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                navigateTo(tab.route);
+              }}
               className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all relative flex-1 ${
                 isActive ? 'text-emerald-500' : 'text-gray-600 hover:text-gray-800'
               }`}
@@ -127,7 +135,11 @@ export function MobileNav() {
 
         {/* More Tab */}
         <button
-          onClick={() => setIsMoreMenuOpen(true)}
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            setIsMoreMenuOpen(true);
+          }}
           className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all relative flex-1 ${
             isMoreActive ? 'text-emerald-500' : 'text-gray-600 hover:text-gray-800'
           }`}
