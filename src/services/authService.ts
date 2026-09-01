@@ -18,13 +18,13 @@ const LOCAL_USERS_STORE_KEY = 'pn_local_users_store_v1';
 
 const safeLocalStorage = {
   getItem(key: string): string | null {
-    try { return safeLocalStorage.getItem(key); } catch (e) { return null; }
+    try { return window.localStorage.getItem(key); } catch (e) { return null; }
   },
   setItem(key: string, value: string): void {
-    try { safeLocalStorage.setItem(key, value); } catch (e) {}
+    try { window.localStorage.setItem(key, value); } catch (e) {}
   },
   removeItem(key: string): void {
-    try { safeLocalStorage.removeItem(key); } catch (e) {}
+    try { window.localStorage.removeItem(key); } catch (e) {}
   }
 };
 
@@ -101,6 +101,8 @@ export class AuthService {
       console.warn('localStorage access denied', e);
     }
   }
+
+  getCurrentUser(): User | null { return this.currentUser; }
 
   getToken(): string | null {
     if (!this.token) {
@@ -465,6 +467,16 @@ export class AuthService {
       };
       this.currentUser = updated;
       safeLocalStorage.setItem(LOCAL_USER_KEY, JSON.stringify(updated));
+      
+      // Update the user in LOCAL_USERS_STORE_KEY
+      if (updated.email) {
+          const localUsers = this.getLocalUsers();
+          const existingIndex = localUsers.findIndex(u => u.email.toLowerCase() === updated.email.toLowerCase());
+          if (existingIndex >= 0) {
+              localUsers[existingIndex].user = updated;
+              safeLocalStorage.setItem(LOCAL_USERS_STORE_KEY, JSON.stringify(localUsers));
+          }
+      }
       return updated;
     }
 

@@ -20,7 +20,10 @@ import { authService } from './authService';
 
 
 
-const LOCAL_PLANS_KEY = 'pn_local_plans_v1';
+const get_LOCAL_PLANS_KEY = () => {
+  const user = authService.getCurrentUser();
+  return user ? `pn_local_plans_v1_${user.id}` : 'pn_local_plans_v1';
+};
 
 const DEFAULT_SAMPLE_PLANS: PlannedOutfit[] = [
   {
@@ -46,18 +49,21 @@ export class PlannerService {
 
   private getLocalPlans(): PlannedOutfit[] {
     try {
-      const raw = localStorage.getItem(LOCAL_PLANS_KEY);
+      const raw = localStorage.getItem(get_LOCAL_PLANS_KEY());
       if (raw !== null) {
-        return JSON.parse(raw);
+        
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+    
       }
     } catch {}
-    localStorage.setItem(LOCAL_PLANS_KEY, JSON.stringify([]));
+    localStorage.setItem(get_LOCAL_PLANS_KEY(), JSON.stringify([]));
     return [];
   }
 
   private saveLocalPlans(plans: PlannedOutfit[]) {
     try {
-      localStorage.setItem(LOCAL_PLANS_KEY, JSON.stringify(plans));
+      localStorage.setItem(get_LOCAL_PLANS_KEY(), JSON.stringify(plans));
     } catch (err) {
       console.warn('Failed to save plans to localStorage:', err);
     }

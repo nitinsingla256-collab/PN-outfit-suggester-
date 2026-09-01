@@ -28,7 +28,10 @@ export interface OutfitFilterOptions {
   sortBy?: 'newest' | 'mostWorn' | 'nameAsc';
 }
 
-const LOCAL_OUTFITS_KEY = 'pn_local_outfits_v1';
+const get_LOCAL_OUTFITS_KEY = () => {
+  const user = authService.getCurrentUser();
+  return user ? `pn_local_outfits_v1_${user.id}` : 'pn_local_outfits_v1';
+};
 
 const DEFAULT_SAMPLE_OUTFITS: Outfit[] = [
   {
@@ -84,18 +87,21 @@ export class OutfitService {
 
   private getLocalOutfits(): Outfit[] {
     try {
-      const raw = localStorage.getItem(LOCAL_OUTFITS_KEY);
+      const raw = localStorage.getItem(get_LOCAL_OUTFITS_KEY());
       if (raw !== null) {
-        return JSON.parse(raw);
+        
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+    
       }
     } catch {}
-    localStorage.setItem(LOCAL_OUTFITS_KEY, JSON.stringify([]));
+    localStorage.setItem(get_LOCAL_OUTFITS_KEY(), JSON.stringify([]));
     return [];
   }
 
   private saveLocalOutfits(outfits: Outfit[]) {
     try {
-      localStorage.setItem(LOCAL_OUTFITS_KEY, JSON.stringify(outfits));
+      localStorage.setItem(get_LOCAL_OUTFITS_KEY(), JSON.stringify(outfits));
     } catch (err) {
       console.warn('Failed to save outfits to localStorage:', err);
     }

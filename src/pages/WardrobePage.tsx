@@ -132,11 +132,12 @@ export function WardrobePage() {
 
   /* Filtered and sorted items */
   const filteredItems = useMemo(() => {
+    const safeWardrobe = Array.isArray(wardrobe) ? wardrobe : [];
     const baseItems = activeClusterFilter
-      ? wardrobe.filter(w => activeClusterFilter.itemIds.includes(w.id))
-      : wardrobe;
+      ? safeWardrobe.filter(w => activeClusterFilter.itemIds.includes(w.id))
+      : safeWardrobe;
 
-    return wardrobeService.filter(baseItems, {
+    return wardrobeService.filter(baseItems || [], {
       searchQuery,
       category: selectedCategory as ClothingCategory | 'All',
       color: selectedColor,

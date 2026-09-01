@@ -32,7 +32,10 @@ export interface WardrobeFilterOptions {
   sortBy?: 'newest' | 'oldest' | 'category' | 'favoritesFirst' | 'mostWorn' | 'leastWorn' | 'nameAsc' | 'highestValue';
 }
 
-const LOCAL_WARDROBE_KEY = 'pn_local_wardrobe_items_v1';
+const get_LOCAL_WARDROBE_KEY = () => {
+  const user = authService.getCurrentUser();
+  return user ? `pn_local_wardrobe_items_v1_${user.id}` : 'pn_local_wardrobe_items_v1';
+};
 
 const DEFAULT_SAMPLE_WARDROBE: WardrobeItem[] = [
   {
@@ -194,18 +197,21 @@ export class WardrobeService {
 
   private getLocalItems(): WardrobeItem[] {
     try {
-      const raw = localStorage.getItem(LOCAL_WARDROBE_KEY);
+      const raw = localStorage.getItem(get_LOCAL_WARDROBE_KEY());
       if (raw !== null) {
-        return JSON.parse(raw);
+        
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+    
       }
     } catch {}
-    localStorage.setItem(LOCAL_WARDROBE_KEY, JSON.stringify([]));
+    localStorage.setItem(get_LOCAL_WARDROBE_KEY(), JSON.stringify([]));
     return [];
   }
 
   private saveLocalItems(items: WardrobeItem[]) {
     try {
-      localStorage.setItem(LOCAL_WARDROBE_KEY, JSON.stringify(items));
+      localStorage.setItem(get_LOCAL_WARDROBE_KEY(), JSON.stringify(items));
     } catch (err) {
       console.warn('Failed to save to localStorage:', err);
     }

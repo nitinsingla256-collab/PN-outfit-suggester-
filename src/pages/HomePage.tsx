@@ -58,6 +58,7 @@ export function HomePage() {
 
   const [dailyOutfit, setDailyOutfit] = useState<AIStylistResponse | null>(() => {
     try {
+      if (!user) return null;
       const cacheKey = `daily_outfit_${new Date().toISOString().split("T")[0]}_${user.id}`;
       const cached = localStorage.getItem(cacheKey);
       if (cached) return JSON.parse(cached);
@@ -68,7 +69,7 @@ export function HomePage() {
 
   // Fast deterministic fallback outfit builder
   const buildInstantLook = (items: typeof wardrobe): AIStylistResponse | null => {
-    if (items.length === 0) return null;
+    if (!items || !Array.isArray(items) || items.length === 0) return null;
     const top = items.find(i => i.category === 'Tops') || items[0];
     const bottom = items.find(i => i.category === 'Bottoms' && i.id !== top.id) || items[1] || top;
     const shoes = items.find(i => i.category === 'Footwear' && i.id !== top.id && i.id !== bottom.id);
@@ -118,6 +119,7 @@ export function HomePage() {
     async function loadDailyOutfit() {
       if (wardrobe.length === 0) return;
 
+      if (!user) return null;
       const cacheKey = `daily_outfit_${new Date().toISOString().split("T")[0]}_${user.id}`;
       const cached = localStorage.getItem(cacheKey);
       if (cached) {
