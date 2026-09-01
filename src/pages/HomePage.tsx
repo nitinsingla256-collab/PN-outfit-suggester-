@@ -3,6 +3,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+const safeLocalStorage = {
+  getItem(key: string): string | null {
+    try { return localStorage.getItem(key); } catch (e) { return null; }
+  },
+  setItem(key: string, value: string): void {
+    try { localStorage.setItem(key, value); } catch (e) {}
+  },
+  removeItem(key: string): void {
+    try { localStorage.removeItem(key); } catch (e) {}
+  }
+};
+
 import React, { useState, useEffect, useMemo } from "react";
 import { aiStylistService } from "../services/aiStylistService";
 import { weatherService } from "../services/weatherService";
@@ -14,8 +26,10 @@ import { Badge } from "../components/ui/Badge";
 import { EmptyState } from "../components/ui/EmptyState";
 import { WeatherWidget } from "../components/ui/WeatherWidget";
 import { SeasonalTrendsSection } from "../components/home/SeasonalTrendsSection";
-import { motion } from "motion/react";
+
 import {
+
+
   Sparkles,
   Plus,
   Layers,

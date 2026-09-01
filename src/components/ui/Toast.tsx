@@ -30,9 +30,9 @@ export function Toast({ toast, onDismiss }: ToastProps) {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 16, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
+    <div
+      
+      
       exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.15 } }}
       className={`flex items-start gap-3 p-4 rounded-xl border ${borders[toast.type]} shadow-[0_8px_25px_rgba(0,0,0,0.6)] w-full max-w-sm pointer-events-auto backdrop-blur-md`}
       role="alert"
@@ -51,7 +51,7 @@ export function Toast({ toast, onDismiss }: ToastProps) {
       >
         <X className="w-3.5 h-3.5" />
       </button>
-    </motion.div>
+    </div>
   );
 }
 
@@ -66,11 +66,11 @@ export function ToastContainer({ toasts, onDismiss }: ToastContainerProps) {
       aria-live="polite"
       className="fixed bottom-20 md:bottom-6 right-4 md:right-6 z-50 flex flex-col gap-2.5 max-w-sm pointer-events-none"
     >
-      <AnimatePresence>
+      <div>
         {toasts.map(toast => (
           <Toast key={toast.id} toast={toast} onDismiss={onDismiss} />
         ))}
-      </AnimatePresence>
+      </div>
     </div>
   );
 }

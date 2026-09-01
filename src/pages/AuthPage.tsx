@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "motion/react";
+
 import {
   Lock,
   Mail,
@@ -314,15 +314,15 @@ export const AuthPage: React.FC = () => {
               </div>
             )}
 
-            <AnimatePresence mode="wait">
+            <div>
               {/* ================= SIGN IN MODE ================= */}
               {mode === "signin" && (
-                <motion.div
+                <div
                   key="signin"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.2 }}
+                  
+                  
+                  
+                  
                 >
                   <div className="mb-8 text-center lg:text-left">
                     <h2 className="text-3xl font-medium text-gray-900 tracking-tight">
@@ -438,17 +438,17 @@ export const AuthPage: React.FC = () => {
                       </a>
                     </p>
                   </div>
-                </motion.div>
+                </div>
               )}
 
               {/* ================= SIGN UP MODE ================= */}
               {mode === "signup" && (
-                <motion.div
+                <div
                   key="signup"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.2 }}
+                  
+                  
+                  
+                  
                 >
                   <div className="mb-8 text-center lg:text-left">
                     <h2 className="text-3xl font-medium text-gray-900 tracking-tight">
@@ -652,17 +652,17 @@ export const AuthPage: React.FC = () => {
                       </a>
                     </p>
                   </div>
-                </motion.div>
+                </div>
               )}
 
               {/* ================= FORGOT PASSWORD ================= */}
               {mode === "forgot" && (
-                <motion.div
+                <div
                   key="forgot"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.2 }}
+                  
+                  
+                  
+                  
                 >
                   <div className="mb-8 text-center lg:text-left">
                     <h2 className="text-3xl font-medium text-gray-900 tracking-tight">
@@ -783,9 +783,9 @@ export const AuthPage: React.FC = () => {
                       </div>
                     </form>
                   )}
-                </motion.div>
+                </div>
               )}
-            </AnimatePresence>
+            </div>
           </div>
 
           <div className="mt-12 pt-6 flex justify-between items-center text-[10px] text-gray-400 max-w-[420px] mx-auto w-full">

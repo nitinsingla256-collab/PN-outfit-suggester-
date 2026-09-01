@@ -16,6 +16,19 @@ const TOKEN_KEY = 'pn_auth_token_v1';
 const LOCAL_USER_KEY = 'pn_local_current_user_v1';
 const LOCAL_USERS_STORE_KEY = 'pn_local_users_store_v1';
 
+const safeLocalStorage = {
+  getItem(key: string): string | null {
+    try { return safeLocalStorage.getItem(key); } catch (e) { return null; }
+  },
+  setItem(key: string, value: string): void {
+    try { safeLocalStorage.setItem(key, value); } catch (e) {}
+  },
+  removeItem(key: string): void {
+    try { safeLocalStorage.removeItem(key); } catch (e) {}
+  }
+};
+
+
 interface SafeJsonResponse<T = any> {
   ok: boolean;
   status: number;
@@ -74,20 +87,28 @@ export class AuthService {
   private currentUser: User | null = null;
 
   constructor() {
-    this.token = localStorage.getItem(TOKEN_KEY);
-    const storedUser = localStorage.getItem(LOCAL_USER_KEY);
-    if (storedUser) {
-      try {
-        this.currentUser = JSON.parse(storedUser);
-      } catch {
-        this.currentUser = null;
+    try {
+      this.token = safeLocalStorage.getItem(TOKEN_KEY);
+      const storedUser = safeLocalStorage.getItem(LOCAL_USER_KEY);
+      if (storedUser) {
+        try {
+          this.currentUser = JSON.parse(storedUser);
+        } catch {
+          this.currentUser = null;
+        }
       }
+    } catch (e) {
+      console.warn('localStorage access denied', e);
     }
   }
 
   getToken(): string | null {
     if (!this.token) {
-      this.token = localStorage.getItem(TOKEN_KEY);
+      try {
+        this.token = safeLocalStorage.getItem(TOKEN_KEY);
+      } catch (e) {
+        console.warn('localStorage access denied', e);
+      }
     }
     return this.token;
   }
@@ -95,25 +116,35 @@ export class AuthService {
   setSession(token: string, user: User) {
     this.token = token;
     this.currentUser = user;
-    localStorage.setItem(TOKEN_KEY, token);
-    localStorage.setItem(LOCAL_USER_KEY, JSON.stringify(user));
+    try {
+      safeLocalStorage.setItem(TOKEN_KEY, token);
+      safeLocalStorage.setItem(LOCAL_USER_KEY, JSON.stringify(user));
+    } catch (e) {
+      console.warn('localStorage access denied', e);
+    }
   }
 
   clearSession() {
     this.token = null;
     this.currentUser = null;
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(LOCAL_USER_KEY);
+    try {
+      safeLocalStorage.removeItem(TOKEN_KEY);
+      safeLocalStorage.removeItem(LOCAL_USER_KEY);
+    } catch (e) {
+      console.warn('localStorage access denied', e);
+    }
   }
 
   // Fallback Local Storage Users Helper for static hosting (EdgeOne, Vercel, Netlify)
   private getLocalUsers(): Array<{ email: string; password?: string; user: User }> {
     try {
-      const raw = localStorage.getItem(LOCAL_USERS_STORE_KEY);
+      const raw = safeLocalStorage.getItem(LOCAL_USERS_STORE_KEY);
       if (raw) {
         return JSON.parse(raw);
       }
-    } catch {}
+    } catch (e) {
+      console.warn('localStorage access denied', e);
+    }
     
     // Seed default offline users
     const defaultLocalUsers = [
@@ -140,7 +171,7 @@ export class AuthService {
         user: INITIAL_USER,
       },
     ];
-    localStorage.setItem(LOCAL_USERS_STORE_KEY, JSON.stringify(defaultLocalUsers));
+    safeLocalStorage.setItem(LOCAL_USERS_STORE_KEY, JSON.stringify(defaultLocalUsers));
     return defaultLocalUsers;
   }
 
@@ -153,7 +184,7 @@ export class AuthService {
     } else {
       users.push({ email: cleanEmail, password: passwordPlain, user });
     }
-    localStorage.setItem(LOCAL_USERS_STORE_KEY, JSON.stringify(users));
+    safeLocalStorage.setItem(LOCAL_USERS_STORE_KEY, JSON.stringify(users));
   }
 
   async getCurrentSession(): Promise<AuthSession> {
@@ -171,7 +202,7 @@ export class AuthService {
 
     if (res.ok && res.data?.success && res.data?.user) {
       this.currentUser = res.data.user;
-      localStorage.setItem(LOCAL_USER_KEY, JSON.stringify(res.data.user));
+      safeLocalStorage.setItem(LOCAL_USER_KEY, JSON.stringify(res.data.user));
       return {
         user: res.data.user,
         token,
@@ -194,7 +225,7 @@ export class AuthService {
       };
     }
 
-    const storedUserRaw = localStorage.getItem(LOCAL_USER_KEY);
+    const storedUserRaw = safeLocalStorage.getItem(LOCAL_USER_KEY);
     if (storedUserRaw) {
       try {
         const parsed = JSON.parse(storedUserRaw);
@@ -394,7 +425,7 @@ export class AuthService {
     const idx = localUsers.findIndex(u => u.email.toLowerCase() === cleanEmail);
     if (idx >= 0) {
       localUsers[idx].password = newPasswordPlain;
-      localStorage.setItem(LOCAL_USERS_STORE_KEY, JSON.stringify(localUsers));
+      safeLocalStorage.setItem(LOCAL_USERS_STORE_KEY, JSON.stringify(localUsers));
     }
 
     return 'Your password has been successfully updated. You may now sign in.';
@@ -418,7 +449,7 @@ export class AuthService {
 
     if (res.isJson && res.ok && res.data?.success && res.data?.user) {
       this.currentUser = res.data.user;
-      localStorage.setItem(LOCAL_USER_KEY, JSON.stringify(res.data.user));
+      safeLocalStorage.setItem(LOCAL_USER_KEY, JSON.stringify(res.data.user));
       return res.data.user;
     }
 
@@ -433,7 +464,7 @@ export class AuthService {
         },
       };
       this.currentUser = updated;
-      localStorage.setItem(LOCAL_USER_KEY, JSON.stringify(updated));
+      safeLocalStorage.setItem(LOCAL_USER_KEY, JSON.stringify(updated));
       return updated;
     }
 

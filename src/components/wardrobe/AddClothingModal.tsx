@@ -789,12 +789,12 @@ export function AddClothingModal() {
             {/* Batch Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 max-h-[50vh] overflow-y-auto pr-1">
               {batchItems.map((item, idx) => (
-                <motion.div
+                <div
                   key={item.id}
-                  layout
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
+                  
+                  
+                  
+                  
                   className="relative flex flex-col justify-between p-3.5 rounded-2xl bg-white border border-gray-200 hover:border-emerald-400/80 shadow-xs hover:shadow-md transition-all group"
                 >
                   <div>
@@ -886,7 +886,7 @@ export function AddClothingModal() {
                     </button>
                     <span className="text-[10px] text-gray-400 font-mono">#{idx + 1}</span>
                   </div>
-                </motion.div>
+                </div>
               ))}
             </div>
 

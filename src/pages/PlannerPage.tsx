@@ -11,7 +11,7 @@ import { Badge } from "../components/ui/Badge";
 import { EmptyState } from "../components/ui/EmptyState";
 import { PlanOutfitModal } from "../components/planner/PlanOutfitModal";
 import { WeatherWidget } from "../components/ui/WeatherWidget";
-import { motion, AnimatePresence } from "motion/react";
+
 import {
   Calendar as CalendarIcon,
   ChevronLeft,

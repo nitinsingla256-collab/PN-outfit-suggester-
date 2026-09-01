@@ -178,13 +178,13 @@ export function WardrobeCategoryChart({
       </div>
 
       {/* Collapsible Content */}
-      <AnimatePresence initial={false}>
+      <div>
         {isExpanded && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3, ease: 'easeInOut' }}
+          <div
+            
+            
+            
+            
             className="overflow-hidden"
           >
             <div className="p-5 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
@@ -242,11 +242,11 @@ export function WardrobeCategoryChart({
 
                   {/* Centered Donut Stat Insight */}
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center p-2">
-                    <motion.div
+                    <div
                       key={activeCategoryData ? activeCategoryData.name : 'total'}
-                      initial={{ scale: 0.9, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      transition={{ duration: 0.2 }}
+                      
+                      
+                      
                       className="space-y-0.5"
                     >
                       <span className="text-[10px] font-bold tracking-wider uppercase text-slate-400 font-mono block">
@@ -261,7 +261,7 @@ export function WardrobeCategoryChart({
                       <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200/60 font-mono">
                         {activeCategoryData ? `${activeCategoryData.percentage}% of wardrobe` : '100%'}
                       </span>
-                    </motion.div>
+                    </div>
                   </div>
                 </div>
 
@@ -376,9 +376,9 @@ export function WardrobeCategoryChart({
                 </div>
               </div>
             </div>
-          </motion.div>
+          </div>
         )}
-      </AnimatePresence>
+      </div>
     </div>
   );
 }

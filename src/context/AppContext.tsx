@@ -3,6 +3,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+const safeLocalStorage = {
+  getItem(key: string): string | null {
+    try { return localStorage.getItem(key); } catch (e) { return null; }
+  },
+  setItem(key: string, value: string): void {
+    try { localStorage.setItem(key, value); } catch (e) {}
+  },
+  removeItem(key: string): void {
+    try { localStorage.removeItem(key); } catch (e) {}
+  }
+};
+
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import {
   NavigationRoute,
@@ -19,6 +31,8 @@ import { wardrobeService } from '../services/wardrobeService';
 import { outfitService } from '../services/outfitService';
 import { plannerService } from '../services/plannerService';
 import { authService } from '../services/authService';
+
+
 
 interface AppContextType {
   // Routing
@@ -319,7 +333,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const initAuth = async () => {
       try {
         setAuthLoading(true);
-        const session = await authService.getCurrentSession();
+        const session = await authService.getCurrentSession(); console.log("initAuth session", session);
         if (session.isAuthenticated && session.user) {
           setUser(session.user);
           setIsAuthenticated(true);

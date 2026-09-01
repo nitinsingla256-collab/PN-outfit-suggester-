@@ -3,8 +3,22 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+const safeLocalStorage = {
+  getItem(key: string): string | null {
+    try { return localStorage.getItem(key); } catch (e) { return null; }
+  },
+  setItem(key: string, value: string): void {
+    try { localStorage.setItem(key, value); } catch (e) {}
+  },
+  removeItem(key: string): void {
+    try { localStorage.removeItem(key); } catch (e) {}
+  }
+};
+
 import { PlannedOutfit, Outfit, OccasionType } from '../types';
 import { authService } from './authService';
+
+
 
 const LOCAL_PLANS_KEY = 'pn_local_plans_v1';
 
@@ -37,8 +51,8 @@ export class PlannerService {
         return JSON.parse(raw);
       }
     } catch {}
-    localStorage.setItem(LOCAL_PLANS_KEY, JSON.stringify(DEFAULT_SAMPLE_PLANS));
-    return DEFAULT_SAMPLE_PLANS;
+    localStorage.setItem(LOCAL_PLANS_KEY, JSON.stringify([]));
+    return [];
   }
 
   private saveLocalPlans(plans: PlannedOutfit[]) {

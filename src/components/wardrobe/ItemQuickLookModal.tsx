@@ -146,32 +146,32 @@ export function ItemQuickLookModal({
   };
 
   return (
-    <AnimatePresence>
+    <div>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
         {/* Backdrop */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
+        <div
+          
+          
+          
+          
           onClick={onClose}
           className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm"
         />
 
         {/* Modal Window */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.94, y: 16 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.96, y: 8 }}
-          transition={{ type: 'spring', damping: 25, stiffness: 320 }}
+        <div
+          
+          
+          
+          
           className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-slate-200/90 overflow-hidden z-10 my-auto"
         >
           {/* Header Action Bar */}
           <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
             {/* Favorite toggle */}
-            <motion.button
-              whileHover={{ scale: 1.08 }}
-              whileTap={{ scale: 0.92 }}
+            <button
+              
+              
               onClick={() => toggleWardrobeFavorite(item.id)}
               className={`p-2.5 rounded-full backdrop-blur-md transition-colors shadow-sm ${
                 item.isFavorite
@@ -181,18 +181,18 @@ export function ItemQuickLookModal({
               title={item.isFavorite ? 'Favorited' : 'Add to Favorites'}
             >
               <Heart className={`w-4 h-4 ${item.isFavorite ? 'fill-current' : ''}`} />
-            </motion.button>
+            </button>
 
             {/* Close Button */}
-            <motion.button
-              whileHover={{ scale: 1.08 }}
-              whileTap={{ scale: 0.92 }}
+            <button
+              
+              
               onClick={onClose}
               className="p-2.5 rounded-full bg-white/90 hover:bg-slate-100 text-slate-600 hover:text-slate-900 backdrop-blur-md transition-colors border border-slate-200/60 shadow-sm"
               title="Close"
             >
               <X className="w-4 h-4" />
-            </motion.button>
+            </button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-12 max-h-[85vh] overflow-y-auto">
@@ -398,8 +398,8 @@ export function ItemQuickLookModal({
               </div>
             </div>
           </div>
-        </motion.div>
+        </div>
       </div>
-    </AnimatePresence>
+    </div>
   );
 }

@@ -3,14 +3,28 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+const safeLocalStorage = {
+  getItem(key: string): string | null {
+    try { return localStorage.getItem(key); } catch (e) { return null; }
+  },
+  setItem(key: string, value: string): void {
+    try { localStorage.setItem(key, value); } catch (e) {}
+  },
+  removeItem(key: string): void {
+    try { localStorage.removeItem(key); } catch (e) {}
+  }
+};
+
 import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "motion/react";
+
 import { aiStylistService } from "../../services/aiStylistService";
 import { FashionTrend, FashionTrendsReport, ClothingCategory } from "../../types";
 import { useApp } from "../../context/AppContext";
 import { Button } from "../ui/Button";
 import { Badge } from "../ui/Badge";
 import {
+
+
   Sparkles,
   Globe,
   ExternalLink,
@@ -271,13 +285,13 @@ export function SeasonalTrendsSection({ className = "" }: SeasonalTrendsSectionP
             const matchingItems = getMatchingWardrobeItems(trend.matchingCategories);
 
             return (
-              <motion.div
+              <div
                 key={trend.id || index}
                 id={`trend-card-${trend.id}`}
-                layout
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.35, delay: index * 0.05 }}
+                
+                
+                
+                
                 className="group bg-white rounded-3xl border border-slate-200/90 hover:border-slate-300 p-6 shadow-xs hover:shadow-md transition-all flex flex-col justify-between"
               >
                 <div className="space-y-4">
@@ -436,7 +450,7 @@ export function SeasonalTrendsSection({ className = "" }: SeasonalTrendsSectionP
                     Style in Studio
                   </Button>
                 </div>
-              </motion.div>
+              </div>
             );
           })}
         </div>
@@ -456,13 +470,13 @@ export function SeasonalTrendsSection({ className = "" }: SeasonalTrendsSectionP
       )}
 
       {/* 5. Google Search Grounding Sources Modal */}
-      <AnimatePresence>
+      <div>
         {showSourcesModal && report && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
+            <div
+              
+              
+              
               className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-slate-200 space-y-5"
             >
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -547,10 +561,10 @@ export function SeasonalTrendsSection({ className = "" }: SeasonalTrendsSectionP
                   Close
                 </Button>
               </div>
-            </motion.div>
+            </div>
           </div>
         )}
-      </AnimatePresence>
+      </div>
     </section>
   );
 }

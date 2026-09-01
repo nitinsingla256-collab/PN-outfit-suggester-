@@ -49,23 +49,23 @@ export function AutoOrganizeModal({
   wardrobe.forEach(item => wardrobeMap.set(item.id, item));
 
   return (
-    <AnimatePresence>
+    <div>
       <div className="fixed inset-0 z-60 flex items-center justify-center p-3 sm:p-6 overflow-y-auto pb-24 lg:pb-6">
         {/* Backdrop */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
+        <div
+          
+          
+          
           onClick={onClose}
           className="fixed inset-0 bg-slate-950/80 backdrop-blur-md transition-opacity"
         />
 
         {/* Modal Window */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 16 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.96, y: 8 }}
-          transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+        <div
+          
+          
+          
+          
           className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden z-10 my-auto flex flex-col max-h-[88vh]"
         >
           {/* Header Banner */}
@@ -353,8 +353,8 @@ export function AutoOrganizeModal({
               )}
             </div>
           </div>
-        </motion.div>
+        </div>
       </div>
-    </AnimatePresence>
+    </div>
   );
 }

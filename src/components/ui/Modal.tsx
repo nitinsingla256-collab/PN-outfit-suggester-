@@ -51,26 +51,26 @@ export function Modal({
   };
 
   return (
-    <AnimatePresence>
+    <div>
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
           {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+          <div
+            
+            
+            
             onClick={onClose}
             className="fixed inset-0 bg-black/75 backdrop-blur-sm transition-opacity"
             aria-hidden="true"
           />
 
           {/* Dialog Container */}
-          <motion.div
+          <div
             ref={modalRef}
-            initial={{ opacity: 0, scale: 0.96, y: 8 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: 8 }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
+            
+            
+            
+            
             role="dialog"
             aria-modal="true"
             aria-labelledby="modal-title"
@@ -97,9 +97,9 @@ export function Modal({
 
             {/* Body */}
             <div className="p-6 max-h-[80vh] overflow-y-auto">{children}</div>
-          </motion.div>
+          </div>
         </div>
       )}
-    </AnimatePresence>
+    </div>
   );
 }

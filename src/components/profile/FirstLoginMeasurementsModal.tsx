@@ -205,23 +205,23 @@ export function FirstLoginMeasurementsModal({
   if (!isOpen) return null;
 
   return (
-    <AnimatePresence>
+    <div>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto pb-28 sm:pb-6">
         {/* Backdrop */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
+        <div
+          
+          
+          
+          
           className="fixed inset-0 bg-slate-950/80 backdrop-blur-md"
         />
 
         {/* Modal Dialog */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.94, y: 16 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.96, y: 8 }}
-          transition={{ type: 'spring', damping: 26, stiffness: 320 }}
+        <div
+          
+          
+          
+          
           className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-slate-200/90 overflow-hidden z-10 my-auto mb-6 sm:my-auto max-h-[85vh] flex flex-col"
         >
 
@@ -502,9 +502,9 @@ export function FirstLoginMeasurementsModal({
 
             {/* 3. Live Silhouette & Tailoring Proportions Preview */}
             {bodyMetrics && (
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
+              <div
+                
+                
                 className="p-4 rounded-2xl bg-emerald-50/80 border border-emerald-200/80 space-y-2 text-xs"
               >
                 <div className="flex items-center justify-between">
@@ -520,7 +520,7 @@ export function FirstLoginMeasurementsModal({
                 <p className="text-slate-700 leading-relaxed text-[11px]">
                   {bodyMetrics.tailoringRecommendation}
                 </p>
-              </motion.div>
+              </div>
             )}
 
             <div className="flex items-center gap-2 text-[11px] text-slate-500 bg-slate-50 p-3 rounded-xl border border-slate-200/60">
@@ -555,8 +555,8 @@ export function FirstLoginMeasurementsModal({
               {isSubmitting ? 'Saving Fit Profile...' : 'Save & Enter Atelier Studio'}
             </Button>
           </div>
-        </motion.div>
+        </div>
       </div>
-    </AnimatePresence>
+    </div>
   );
 }

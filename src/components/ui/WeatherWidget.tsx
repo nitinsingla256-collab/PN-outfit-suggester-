@@ -8,8 +8,10 @@ import {
   MapPin,
   Sparkles,
 } from "lucide-react";
-import { motion, AnimatePresence } from "motion/react";
+
 import { useApp } from "../../context/AppContext";
+
+
 
 export function WeatherWidget({ className = "" }: { className?: string }) {
   const { user } = useApp();
@@ -57,9 +59,9 @@ export function WeatherWidget({ className = "" }: { className?: string }) {
   if (!weather) return null;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
+    <div
+      
+      
       className={`relative overflow-hidden rounded-2xl bg-white/40 backdrop-blur-2xl border border-white/40 p-5 shadow-[0_8px_30px_rgba(0,0,0,0.12)] ${className}`}
     >
       <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-emerald-300/30 blur-3xl rounded-full pointer-events-none"></div>
@@ -69,17 +71,17 @@ export function WeatherWidget({ className = "" }: { className?: string }) {
           <MapPin className="w-3 h-3" />
           {weather.locationName || "Live Location"}
         </span>
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+        <div
+          
+          
         >
           <Sparkles className="w-3 h-3 text-emerald-500/50" />
-        </motion.div>
+        </div>
       </div>
 
       <div className="flex items-center gap-4 relative z-10">
-        <motion.div
-          whileHover={{ scale: 1.1, rotate: 5 }}
+        <div
+          
           className="p-3 rounded-2xl bg-gradient-to-br from-white/60 to-white/20 shadow-inner border border-white/50 text-emerald-600 backdrop-blur-md"
         >
           {weather.isRaining ? (
@@ -89,7 +91,7 @@ export function WeatherWidget({ className = "" }: { className?: string }) {
           ) : (
             <CloudSun className="w-7 h-7" />
           )}
-        </motion.div>
+        </div>
         <div>
           <div className="text-3xl font-black text-gray-900 tracking-tighter drop-shadow-sm">
             {weather.temperatureCelsius}°
@@ -111,6 +113,6 @@ export function WeatherWidget({ className = "" }: { className?: string }) {
           Active Weather
         </span>
       </div>
-    </motion.div>
+    </div>
   );
 }

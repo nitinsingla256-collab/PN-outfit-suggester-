@@ -3,8 +3,22 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+const safeLocalStorage = {
+  getItem(key: string): string | null {
+    try { return localStorage.getItem(key); } catch (e) { return null; }
+  },
+  setItem(key: string, value: string): void {
+    try { localStorage.setItem(key, value); } catch (e) {}
+  },
+  removeItem(key: string): void {
+    try { localStorage.removeItem(key); } catch (e) {}
+  }
+};
+
 import { Outfit, WardrobeItem, OccasionType, StyleVibe } from '../types';
 import { authService } from './authService';
+
+
 
 export interface OutfitFilterOptions {
   searchQuery?: string;
@@ -75,8 +89,8 @@ export class OutfitService {
         return JSON.parse(raw);
       }
     } catch {}
-    localStorage.setItem(LOCAL_OUTFITS_KEY, JSON.stringify(DEFAULT_SAMPLE_OUTFITS));
-    return DEFAULT_SAMPLE_OUTFITS;
+    localStorage.setItem(LOCAL_OUTFITS_KEY, JSON.stringify([]));
+    return [];
   }
 
   private saveLocalOutfits(outfits: Outfit[]) {

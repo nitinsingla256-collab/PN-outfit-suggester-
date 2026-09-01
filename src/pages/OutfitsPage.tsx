@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useMemo } from "react";
-import { motion, AnimatePresence, Variants } from "motion/react";
+
 import { useApp } from "../context/AppContext";
 import { Button } from "../components/ui/Button";
 import { Badge } from "../components/ui/Badge";
@@ -89,10 +89,10 @@ export function OutfitsPage() {
   return (
     <div className="space-y-8">
       {/* 1. Atelier Lookbook Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: "easeOut" }}
+      <div
+        
+        
+        
         className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 text-white rounded-3xl p-6 sm:p-8 shadow-xl border border-slate-700/50"
       >
         <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -138,13 +138,13 @@ export function OutfitsPage() {
             </Button>
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* 2. Category Tabs with animated active pill indicator */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.1 }}
+      <div
+        
+        
+        
         className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none"
       >
         {OUTFIT_CATEGORIES.map((cat) => {
@@ -157,11 +157,11 @@ export function OutfitsPage() {
                 : outfits.filter((o) => o.occasion === cat.id).length;
 
           return (
-            <motion.button
+            <button
               key={cat.id}
               onClick={() => setActiveCategory(cat.id)}
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
+              
+              
               className={`relative px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-colors flex items-center gap-2 ${
                 isSelected
                   ? "text-white shadow-md"
@@ -169,10 +169,10 @@ export function OutfitsPage() {
               }`}
             >
               {isSelected && (
-                <motion.div
+                <div
                   layoutId="activeCategoryPill"
                   className="absolute inset-0 bg-slate-900 rounded-full z-0"
-                  transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                  
                 />
               )}
               <span className="relative z-10">{cat.label}</span>
@@ -183,17 +183,17 @@ export function OutfitsPage() {
               >
                 {count}
               </span>
-            </motion.button>
+            </button>
           );
         })}
-      </motion.div>
+      </div>
 
       {/* 3. Outfits Grid & Empty States */}
       {filteredOutfits.length === 0 ? (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.3 }}
+        <div
+          
+          
+          
           className="bg-white border border-slate-200/80 rounded-3xl p-12 text-center shadow-sm"
         >
           <EmptyState
@@ -210,23 +210,23 @@ export function OutfitsPage() {
               onClick: () => setIsCreateLookModalOpen(true),
             }}
           />
-        </motion.div>
+        </div>
       ) : (
-        <motion.div
+        <div
           layout
           variants={containerVariants}
-          initial="hidden"
-          animate="visible"
+          
+          
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
         >
-          <AnimatePresence mode="popLayout">
+          <div>
             {filteredOutfits.map((outfit) => (
-              <motion.div
+              <div
                 key={outfit.id}
                 layout
                 variants={cardVariants}
-                initial="hidden"
-                animate="visible"
+                
+                
                 exit="exit"
                 whileHover={{
                   y: -6,
@@ -241,21 +241,21 @@ export function OutfitsPage() {
                   {/* Outfit Cover Image */}
                   {outfit.imageUrl && (
                     <div className="relative aspect-[16/10] rounded-2xl overflow-hidden mb-4 bg-slate-100 border border-slate-200/90 shadow-2xs">
-                      <motion.img
+                      <img
                         src={outfit.imageUrl}
                         alt={outfit.name}
                         className="w-full h-full object-cover"
                         referrerPolicy="no-referrer"
-                        whileHover={{ scale: 1.06 }}
-                        transition={{ duration: 0.4, ease: "easeOut" }}
+                        
+                        
                       />
 
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none" />
 
                       {/* Favorite Button */}
-                      <motion.button
-                        whileHover={{ scale: 1.12 }}
-                        whileTap={{ scale: 0.9 }}
+                      <button
+                        
+                        
                         onClick={(e) => {
                           e.stopPropagation();
                           toggleOutfitFavorite(outfit.id);
@@ -270,7 +270,7 @@ export function OutfitsPage() {
                         <Heart
                           className={`w-3.5 h-3.5 transition-transform ${outfit.isFavorite ? "fill-current scale-110" : ""}`}
                         />
-                      </motion.button>
+                      </button>
 
                       {/* Badges on Cover */}
                       <div className="absolute bottom-3 left-3 flex items-center gap-1.5 z-10">
@@ -307,10 +307,10 @@ export function OutfitsPage() {
                     <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
                       {outfit.itemDetails && outfit.itemDetails.length > 0 ? (
                         outfit.itemDetails.map((item, idx) => (
-                          <motion.div
+                          <div
                             key={item.id || idx}
-                            whileHover={{ scale: 1.15, y: -2 }}
-                            transition={{ type: "spring", stiffness: 350, damping: 18 }}
+                            
+                            
                             title={`${item.name} (${item.category})`}
                             className="w-11 h-11 rounded-xl overflow-hidden shrink-0 border border-slate-200/90 bg-slate-50 shadow-2xs relative group/piece cursor-pointer"
                           >
@@ -323,7 +323,7 @@ export function OutfitsPage() {
                             <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover/piece:opacity-100 transition-opacity flex items-center justify-center">
                               <Eye className="w-3 h-3 text-white" />
                             </div>
-                          </motion.div>
+                          </div>
                         ))
                       ) : (
                         <span className="text-[11px] text-slate-500 font-mono">
@@ -368,10 +368,10 @@ export function OutfitsPage() {
                     Share
                   </Button>
                 </div>
-              </motion.div>
+              </div>
             ))}
-          </AnimatePresence>
-        </motion.div>
+          </div>
+        </div>
       )}
     </div>
   );
