@@ -32,9 +32,30 @@ export class ErrorBoundary extends Component<Props, State> {
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     this.setState({ errorInfo });
     console.error("ErrorBoundary caught error in page:", this.props.pageName || "Unknown", error, errorInfo);
+
+    const isChunkLoadError = error?.message?.toLowerCase().includes('failed to fetch dynamically imported module') || 
+                             error?.message?.toLowerCase().includes('importing a module script failed');
+
+    if (isChunkLoadError) {
+      const reloadKey = `pn_chunk_reload_${this.props.pageName || 'global'}`;
+      if (!sessionStorage.getItem(reloadKey)) {
+        sessionStorage.setItem(reloadKey, 'true');
+        window.location.reload();
+      } else {
+        sessionStorage.removeItem(reloadKey);
+      }
+    }
   }
 
   public handleRetry = () => {
+    const isChunkLoadError = this.state.error?.message?.toLowerCase().includes('failed to fetch dynamically imported module') || 
+                             this.state.error?.message?.toLowerCase().includes('importing a module script failed');
+                             
+    if (isChunkLoadError) {
+      window.location.reload();
+      return;
+    }
+
     this.setState({ hasError: false, error: null, errorInfo: null, showDetails: false });
     if (this.props.onReset) {
       this.props.onReset();
