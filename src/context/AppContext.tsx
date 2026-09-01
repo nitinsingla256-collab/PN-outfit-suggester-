@@ -230,40 +230,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Sync route safely across standalone PWA, mobile Chrome, and embedded iframes
   const navigateTo = useCallback((route: NavigationRoute) => {
-    const targetRoute = route === '/home' ? '/' : route;
-    setCurrentRoute(prev => {
-      if (prev !== targetRoute) {
-        console.log(`[PN Router] Navigated: ${prev} -> ${targetRoute}`);
-      }
-      return targetRoute;
-    });
-
     try {
-      if (typeof window !== 'undefined' && window.history) {
-        const hashTarget = targetRoute === '/' ? '' : `#${targetRoute.replace(/^\//, '')}`;
-        // Preserve current pathname and search, update hash for smooth single-page history
-        const urlToPush = `${window.location.pathname}${window.location.search}${hashTarget}`;
-        window.history.pushState({ route: targetRoute }, '', urlToPush);
+      const targetRoute = route === '/home' ? '/' : route;
+      const hashTarget = targetRoute === '/' ? '' : `#${targetRoute.replace(/^\//, '')}`;
+      
+      if (typeof window !== 'undefined') {
+        if (window.location.hash !== hashTarget) {
+           window.location.hash = hashTarget;
+        } else {
+           // If we are already on the hash, just force state update to ensure UI is in sync
+           setCurrentRoute(targetRoute);
+        }
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      } else {
+        setCurrentRoute(targetRoute);
       }
     } catch (e) {
-      console.warn('[PN Router] pushState warning (restricted environment):', e);
+      console.warn('[PN Router] Navigation warning:', e);
+      setCurrentRoute(route === '/home' ? '/' : route);
     }
-    try {
-      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-    } catch {}
   }, []);
 
   // Initialize history state and handle back/forward / hashchange navigation
   useEffect(() => {
-    try {
-      if (typeof window !== 'undefined' && window.history && typeof window.history.replaceState === 'function') {
-        const initial = resolveCurrentRoute();
-        const hashTarget = initial === '/' ? '' : `#${initial.replace(/^\//, '')}`;
-        const urlToReplace = `${window.location.pathname}${window.location.search}${hashTarget}`;
-        window.history.replaceState({ route: initial }, '', urlToReplace);
-      }
-    } catch {}
-
     const handleSync = () => {
       try {
         const nextRoute = resolveCurrentRoute();
@@ -274,10 +263,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     };
 
-    window.addEventListener('popstate', handleSync);
     window.addEventListener('hashchange', handleSync);
     return () => {
-      window.removeEventListener('popstate', handleSync);
       window.removeEventListener('hashchange', handleSync);
     };
   }, []);

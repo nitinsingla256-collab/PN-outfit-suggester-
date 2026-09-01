@@ -3,30 +3,28 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { Suspense, lazy } from 'react';
+import React from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { AppLayout } from './components/layout/AppLayout';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { ShieldAlert, ArrowLeft } from 'lucide-react';
 
-// Lazy-load all pages for fast route transitions and minimal initial memory footprint
-const HomePage = lazy(() => import('./pages/HomePage').then(m => ({ default: m.HomePage })));
-const WardrobePage = lazy(() => import('./pages/WardrobePage').then(m => ({ default: m.WardrobePage })));
-const StylistPage = lazy(() => import('./pages/StylistPage').then(m => ({ default: m.StylistPage })));
-const OutfitsPage = lazy(() => import('./pages/OutfitsPage').then(m => ({ default: m.OutfitsPage })));
-const PlannerPage = lazy(() => import('./pages/PlannerPage').then(m => ({ default: m.PlannerPage })));
-const FavoritesPage = lazy(() => import('./pages/FavoritesPage').then(m => ({ default: m.FavoritesPage })));
-const ProfilePage = lazy(() => import('./pages/ProfilePage').then(m => ({ default: m.ProfilePage })));
-const SettingsPage = lazy(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
-const AdminPage = lazy(() => import('./pages/AdminPage').then(m => ({ default: m.AdminPage })));
-const NotFoundPage = lazy(() => import('./pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })));
-const AuthPage = lazy(() => import('./pages/AuthPage').then(m => ({ default: m.AuthPage })));
+import { HomePage } from './pages/HomePage';
+import { WardrobePage } from './pages/WardrobePage';
+import { StylistPage } from './pages/StylistPage';
+import { OutfitsPage } from './pages/OutfitsPage';
+import { PlannerPage } from './pages/PlannerPage';
+import { FavoritesPage } from './pages/FavoritesPage';
+import { ProfilePage } from './pages/ProfilePage';
+import { SettingsPage } from './pages/SettingsPage';
+import { AdminPage } from './pages/AdminPage';
+import { NotFoundPage } from './pages/NotFoundPage';
+import { AuthPage } from './pages/AuthPage';
 
-// Lazy-load heavy workspace modals only when opened
-const AddClothingModal = lazy(() => import('./components/wardrobe/AddClothingModal').then(m => ({ default: m.AddClothingModal })));
-const ClothingDetailModal = lazy(() => import('./components/wardrobe/ClothingDetailModal').then(m => ({ default: m.ClothingDetailModal })));
-const CreateLookModal = lazy(() => import('./components/outfits/CreateLookModal').then(m => ({ default: m.CreateLookModal })));
-const FirstLoginMeasurementsModal = lazy(() => import('./components/profile/FirstLoginMeasurementsModal').then(m => ({ default: m.FirstLoginMeasurementsModal })));
+import { AddClothingModal } from './components/wardrobe/AddClothingModal';
+import { ClothingDetailModal } from './components/wardrobe/ClothingDetailModal';
+import { CreateLookModal } from './components/outfits/CreateLookModal';
+import { FirstLoginMeasurementsModal } from './components/profile/FirstLoginMeasurementsModal';
 
 function PageLoadingSkeleton() {
   return (
@@ -97,11 +95,9 @@ function RouterView() {
       fallbackTitle={`Issue rendering ${currentRoute.replace('/', '') || 'Home'} page`}
       fallbackMessage="We encountered an issue displaying this page. Your wardrobe and data remain completely safe."
     >
-      <Suspense fallback={<PageLoadingSkeleton />}>
-        <div className="w-full h-full">
-          {renderPage()}
-        </div>
-      </Suspense>
+      <div className="w-full h-full">
+        {renderPage()}
+      </div>
     </ErrorBoundary>
   );
 }
@@ -134,11 +130,7 @@ export function AppContent() {
   }
 
   if (!isAuthenticated) {
-    return (
-      <Suspense fallback={<PageLoadingSkeleton />}>
-        <AuthPage />
-      </Suspense>
-    );
+    return <AuthPage />;
   }
 
   return (
@@ -147,30 +139,22 @@ export function AppContent() {
 
       {/* Conditionally rendered modals for pristine memory and zero idle CPU usage */}
       {isAddClothingModalOpen && (
-        <Suspense fallback={null}>
-          <AddClothingModal />
-        </Suspense>
+        <AddClothingModal />
       )}
 
       {selectedWardrobeItemForDetail && (
-        <Suspense fallback={null}>
-          <ClothingDetailModal />
-        </Suspense>
+        <ClothingDetailModal />
       )}
 
       {isCreateLookModalOpen && (
-        <Suspense fallback={null}>
-          <CreateLookModal />
-        </Suspense>
+        <CreateLookModal />
       )}
 
       {isFirstLoginMeasurementsModalOpen && (
-        <Suspense fallback={null}>
-          <FirstLoginMeasurementsModal
-            isOpen={isFirstLoginMeasurementsModalOpen}
-            onClose={() => setIsFirstLoginMeasurementsModalOpen(false)}
-          />
-        </Suspense>
+        <FirstLoginMeasurementsModal
+          isOpen={isFirstLoginMeasurementsModalOpen}
+          onClose={() => setIsFirstLoginMeasurementsModalOpen(false)}
+        />
       )}
     </AppLayout>
   );

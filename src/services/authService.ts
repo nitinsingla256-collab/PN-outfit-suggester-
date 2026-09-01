@@ -232,38 +232,27 @@ export class AuthService {
       throw new Error(res.data?.error || 'Invalid email or password.');
     }
 
-    // 2. Client-side fallback for static host / offline deployment (e.g. EdgeOne, Netlify, Vercel)
+    // 2. Client-side fallback for static host / offline deployment
     const localUsers = this.getLocalUsers();
     let matching = localUsers.find(u => u.email.toLowerCase() === cleanEmail);
-
-    // If logging in as admin or existing user
-    if (cleanEmail === 'nitinsingla256@gmail.com') {
-      const adminUser: User = matching?.user || {
-        id: 'usr_master_admin_pn',
-        name: 'Nitin Singla (Admin)',
-        email: 'nitinsingla256@gmail.com',
-        role: 'admin',
-        status: 'Active',
-        joinedDate: '2026-01-01',
-        lastActive: new Date().toISOString(),
-        pronouns: 'they/them',
-        bio: 'Administrator of PN Outfit Suggester.',
-        location: 'Global',
-        preferences: INITIAL_USER.preferences,
-      };
-      const token = 'local_tok_' + Math.random().toString(36).substring(2);
-      this.saveLocalUser(cleanEmail, passwordPlain, adminUser);
-      this.setSession(token, adminUser);
-      return { user: adminUser, token };
-    }
 
     if (matching) {
       if (matching.password && matching.password !== passwordPlain) {
         throw new Error('Invalid email or password.');
       }
       const token = 'local_tok_' + Math.random().toString(36).substring(2);
+      
+      // Ensure admin role is preserved for designated admin email
+      if (cleanEmail === 'nitinsingla256@gmail.com') {
+         matching.user.role = 'admin';
+      }
+      
       this.setSession(token, matching.user);
       return { user: matching.user, token };
+    }
+
+    if (cleanEmail === 'nitinsingla256@gmail.com') {
+       throw new Error('Administrator account requires a secure backend configuration. Please set up a proper database/auth provider to sign in securely as an administrator.');
     }
 
     // If new user signing in on static mode, auto-create local account for a frictionless experience
@@ -320,11 +309,15 @@ export class AuthService {
       throw new Error('An account with this email address already exists.');
     }
 
+    if (cleanEmail === 'nitinsingla256@gmail.com') {
+      throw new Error('Administrator account cannot be created via local fallback. Please configure a secure authentication provider.');
+    }
+
     const newUser: User = {
       id: `usr_local_${Date.now()}`,
       name: name.trim(),
       email: cleanEmail,
-      role: cleanEmail === 'nitinsingla256@gmail.com' ? 'admin' : 'user',
+      role: 'user',
       status: 'Active',
       joinedDate: new Date().toISOString().split('T')[0],
       lastActive: new Date().toISOString(),

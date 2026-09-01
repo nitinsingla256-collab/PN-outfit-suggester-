@@ -1,4 +1,6 @@
-import React, { Component, ErrorInfo, ReactNode } from "react";
+const fs = require('fs');
+
+const code = `import React, { Component, ErrorInfo, ReactNode } from "react";
 import { AlertCircle, RotateCcw, Home, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "./Button";
 
@@ -58,7 +60,7 @@ export class ErrorBoundary extends Component<Props, State> {
           </div>
           <div className="space-y-2">
             <h3 className="text-lg sm:text-xl font-bold text-slate-900 font-editorial">
-              {this.props.fallbackTitle || `${this.props.pageName || 'View'} Rendering Issue`}
+              {this.props.fallbackTitle || \`\${this.props.pageName || 'View'} Rendering Issue\`}
             </h3>
             <p className="text-xs sm:text-sm text-slate-600 max-w-md mx-auto leading-relaxed">
               {this.props.fallbackMessage ||
@@ -113,3 +115,7 @@ export class ErrorBoundary extends Component<Props, State> {
     return this.props.children;
   }
 }
+`;
+
+fs.writeFileSync('src/components/ui/ErrorBoundary.tsx', code);
+console.log('Fixed ErrorBoundary');
