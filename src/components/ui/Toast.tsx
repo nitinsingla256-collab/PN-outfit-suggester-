@@ -30,10 +30,7 @@ export function Toast({ toast, onDismiss }: ToastProps) {
   };
 
   return (
-    <div
-      
-      
-      exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.15 } }}
+    <motion.div exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.15 } }}
       className={`flex items-start gap-3 p-4 rounded-xl border ${borders[toast.type]} shadow-[0_8px_25px_rgba(0,0,0,0.6)] w-full max-w-sm pointer-events-auto backdrop-blur-md`}
       role="alert"
     >
@@ -51,7 +48,7 @@ export function Toast({ toast, onDismiss }: ToastProps) {
       >
         <X className="w-3.5 h-3.5" />
       </button>
-    </div>
+    </motion.div>
   );
 }
 

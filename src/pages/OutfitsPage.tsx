@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useMemo } from "react";
+import { motion, AnimatePresence, Variants } from "motion/react";
 
 import { useApp } from "../context/AppContext";
 import { Button } from "../components/ui/Button";
@@ -170,7 +171,7 @@ export function OutfitsPage() {
             >
               {isSelected && (
                 <div
-                  layoutId="activeCategoryPill"
+                  
                   className="absolute inset-0 bg-slate-900 rounded-full z-0"
                   
                 />
@@ -212,19 +213,14 @@ export function OutfitsPage() {
           />
         </div>
       ) : (
-        <div
-          layout
-          variants={containerVariants}
+        <motion.div layout variants={containerVariants}
           
           
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
         >
           <div>
             {filteredOutfits.map((outfit) => (
-              <div
-                key={outfit.id}
-                layout
-                variants={cardVariants}
+              <motion.div key={outfit.id} layout variants={cardVariants}
                 
                 
                 exit="exit"
@@ -368,10 +364,10 @@ export function OutfitsPage() {
                     Share
                   </Button>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
-        </div>
+        </motion.div>
       )}
     </div>
   );
