@@ -9,9 +9,69 @@
       "role": "supervisor",
       "status": "Active",
       "joinedDate": "2026-08-29",
-      "lastActive": "2026-08-29T16:27:34.643Z",
+      "lastActive": "2026-08-31T15:07:54.473Z",
       "pronouns": "she/they",
       "bio": "Lead Atelier Supervisor & Haute Horlogerie Archivist.",
+      "location": "Paris, France",
+      "preferences": {
+        "styleVibes": [
+          "Minimal",
+          "Classic"
+        ],
+        "favoriteColors": [
+          "Black",
+          "Ivory",
+          "Navy",
+          "Camel"
+        ],
+        "dislikedColors": [],
+        "preferredFits": [
+          "Tailored",
+          "Relaxed"
+        ],
+        "temperatureUnit": "Celsius",
+        "theme": "Dark",
+        "notifications": {
+          "dailySuggestions": true,
+          "plannerReminders": true,
+          "weatherAlerts": true,
+          "productUpdates": false
+        },
+        "privacy": {
+          "improveRecommendations": true,
+          "publicProfile": false,
+          "shareOutfits": false
+        },
+        "security": {
+          "twoFactorEnabled": false,
+          "activeSessionsCount": 1
+        },
+        "stylistRules": {
+          "onlyUseOwnedItems": true,
+          "explainSuggestions": true,
+          "autoTagNewItems": true
+        }
+      },
+      "measurements": {
+        "heightCm": 167.6,
+        "heightUnit": "ft_in",
+        "weightKg": 60,
+        "weightUnit": "kg",
+        "hasCompletedFirstLoginMeasurements": true
+      }
+    },
+    {
+      "id": "usr_client_paurvi",
+      "name": "Client",
+      "email": "client@paurvi.atelier",
+      "passwordHash": "8ce0841c3ad409ded77124bdc46a8745778ad41f353b55621950e97478a9f47b7814af9a6404a9c471d828d964841fbd55b71b15bf3052bfd13f620d991a0ddf",
+      "salt": "7fe587fb6b1187e0f379562d677db0a5",
+      "role": "user",
+      "status": "Suspended",
+      "joinedDate": "2026-08-29",
+      "lastActive": "2026-08-29T12:53:42.031Z",
+      "pronouns": "they/them",
+      "bio": "Personal digital wardrobe and luxury styling studio.",
       "location": "Paris, France",
       "preferences": {
         "styleVibes": [
@@ -54,18 +114,18 @@
       }
     },
     {
-      "id": "usr_client_paurvi",
-      "name": "Client",
-      "email": "client@paurvi.atelier",
-      "passwordHash": "8ce0841c3ad409ded77124bdc46a8745778ad41f353b55621950e97478a9f47b7814af9a6404a9c471d828d964841fbd55b71b15bf3052bfd13f620d991a0ddf",
-      "salt": "7fe587fb6b1187e0f379562d677db0a5",
+      "id": "usr_1788189774471_4d3bcaba",
+      "name": "Test",
+      "email": "test10@example.com",
+      "passwordHash": "8a361b7f6ea2c8f3d743e32d28a4b6da3db41b97af5e729f5d036f8d658a32c44ea3ecf963b410f5a628b63472d44b9f90b12576f8051ce75737075cd9c5f81b",
+      "salt": "72c54074ac69d6e07065ed7b7ec0c52d",
       "role": "user",
-      "status": "Suspended",
-      "joinedDate": "2026-08-29",
-      "lastActive": "2026-08-29T12:53:42.031Z",
+      "status": "Active",
+      "joinedDate": "2026-08-31",
+      "lastActive": "2026-08-31T15:22:54.479Z",
       "pronouns": "they/them",
-      "bio": "Personal digital wardrobe and luxury styling studio.",
-      "location": "Paris, France",
+      "bio": "Member of the PAURVI Atelier private wardrobe capsule.",
+      "location": "Delhi, India",
       "preferences": {
         "styleVibes": [
           "Minimal",
@@ -143,29 +203,82 @@
       "userId": "usr_supervisor_paurvi",
       "createdAt": "2026-08-29T16:27:34.643Z",
       "expiresAt": "2026-09-28T16:27:34.643Z"
+    },
+    {
+      "token": "paurvi_tok_8e9a76369190cbe4da75b55ccd5ceab3bf63e746e0a753e45a9988f7a1ce6fad",
+      "userId": "usr_supervisor_paurvi",
+      "createdAt": "2026-08-31T14:10:37.796Z",
+      "expiresAt": "2026-09-30T14:10:37.796Z"
+    },
+    {
+      "token": "paurvi_tok_524dfffe916b61d3ca1c422b0a9e28ca7862675cb80a03793dc60a622a589358",
+      "userId": "usr_1788189774471_4d3bcaba",
+      "createdAt": "2026-08-31T15:22:54.479Z",
+      "expiresAt": "2026-09-30T15:22:54.479Z"
     }
   ],
   "wardrobes": {
     "usr_supervisor_paurvi": [],
-    "usr_client_paurvi": []
+    "usr_client_paurvi": [],
+    "usr_1788189774471_4d3bcaba": []
   },
   "outfits": {
     "usr_supervisor_paurvi": [],
-    "usr_client_paurvi": []
+    "usr_client_paurvi": [],
+    "usr_1788189774471_4d3bcaba": []
   },
   "plans": {
     "usr_supervisor_paurvi": [],
-    "usr_client_paurvi": []
+    "usr_client_paurvi": [],
+    "usr_1788189774471_4d3bcaba": []
   },
   "wearHistory": {
     "usr_supervisor_paurvi": [],
-    "usr_client_paurvi": []
+    "usr_client_paurvi": [],
+    "usr_1788189774471_4d3bcaba": []
   },
   "stylistConversations": {
     "usr_supervisor_paurvi": [],
-    "usr_client_paurvi": []
+    "usr_client_paurvi": [],
+    "usr_1788189774471_4d3bcaba": []
   },
   "activityLogs": [
+    {
+      "id": "log_1788189774479_4d844b",
+      "userId": "usr_1788189774471_4d3bcaba",
+      "userName": "Test",
+      "userEmail": "test10@example.com",
+      "action": "User signed into PAURVI",
+      "category": "AUTH",
+      "timestamp": "2026-08-31T15:22:54.479Z"
+    },
+    {
+      "id": "log_1788189774472_429098",
+      "userId": "usr_1788189774471_4d3bcaba",
+      "userName": "Test",
+      "userEmail": "test10@example.com",
+      "action": "User registered new PAURVI account",
+      "category": "AUTH",
+      "timestamp": "2026-08-31T15:22:54.472Z"
+    },
+    {
+      "id": "log_1788185451122_57e96b",
+      "userId": "usr_supervisor_paurvi",
+      "userName": "Nitin Singla (Admin)",
+      "userEmail": "nitinsingla256@gmail.com",
+      "action": "User updated style profile and preferences",
+      "category": "SETTINGS",
+      "timestamp": "2026-08-31T14:10:51.122Z"
+    },
+    {
+      "id": "log_1788185437796_713786",
+      "userId": "usr_supervisor_paurvi",
+      "userName": "Nitin Singla (Admin)",
+      "userEmail": "nitinsingla256@gmail.com",
+      "action": "User signed into PAURVI",
+      "category": "AUTH",
+      "timestamp": "2026-08-31T14:10:37.796Z"
+    },
     {
       "id": "log_1788020854643_983dd7",
       "userId": "usr_supervisor_paurvi",
@@ -268,6 +381,7 @@
   ],
   "aiRequestsCount": {
     "usr_supervisor_paurvi": 1,
-    "usr_client_paurvi": 0
+    "usr_client_paurvi": 0,
+    "usr_1788189774471_4d3bcaba": 0
   }
 }

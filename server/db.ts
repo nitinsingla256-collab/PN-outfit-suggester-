@@ -544,6 +544,42 @@ class PaurviDatabase {
     return true;
   }
 
+  deleteWardrobeItems(userId: string, itemIds: string[]): { deletedIds: string[]; remainingCount: number } {
+    if (!itemIds || itemIds.length === 0) {
+      return { deletedIds: [], remainingCount: (this.data.wardrobes[userId] || []).length };
+    }
+    const idSet = new Set(itemIds);
+    const current = this.data.wardrobes[userId] || [];
+    const removed = current.filter(i => idSet.has(i.id));
+    const remaining = current.filter(i => !idSet.has(i.id));
+    this.data.wardrobes[userId] = remaining;
+
+    const user = this.data.users.find(u => u.id === userId);
+    if (removed.length > 0) {
+      this.logActivity(
+        userId,
+        user?.name || 'User',
+        user?.email || '',
+        `Removed ${removed.length} pieces from wardrobe in batch`,
+        'WARDROBE'
+      );
+    }
+    this.save();
+    return {
+      deletedIds: removed.map(r => r.id),
+      remainingCount: remaining.length,
+    };
+  }
+
+  clearWardrobe(userId: string): boolean {
+    const count = (this.data.wardrobes[userId] || []).length;
+    this.data.wardrobes[userId] = [];
+    const user = this.data.users.find(u => u.id === userId);
+    this.logActivity(userId, user?.name || 'User', user?.email || '', `Cleared all wardrobe items (${count} items removed)`, 'WARDROBE');
+    this.save();
+    return true;
+  }
+
   toggleWardrobeFavorite(userId: string, itemId: string): any {
     const items = this.data.wardrobes[userId] || [];
     const index = items.findIndex(i => i.id === itemId);
@@ -629,6 +665,42 @@ class PaurviDatabase {
     if (outfit) {
       this.logActivity(userId, user?.name || 'User', user?.email || '', `Removed look: "${outfit.name}" from Lookbook`, 'AI_STYLIST');
     }
+    this.save();
+    return true;
+  }
+
+  deleteOutfits(userId: string, outfitIds: string[]): { deletedIds: string[]; remainingCount: number } {
+    if (!outfitIds || outfitIds.length === 0) {
+      return { deletedIds: [], remainingCount: (this.data.outfits[userId] || []).length };
+    }
+    const idSet = new Set(outfitIds);
+    const current = this.data.outfits[userId] || [];
+    const removed = current.filter(o => idSet.has(o.id));
+    const remaining = current.filter(o => !idSet.has(o.id));
+    this.data.outfits[userId] = remaining;
+
+    const user = this.data.users.find(u => u.id === userId);
+    if (removed.length > 0) {
+      this.logActivity(
+        userId,
+        user?.name || 'User',
+        user?.email || '',
+        `Removed ${removed.length} looks from Lookbook in batch`,
+        'AI_STYLIST'
+      );
+    }
+    this.save();
+    return {
+      deletedIds: removed.map(r => r.id),
+      remainingCount: remaining.length,
+    };
+  }
+
+  clearOutfits(userId: string): boolean {
+    const count = (this.data.outfits[userId] || []).length;
+    this.data.outfits[userId] = [];
+    const user = this.data.users.find(u => u.id === userId);
+    this.logActivity(userId, user?.name || 'User', user?.email || '', `Cleared all saved looks (${count} looks removed)`, 'AI_STYLIST');
     this.save();
     return true;
   }

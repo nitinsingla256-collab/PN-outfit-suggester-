@@ -446,21 +446,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const updateUser = updateProfile;
 
   const resetToDemoData = useCallback(async () => {
+    const demoItems = await wardrobeService.resetToDemoItems();
+    setWardrobe(demoItems);
     await loadUserData();
     showToast({
-      title: 'Synchronized with Cloud Store',
-      description: 'Your wardrobe data has been refreshed.',
+      title: 'Sample Capsule Loaded',
+      description: 'Your wardrobe data has been re-populated with the curated capsule.',
       type: 'success',
     });
   }, [loadUserData, showToast]);
 
   const clearAllData = useCallback(async () => {
+    await Promise.all([
+      wardrobeService.clearAll(),
+      outfitService.clearAll(),
+    ]);
+    localStorage.removeItem('pn_local_plans_v1');
     setWardrobe([]);
     setOutfits([]);
     setPlans([]);
     showToast({
-      title: 'Cache Cleared',
-      description: 'In-memory state refreshed.',
+      title: 'Inventory Cleared',
+      description: 'All pieces, outfits, and scheduled plans have been cleared.',
       type: 'info',
     });
   }, [showToast]);

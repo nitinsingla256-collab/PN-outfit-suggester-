@@ -19,8 +19,42 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Italiana&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
     <link rel="manifest" href="/manifest.json" />
+    <script>
+      (function() {
+        try {
+          var saved = localStorage.getItem('pn_theme');
+          var isDark = saved === 'Midnight Luxury' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          if (isDark) {
+            document.documentElement.classList.remove('light');
+            document.documentElement.classList.add('dark');
+            document.documentElement.setAttribute('data-theme', 'midnight');
+          } else {
+            document.documentElement.classList.remove('dark');
+            document.documentElement.classList.add('light');
+            document.documentElement.setAttribute('data-theme', 'light');
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body class="bg-[#F8FAFC] text-slate-900 font-sans antialiased selection:bg-emerald-500/20 selection:text-emerald-700 overflow-x-hidden min-h-screen">
+    <div id="global-error" style="display:none; padding: 20px; color: red; background: white; z-index: 9999; position: fixed; top: 0; left: 0; right: 0;"></div>
+    <script>
+      window.addEventListener('error', function(e) {
+        var el = document.getElementById('global-error');
+        if (el) {
+          el.style.display = 'block';
+          el.innerText = 'Global Error: ' + e.message + ' at ' + e.filename + ':' + e.lineno;
+        }
+      });
+      window.addEventListener('unhandledrejection', function(e) {
+        var el = document.getElementById('global-error');
+        if (el) {
+          el.style.display = 'block';
+          el.innerText = 'Unhandled Rejection: ' + (e.reason && e.reason.message ? e.reason.message : e.reason);
+        }
+      });
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

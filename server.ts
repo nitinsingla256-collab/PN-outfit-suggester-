@@ -254,6 +254,28 @@ async function startServer() {
     }
   });
 
+  app.post('/api/user/wardrobe/batch-delete', authMiddleware, (req, res) => {
+    try {
+      const { ids } = req.body;
+      if (!Array.isArray(ids)) {
+        return res.status(400).json({ error: 'ids must be an array of string item IDs.' });
+      }
+      const result = db.deleteWardrobeItems(req.user!.id, ids);
+      return res.json({ success: true, ...result });
+    } catch (err: any) {
+      return res.status(400).json({ error: err.message || 'Failed to delete items in batch.' });
+    }
+  });
+
+  app.post('/api/user/wardrobe/clear', authMiddleware, (req, res) => {
+    try {
+      db.clearWardrobe(req.user!.id);
+      return res.json({ success: true });
+    } catch (err: any) {
+      return res.status(400).json({ error: err.message || 'Failed to clear wardrobe.' });
+    }
+  });
+
   app.post('/api/user/wardrobe/:id/favorite', authMiddleware, (req, res) => {
     try {
       const updated = db.toggleWardrobeFavorite(req.user!.id, req.params.id);
@@ -305,6 +327,28 @@ async function startServer() {
       return res.json({ success: true });
     } catch (err: any) {
       return res.status(400).json({ error: err.message });
+    }
+  });
+
+  app.post('/api/user/outfits/batch-delete', authMiddleware, (req, res) => {
+    try {
+      const { ids } = req.body;
+      if (!Array.isArray(ids)) {
+        return res.status(400).json({ error: 'ids must be an array of string outfit IDs.' });
+      }
+      const result = db.deleteOutfits(req.user!.id, ids);
+      return res.json({ success: true, ...result });
+    } catch (err: any) {
+      return res.status(400).json({ error: err.message || 'Failed to delete outfits in batch.' });
+    }
+  });
+
+  app.post('/api/user/outfits/clear', authMiddleware, (req, res) => {
+    try {
+      db.clearOutfits(req.user!.id);
+      return res.json({ success: true });
+    } catch (err: any) {
+      return res.status(400).json({ error: err.message || 'Failed to clear outfits.' });
     }
   });
 
@@ -398,7 +442,10 @@ async function startServer() {
       const details = db.getAdminUserDetails(req.params.userId);
       return res.json({ success: true, details });
     } catch (err: any) {
-      return res.status(404).json({ error: err.message || 'User not found' });
+      if (err.message && err.message.toLowerCase().includes('not found')) {
+        return res.status(404).json({ error: err.message });
+      }
+      return res.status(500).json({ error: err.message || 'Internal Server Error' });
     }
   });
 
@@ -486,7 +533,7 @@ ${hint ? `User context/hint: "${hint}"` : ''}
       contents.push(prompt);
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3.6-flash',
+        model: 'gemini-flash-latest',
         contents,
         config: {
           responseMimeType: 'application/json',
@@ -673,7 +720,7 @@ Provide:
 `;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3.6-flash',
+        model: 'gemini-flash-latest',
         contents: prompt,
         config: {
           responseMimeType: 'application/json',
@@ -991,7 +1038,7 @@ TASK REQUIREMENTS:
 `;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3.6-flash',
+        model: 'gemini-flash-latest',
         contents: prompt,
         config: {
           responseMimeType: 'application/json',
@@ -1267,7 +1314,7 @@ GENERAL RULES:
       });
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3.6-flash',
+        model: 'gemini-flash-latest',
         contents,
       });
 
@@ -1829,7 +1876,7 @@ Provide an authoritative, editorial analysis of the top seasonal fashion movemen
 Generate 6 high-fashion trends covering diverse categories (Key Silhouettes, Color Palettes, Fabrics & Textures, Accessories & Footwear, Occasion & Vibe). Ensure hex colors match high-fashion palettes.`;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3.7-flash',
+        model: 'gemini-flash-latest',
         contents: prompt,
         config: {
           tools: [{ googleSearch: {} }],

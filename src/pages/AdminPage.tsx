@@ -70,7 +70,7 @@ interface ActivityLogItem {
   userName?: string;
   userEmail?: string;
   action: string;
-  category: 'AUTH' | 'WARDROBE' | 'OUTFIT' | 'AI_STYLIST' | 'SYSTEM';
+  category: 'AUTH' | 'WARDROBE' | 'AI_STYLIST' | 'PLANNER' | 'SETTINGS' | 'OUTFIT' | 'SYSTEM' | string;
 }
 
 interface SystemHealth {
@@ -889,6 +889,10 @@ export function AdminPage() {
                               ? 'bg-amber-100 text-amber-800'
                               : log.category === 'WARDROBE'
                               ? 'bg-emerald-100 text-emerald-800'
+                              : log.category === 'PLANNER'
+                              ? 'bg-indigo-100 text-indigo-800'
+                              : log.category === 'SETTINGS'
+                              ? 'bg-pink-100 text-pink-800'
                               : log.category === 'OUTFIT'
                               ? 'bg-purple-100 text-purple-800'
                               : 'bg-gray-100 text-gray-700'

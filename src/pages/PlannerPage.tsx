@@ -35,8 +35,17 @@ export function PlannerPage() {
     setIsPlanModalOpen,
   } = useApp();
 
-  const [currentDate, setCurrentDate] = useState(new Date(2026, 7, 29)); // August 2026 anchor
-  const [selectedDateStr, setSelectedDateStr] = useState("2026-08-30");
+  const formatTodayStr = (d: Date) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  };
+
+  const [currentDate, setCurrentDate] = useState(() => new Date());
+  const [selectedDateStr, setSelectedDateStr] = useState(() =>
+    formatTodayStr(new Date()),
+  );
 
   // Month navigation
   const year = currentDate.getFullYear();
@@ -56,9 +65,9 @@ export function PlannerPage() {
   };
 
   const handleToday = () => {
-    const now = new Date(2026, 7, 29);
+    const now = new Date();
     setCurrentDate(now);
-    setSelectedDateStr("2026-08-29");
+    setSelectedDateStr(formatTodayStr(now));
   };
 
   // Calendar matrix calculation

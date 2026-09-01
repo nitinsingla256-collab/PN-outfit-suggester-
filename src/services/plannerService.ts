@@ -33,7 +33,7 @@ export class PlannerService {
   private getLocalPlans(): PlannedOutfit[] {
     try {
       const raw = localStorage.getItem(LOCAL_PLANS_KEY);
-      if (raw) {
+      if (raw !== null) {
         return JSON.parse(raw);
       }
     } catch {}
@@ -73,11 +73,8 @@ export class PlannerService {
         try {
           const data = JSON.parse(text);
           if (data.plans && Array.isArray(data.plans)) {
-            if (data.plans.length > 0) {
-              this.saveLocalPlans(data.plans);
-              return data.plans;
-            }
-            return this.getLocalPlans();
+            this.saveLocalPlans(data.plans);
+            return data.plans;
           }
         } catch {}
       }

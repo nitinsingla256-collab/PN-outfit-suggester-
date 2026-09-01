@@ -213,17 +213,27 @@ export class WardrobeService {
   }
 
   async deleteMany(ids: string[]): Promise<boolean> {
+    if (!ids || ids.length === 0) return true;
     const token = authService.getToken();
     if (token && !token.startsWith('local_tok_')) {
-      for (const id of ids) {
-        try {
-          await fetch(`/api/user/wardrobe/${id}`, {
-            method: 'DELETE',
-            headers: this.getHeaders(),
-          });
-        } catch (err) {
-          console.warn('Server wardrobe delete item fallback:', err);
+      try {
+        const res = await fetch('/api/user/wardrobe/batch-delete', {
+          method: 'POST',
+          headers: this.getHeaders(),
+          body: JSON.stringify({ ids }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.deletedIds && Array.isArray(data.deletedIds)) {
+            const deletedSet = new Set(data.deletedIds);
+            const items = this.getLocalItems();
+            const updated = items.filter(i => !deletedSet.has(i.id));
+            this.saveLocalItems(updated);
+            return true;
+          }
         }
+      } catch (err) {
+        console.warn('Server wardrobe batch delete fallback:', err);
       }
     }
 
@@ -263,11 +273,8 @@ export class WardrobeService {
         try {
           const data = JSON.parse(text);
           if (data.items && Array.isArray(data.items)) {
-            if (data.items.length > 0) {
-              this.saveLocalItems(data.items);
-              return data.items;
-            }
-            return this.getLocalItems();
+            this.saveLocalItems(data.items);
+            return data.items;
           }
         } catch {}
       }

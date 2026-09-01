@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Lock,
@@ -41,7 +41,14 @@ export const AuthPage: React.FC = () => {
   const { signIn, signUp, requestPasswordReset, resetPassword, showToast } =
     useApp();
 
-  const [mode, setMode] = useState<AuthMode>("signin");
+  const [mode, setMode] = useState<AuthMode>(() => {
+    if (typeof window !== "undefined") {
+      const hash = window.location.hash.toLowerCase();
+      if (hash.includes("forgot")) return "forgot";
+      if (hash.includes("signup")) return "signup";
+    }
+    return "signin";
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -57,6 +64,24 @@ export const AuthPage: React.FC = () => {
   const [resetCode, setResetCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [resetStep, setResetStep] = useState<1 | 2>(1);
+
+  useEffect(() => {
+    const onHashChange = () => {
+      const hash = window.location.hash.toLowerCase();
+      if (hash.includes("forgot")) {
+        setMode("forgot");
+        setError(null);
+      } else if (hash.includes("signup")) {
+        setMode("signup");
+        setError(null);
+      } else if (hash.includes("signin") || hash === "" || hash === "#") {
+        setMode("signin");
+        setError(null);
+      }
+    };
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -360,13 +385,24 @@ export const AuthPage: React.FC = () => {
                           Remember me
                         </span>
                       </label>
-                      <button
-                        type="button"
-                        onClick={() => setMode("forgot")}
-                        className="text-xs text-emerald-600 hover:text-emerald-700 font-medium transition"
+                      <a
+                        href="#forgot-password"
+                        id="forgot-password-link"
+                        role="link"
+                        aria-label="Forgot password?"
+                        data-testid="forgot-password-link"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setError(null);
+                          setMode("forgot");
+                          if (typeof window !== "undefined") {
+                            window.location.hash = "forgot-password";
+                          }
+                        }}
+                        className="text-xs text-emerald-600 hover:text-emerald-700 font-medium transition cursor-pointer"
                       >
                         Forgot password?
-                      </button>
+                      </a>
                     </div>
 
                     <div className="pt-4">
@@ -383,16 +419,23 @@ export const AuthPage: React.FC = () => {
                   <div className="mt-8 text-center pt-6">
                     <p className="text-sm text-gray-500">
                       Don't have an account?{" "}
-                      <button
-                        type="button"
-                        onClick={() => {
+                      <a
+                        href="#signup"
+                        id="signup-link"
+                        role="link"
+                        data-testid="signup-link"
+                        onClick={(e) => {
+                          e.preventDefault();
                           setError(null);
                           setMode("signup");
+                          if (typeof window !== "undefined") {
+                            window.location.hash = "signup";
+                          }
                         }}
-                        className="text-emerald-600 hover:text-emerald-700 font-medium transition"
+                        className="text-emerald-600 hover:text-emerald-700 font-medium transition cursor-pointer"
                       >
                         Sign up
-                      </button>
+                      </a>
                     </p>
                   </div>
                 </motion.div>
@@ -590,16 +633,23 @@ export const AuthPage: React.FC = () => {
                   <div className="mt-8 text-center pt-6">
                     <p className="text-sm text-gray-500">
                       Already have an account?{" "}
-                      <button
-                        type="button"
-                        onClick={() => {
+                      <a
+                        href="#signin"
+                        id="login-link"
+                        role="link"
+                        data-testid="login-link"
+                        onClick={(e) => {
+                          e.preventDefault();
                           setError(null);
                           setMode("signin");
+                          if (typeof window !== "undefined") {
+                            window.location.hash = "signin";
+                          }
                         }}
-                        className="text-emerald-600 hover:text-emerald-700 font-medium transition"
+                        className="text-emerald-600 hover:text-emerald-700 font-medium transition cursor-pointer"
                       >
                         Log in
-                      </button>
+                      </a>
                     </p>
                   </div>
                 </motion.div>
@@ -650,13 +700,22 @@ export const AuthPage: React.FC = () => {
                           {loading ? "Sending..." : "Send Recovery Code"}
                         </button>
 
-                        <button
-                          type="button"
-                          onClick={() => setMode("signin")}
-                          className="w-full bg-transparent hover:bg-gray-50 text-gray-500 border border-gray-200 font-medium h-12 rounded-xl transition flex items-center justify-center"
+                        <a
+                          href="#signin"
+                          id="back-to-login-link"
+                          role="link"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setError(null);
+                            setMode("signin");
+                            if (typeof window !== "undefined") {
+                              window.location.hash = "signin";
+                            }
+                          }}
+                          className="w-full bg-transparent hover:bg-gray-50 text-gray-500 border border-gray-200 font-medium h-12 rounded-xl transition flex items-center justify-center cursor-pointer"
                         >
                           Cancel
-                        </button>
+                        </a>
                       </div>
                     </form>
                   ) : (

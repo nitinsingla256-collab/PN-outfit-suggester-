@@ -103,17 +103,27 @@ export class OutfitService {
   }
 
   async deleteMany(ids: string[]): Promise<boolean> {
+    if (!ids || ids.length === 0) return true;
     const token = authService.getToken();
     if (token && !token.startsWith('local_tok_')) {
-      for (const id of ids) {
-        try {
-          await fetch(`/api/user/outfits/${id}`, {
-            method: 'DELETE',
-            headers: this.getHeaders(),
-          });
-        } catch (err) {
-          console.warn('Server outfit delete fallback:', err);
+      try {
+        const res = await fetch('/api/user/outfits/batch-delete', {
+          method: 'POST',
+          headers: this.getHeaders(),
+          body: JSON.stringify({ ids }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.deletedIds && Array.isArray(data.deletedIds)) {
+            const deletedSet = new Set(data.deletedIds);
+            const outfits = this.getLocalOutfits();
+            const updated = outfits.filter(o => !deletedSet.has(o.id));
+            this.saveLocalOutfits(updated);
+            return true;
+          }
         }
+      } catch (err) {
+        console.warn('Server outfits batch delete fallback:', err);
       }
     }
 
@@ -148,11 +158,8 @@ export class OutfitService {
         try {
           const data = JSON.parse(text);
           if (data.outfits && Array.isArray(data.outfits)) {
-            if (data.outfits.length > 0) {
-              this.saveLocalOutfits(data.outfits);
-              return data.outfits;
-            }
-            return this.getLocalOutfits();
+            this.saveLocalOutfits(data.outfits);
+            return data.outfits;
           }
         } catch {}
       }

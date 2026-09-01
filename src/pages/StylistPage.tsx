@@ -344,7 +344,18 @@ function StylistPageContent() {
       if (!targetOutfitId) {
         const outfitPieces = (look.pieces || [])
           .filter((p) => p.item)
-          .map((p) => ({ itemId: p.item!.id, slotName: "Main" as any }));
+          .map((p) => ({
+            itemId: p.item!.id,
+            slotName: (p.category === "Tops"
+              ? "Top"
+              : p.category === "Bottoms"
+                ? "Bottom"
+                : p.category === "Outerwear"
+                  ? "Outerwear"
+                  : p.category === "Footwear"
+                    ? "Footwear"
+                    : "Main") as any,
+          }));
         const newLook = await addOutfit({
           name: look.title,
           description: look.whyItWorks,
