@@ -123,8 +123,12 @@ export function HomePage() {
       const cacheKey = `daily_outfit_${new Date().toISOString().split("T")[0]}_${user.id}`;
       const cached = localStorage.getItem(cacheKey);
       if (cached) {
-        setDailyOutfit(JSON.parse(cached));
-        return;
+        try {
+          setDailyOutfit(JSON.parse(cached));
+          return;
+        } catch(e) {
+          localStorage.removeItem(cacheKey);
+        }
       }
 
       // Provide instant local look so the screen is never empty or blocked

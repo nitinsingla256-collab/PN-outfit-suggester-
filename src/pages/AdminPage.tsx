@@ -148,18 +148,6 @@ export function AdminPage() {
 
       if (overviewRes?.success && overviewRes.overview) {
         setOverview(overviewRes.overview);
-      } else {
-        // Fallback mock overview if offline/local
-        setOverview({
-          totalUsers: 1,
-          activeUsers: 1,
-          newUsers: 1,
-          totalWardrobeItems: 6,
-          totalOutfits: 2,
-          totalAiRequests: 14,
-          totalWearCycles: 122,
-          totalActivityLogs: 28,
-        });
       }
 
       if (usersRes?.success && usersRes.users) {

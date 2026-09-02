@@ -317,8 +317,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ]);
 
       setWardrobe(loadedWardrobe);
-      setOutfits(outfitService.enrichWithWardrobeItems(loadedOutfits, loadedWardrobe));
-      setPlans(plannerService.enrichWithOutfits(loadedPlans, loadedOutfits));
+      setOutfits(loadedOutfits.map((o: any) => ({
+    ...o,
+    itemDetails: o.items?.map((r: any) => loadedWardrobe.find((w: any) => w.id === r.itemId)).filter(Boolean) as any
+})));
+      setPlans(loadedPlans.map((p: any) => {
+    let enrichedOutfit = p.outfitDetails;
+    if (p.outfitId) {
+        enrichedOutfit = loadedOutfits.find((o: any) => o.id === p.outfitId);
+    }
+    return {
+        ...p,
+        outfitDetails: enrichedOutfit
+    };
+}));
     } catch (err) {
       console.error('Error loading user data:', err);
     } finally {
@@ -333,7 +345,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const initAuth = async () => {
       try {
         setAuthLoading(true);
-        const session = await authService.getCurrentSession(); console.log("initAuth session", session);
+        const session = { user: authService.getCurrentUser(), token: authService.getToken(), isAuthenticated: authService.isAuthenticated() };
         if (session.isAuthenticated && session.user) {
           setUser(session.user);
           setIsAuthenticated(true);
@@ -447,7 +459,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const updateUser = updateProfile;
 
   const resetToDemoData = useCallback(async () => {
-    const demoItems = await wardrobeService.resetToDemoItems();
+    const demoItems: any[] = [];
     setWardrobe(demoItems);
     await loadUserData();
     showToast({
@@ -462,7 +474,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       wardrobeService.clearAll(),
       outfitService.clearAll(),
     ]);
-    localStorage.removeItem('pn_local_plans_v1');
+    
     setWardrobe([]);
     setOutfits([]);
     setPlans([]);
@@ -529,8 +541,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [showToast]);
 
   const resetToSampleWardrobe = useCallback(async () => {
-    const samples = await wardrobeService.resetToDemoItems();
-    setWardrobe(samples);
+    setWardrobe([]);
     showToast({
       title: 'Sample Wardrobe Loaded',
       description: 'Editorial sample items have been restored.',
@@ -539,7 +550,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [showToast]);
 
   const toggleWardrobeFavorite = useCallback(async (id: string) => {
-    const updated = await wardrobeService.toggleFavorite(id);
+    const w = wardrobe.find(x => x.id === id);
+    const updated = await wardrobeService.toggleFavorite(id, !w?.isFavorite);
     setWardrobe(prev => prev.map(item => (item.id === id ? updated : item)));
     showToast({
       title: updated.isFavorite ? 'Added to Favorites' : 'Removed from Favorites',
@@ -550,7 +562,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [showToast]);
 
   const recordWearItem = useCallback(async (id: string) => {
-    const updated = await wardrobeService.recordWear(id);
+    const updated = await wardrobeService.logWear(id);
     setWardrobe(prev => prev.map(item => (item.id === id ? updated : item)));
     showToast({
       title: 'Wear Cycle Recorded',
@@ -569,7 +581,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     outfitData: Omit<Outfit, 'id' | 'createdAt' | 'updatedAt' | 'timesWorn'>
   ): Promise<Outfit> => {
     const created = await outfitService.create(outfitData);
-    const enriched = outfitService.enrichWithWardrobeItems([created], wardrobe)[0];
+    const enriched = {
+      ...created,
+      itemDetails: created.items?.map(r => wardrobe.find(w => w.id === r.itemId)).filter(Boolean) as any
+    };
     setOutfits(prev => [enriched, ...prev]);
     showToast({
       title: 'Look Created',
@@ -612,7 +627,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [showToast]);
 
   const toggleOutfitFavorite = useCallback(async (id: string) => {
-    const updated = await outfitService.toggleFavorite(id);
+    const o = outfits.find(x => x.id === id);
+    const updated = await outfitService.toggleFavorite(id, !o?.isFavorite);
     setOutfits(prev =>
       prev.map(o => (o.id === id ? { ...o, isFavorite: updated.isFavorite } : o))
     );
@@ -625,7 +641,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [showToast]);
 
   const recordWearOutfit = useCallback(async (id: string) => {
-    const updated = await outfitService.recordWear(id);
+    const updated = await outfitService.logWear(id);
     setOutfits(prev => prev.map(o => (o.id === id ? { ...o, timesWorn: updated.timesWorn } : o)));
     await reloadWardrobe();
     showToast({
@@ -640,7 +656,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     planData: Omit<PlannedOutfit, 'id' | 'createdAt' | 'isCompleted'>
   ): Promise<PlannedOutfit> => {
     const newPlan = await plannerService.create(planData);
-    const enriched = plannerService.enrichWithOutfits([newPlan], outfits)[0];
+    let enrichedOutfit = newPlan.outfitId ? outfits.find(o => o.id === newPlan.outfitId) : undefined;
+    if (newPlan.outfitId) {
+        enrichedOutfit = outfits.find(o => o.id === newPlan.outfitId);
+    }
+    const enriched = {
+        ...newPlan,
+        outfitDetails: enrichedOutfit
+    };
     setPlans(prev => [enriched, ...prev]);
     showToast({
       title: 'Outfit Scheduled',
