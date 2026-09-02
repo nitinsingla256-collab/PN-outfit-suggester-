@@ -9,7 +9,7 @@
       "role": "supervisor",
       "status": "Active",
       "joinedDate": "2026-08-29",
-      "lastActive": "2026-09-01T11:23:20.853Z",
+      "lastActive": "2026-09-02T11:17:37.016Z",
       "pronouns": "she/they",
       "bio": "Lead Atelier Supervisor & Haute Horlogerie Archivist.",
       "location": "Paris, France",
@@ -165,6 +165,59 @@
           "autoTagNewItems": true
         }
       }
+    },
+    {
+      "id": "usr_1788347656399_e86996db",
+      "name": "test",
+      "email": "test@example.com",
+      "passwordHash": "66c5053cf4554e2fab7fd3076c2c318d5686ef85f364299e60db2b46fe04427388ef46df809ddafd35ab507aedc87d312ab2382b21009fd8383f48bb8a4122c3",
+      "salt": "2f9d9a248fe608ae0681a1f6826c9191",
+      "role": "user",
+      "status": "Active",
+      "joinedDate": "2026-09-02",
+      "lastActive": "2026-09-02T11:14:16.407Z",
+      "pronouns": "they/them",
+      "bio": "Member of the PAURVI Atelier private wardrobe capsule.",
+      "location": "Delhi, India",
+      "preferences": {
+        "styleVibes": [
+          "Minimal",
+          "Classic"
+        ],
+        "favoriteColors": [
+          "Black",
+          "Ivory",
+          "Navy",
+          "Camel"
+        ],
+        "dislikedColors": [],
+        "preferredFits": [
+          "Tailored",
+          "Relaxed"
+        ],
+        "temperatureUnit": "Celsius",
+        "theme": "Dark",
+        "notifications": {
+          "dailySuggestions": true,
+          "plannerReminders": true,
+          "weatherAlerts": true,
+          "productUpdates": false
+        },
+        "privacy": {
+          "improveRecommendations": true,
+          "publicProfile": false,
+          "shareOutfits": false
+        },
+        "security": {
+          "twoFactorEnabled": false,
+          "activeSessionsCount": 1
+        },
+        "stylistRules": {
+          "onlyUseOwnedItems": true,
+          "explainSuggestions": true,
+          "autoTagNewItems": true
+        }
+      }
     }
   ],
   "sessions": [
@@ -221,34 +274,168 @@
       "userId": "usr_supervisor_paurvi",
       "createdAt": "2026-09-01T11:23:20.854Z",
       "expiresAt": "2026-10-01T11:23:20.854Z"
+    },
+    {
+      "token": "paurvi_tok_6260294bd8f48bc28b831977c439d6b5ee9dbda998ffd9402a51436d265be0c3",
+      "userId": "usr_supervisor_paurvi",
+      "createdAt": "2026-09-02T10:32:47.377Z",
+      "expiresAt": "2026-10-02T10:32:47.377Z"
+    },
+    {
+      "token": "paurvi_tok_88e1d53f1653d12213f953945837a83aa52e6717682135ab2aeb0d4c863052cf",
+      "userId": "usr_supervisor_paurvi",
+      "createdAt": "2026-09-02T11:11:21.914Z",
+      "expiresAt": "2026-10-02T11:11:21.914Z"
+    },
+    {
+      "token": "paurvi_tok_6ea1206844eaa3d299998770a48d38d73f87a1cde7b733e977e41c5805e11a3b",
+      "userId": "usr_supervisor_paurvi",
+      "createdAt": "2026-09-02T11:11:59.624Z",
+      "expiresAt": "2026-10-02T11:11:59.624Z"
+    },
+    {
+      "token": "paurvi_tok_f368d28d0db0f056c2392810ba02145676b0e9e99fbf6799f96b41b6f3e022ca",
+      "userId": "usr_supervisor_paurvi",
+      "createdAt": "2026-09-02T11:13:13.519Z",
+      "expiresAt": "2026-10-02T11:13:13.519Z"
+    },
+    {
+      "token": "paurvi_tok_7472450d7479f646846842dacf17a6348724ebe78f032535ef35e4100d89b5f4",
+      "userId": "usr_supervisor_paurvi",
+      "createdAt": "2026-09-02T11:14:02.847Z",
+      "expiresAt": "2026-10-02T11:14:02.847Z"
+    },
+    {
+      "token": "paurvi_tok_8b00c0f064d6260e5d3abb77ae0eeec75bff7de09e8ae788286480042c8d950d",
+      "userId": "usr_1788347656399_e86996db",
+      "createdAt": "2026-09-02T11:14:16.407Z",
+      "expiresAt": "2026-10-02T11:14:16.407Z"
+    },
+    {
+      "token": "paurvi_tok_84b5862d97de8e69f14917626c004afc54c1039c71fdb5e1332e5d20c080d480",
+      "userId": "usr_supervisor_paurvi",
+      "createdAt": "2026-09-02T11:14:54.373Z",
+      "expiresAt": "2026-10-02T11:14:54.373Z"
+    },
+    {
+      "token": "paurvi_tok_8c4203dcdb3e703cc66fbaaa654581dbfa9e3c678cb0c9a5e48d04d91804ec18",
+      "userId": "usr_supervisor_paurvi",
+      "createdAt": "2026-09-02T11:17:37.017Z",
+      "expiresAt": "2026-10-02T11:17:37.017Z"
     }
   ],
   "wardrobes": {
     "usr_supervisor_paurvi": [],
     "usr_client_paurvi": [],
-    "usr_1788189774471_4d3bcaba": []
+    "usr_1788189774471_4d3bcaba": [],
+    "usr_1788347656399_e86996db": []
   },
   "outfits": {
     "usr_supervisor_paurvi": [],
     "usr_client_paurvi": [],
-    "usr_1788189774471_4d3bcaba": []
+    "usr_1788189774471_4d3bcaba": [],
+    "usr_1788347656399_e86996db": []
   },
   "plans": {
     "usr_supervisor_paurvi": [],
     "usr_client_paurvi": [],
-    "usr_1788189774471_4d3bcaba": []
+    "usr_1788189774471_4d3bcaba": [],
+    "usr_1788347656399_e86996db": []
   },
   "wearHistory": {
     "usr_supervisor_paurvi": [],
     "usr_client_paurvi": [],
-    "usr_1788189774471_4d3bcaba": []
+    "usr_1788189774471_4d3bcaba": [],
+    "usr_1788347656399_e86996db": []
   },
   "stylistConversations": {
     "usr_supervisor_paurvi": [],
     "usr_client_paurvi": [],
-    "usr_1788189774471_4d3bcaba": []
+    "usr_1788189774471_4d3bcaba": [],
+    "usr_1788347656399_e86996db": []
   },
   "activityLogs": [
+    {
+      "id": "log_1788347857017_bb1ee8",
+      "userId": "usr_supervisor_paurvi",
+      "userName": "Nitin Singla (Admin)",
+      "userEmail": "nitinsingla256@gmail.com",
+      "action": "User signed into PAURVI",
+      "category": "AUTH",
+      "timestamp": "2026-09-02T11:17:37.017Z"
+    },
+    {
+      "id": "log_1788347694373_e1ac87",
+      "userId": "usr_supervisor_paurvi",
+      "userName": "Nitin Singla (Admin)",
+      "userEmail": "nitinsingla256@gmail.com",
+      "action": "User signed into PAURVI",
+      "category": "AUTH",
+      "timestamp": "2026-09-02T11:14:54.373Z"
+    },
+    {
+      "id": "log_1788347656407_55aa8b",
+      "userId": "usr_1788347656399_e86996db",
+      "userName": "test",
+      "userEmail": "test@example.com",
+      "action": "User signed into PAURVI",
+      "category": "AUTH",
+      "timestamp": "2026-09-02T11:14:16.407Z"
+    },
+    {
+      "id": "log_1788347656400_65f069",
+      "userId": "usr_1788347656399_e86996db",
+      "userName": "test",
+      "userEmail": "test@example.com",
+      "action": "User registered new PAURVI account",
+      "category": "AUTH",
+      "timestamp": "2026-09-02T11:14:16.400Z"
+    },
+    {
+      "id": "log_1788347642847_1d08f0",
+      "userId": "usr_supervisor_paurvi",
+      "userName": "Nitin Singla (Admin)",
+      "userEmail": "nitinsingla256@gmail.com",
+      "action": "User signed into PAURVI",
+      "category": "AUTH",
+      "timestamp": "2026-09-02T11:14:02.847Z"
+    },
+    {
+      "id": "log_1788347593519_9ce630",
+      "userId": "usr_supervisor_paurvi",
+      "userName": "Nitin Singla (Admin)",
+      "userEmail": "nitinsingla256@gmail.com",
+      "action": "User signed into PAURVI",
+      "category": "AUTH",
+      "timestamp": "2026-09-02T11:13:13.519Z"
+    },
+    {
+      "id": "log_1788347519624_628d3c",
+      "userId": "usr_supervisor_paurvi",
+      "userName": "Nitin Singla (Admin)",
+      "userEmail": "nitinsingla256@gmail.com",
+      "action": "User signed into PAURVI",
+      "category": "AUTH",
+      "timestamp": "2026-09-02T11:11:59.624Z"
+    },
+    {
+      "id": "log_1788347481914_47802c",
+      "userId": "usr_supervisor_paurvi",
+      "userName": "Nitin Singla (Admin)",
+      "userEmail": "nitinsingla256@gmail.com",
+      "action": "User signed into PAURVI",
+      "category": "AUTH",
+      "timestamp": "2026-09-02T11:11:21.914Z"
+    },
+    {
+      "id": "log_1788345167377_2f443c",
+      "userId": "usr_supervisor_paurvi",
+      "userName": "Nitin Singla (Admin)",
+      "userEmail": "nitinsingla256@gmail.com",
+      "action": "User signed into PAURVI",
+      "category": "AUTH",
+      "timestamp": "2026-09-02T10:32:47.377Z"
+    },
     {
       "id": "log_1788261800854_07a814",
       "userId": "usr_supervisor_paurvi",
@@ -397,6 +584,7 @@
   "aiRequestsCount": {
     "usr_supervisor_paurvi": 1,
     "usr_client_paurvi": 0,
-    "usr_1788189774471_4d3bcaba": 0
+    "usr_1788189774471_4d3bcaba": 0,
+    "usr_1788347656399_e86996db": 0
   }
 }

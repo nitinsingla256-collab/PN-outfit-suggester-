@@ -143,12 +143,13 @@ export class AuthService {
 
   async signIn(email: string, passwordPlain: string): Promise<{ user: User; token: string }> {
     const cleanEmail = email.toLowerCase().trim();
+    const cleanPassword = passwordPlain.trim();
     const res = await safeFetchJson<{ success: boolean; user: User; token: string; error?: string }>(
       '/api/auth/signin',
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: cleanEmail, password: passwordPlain }),
+        body: JSON.stringify({ email: cleanEmail, password: cleanPassword }),
       }
     );
 
@@ -167,12 +168,14 @@ export class AuthService {
     confirmPassword?: string
   ): Promise<{ user: User; token: string }> {
     const cleanEmail = email.toLowerCase().trim();
+    const cleanPassword = passwordPlain.trim();
+    const cleanConfirm = confirmPassword ? confirmPassword.trim() : undefined;
     const res = await safeFetchJson<{ success: boolean; user: User; token: string; error?: string }>(
       '/api/auth/signup',
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email: cleanEmail, password: passwordPlain, confirmPassword }),
+        body: JSON.stringify({ name, email: cleanEmail, password: cleanPassword, confirmPassword: cleanConfirm }),
       }
     );
 

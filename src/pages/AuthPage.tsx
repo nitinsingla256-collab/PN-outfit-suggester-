@@ -113,21 +113,8 @@ export const AuthPage: React.FC = () => {
       setError("Please enter a valid email address.");
       return;
     }
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
-      return;
-    }
-    const hasUpper = /[A-Z]/.test(password);
-    const hasLower = /[a-z]/.test(password);
-    const hasNumberOrSpecial = /[0-9!@#$%^&*]/.test(password);
-    const score = [hasUpper, hasLower, hasNumberOrSpecial].filter(
-      Boolean,
-    ).length;
-
-    if (score < 3) {
-      setError(
-        "Password must contain uppercase, lowercase, and a number/special character.",
-      );
+    if (!password) {
+      setError("Please enter a password.");
       return;
     }
 
@@ -181,8 +168,8 @@ export const AuthPage: React.FC = () => {
       setError("Please enter the reset code and your new password.");
       return;
     }
-    if (newPassword.length < 6) {
-      setError("New password must be at least 6 characters.");
+    if (newPassword.length < 4) {
+      setError("New password must be at least 4 characters.");
       return;
     }
 
