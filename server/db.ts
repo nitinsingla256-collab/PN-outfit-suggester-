@@ -220,7 +220,7 @@ class PaurviDatabase {
     } else {
       const hasAdmin = this.data.users.some(u => u.role === 'supervisor' || u.role === 'admin');
       if (!hasAdmin) {
-        const { hash, salt } = hashPassword(process.env.ADMIN_PASSWORD || '1211');
+        const { hash, salt } = hashPassword((process.env.ADMIN_PASSWORD || '1211').trim());
         const supervisor: StoredUser = {
           id: 'usr_supervisor_paurvi',
           name: 'Nitin Singla (Admin)',
@@ -262,7 +262,7 @@ class PaurviDatabase {
     // Check if nitinsingla256@gmail.com account exists
     const hasMasterAdmin = this.data.users.some(u => u.email.toLowerCase() === 'nitinsingla256@gmail.com');
     if (!hasMasterAdmin) {
-      const { hash, salt } = hashPassword(process.env.ADMIN_INITIAL_PASSWORD || '1211');
+      const { hash, salt } = hashPassword((process.env.ADMIN_INITIAL_PASSWORD || '1211').trim());
       const masterAdmin: StoredUser = {
         id: 'usr_master_admin_paurvi',
         name: 'Master Administrator',
