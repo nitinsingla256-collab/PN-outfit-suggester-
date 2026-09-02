@@ -1,0 +1,571 @@
+     1	/**
+     2	 * @license
+     3	 * SPDX-License-Identifier: Apache-2.0
+     4	 */
+     5	
+     6	import React, { useState, useEffect } from "react";
+     7	
+     8	import {
+     9	  Lock,
+    10	  Mail,
+    11	  User as UserIcon,
+    12	  Eye,
+    13	  EyeOff,
+    14	  Sparkles,
+    15	  ArrowRight,
+    16	  ShieldCheck,
+    17	  KeyRound,
+    18	  CheckCircle2,
+    19	  AlertCircle,
+    20	} from "lucide-react";
+    21	import { useApp } from "../context/AppContext";
+    22	
+    23	type AuthMode = "signin" | "signup" | "forgot";
+    24	
+    25	function sanitizeAuthError(err: any): string {
+    26	  const msg = typeof err === 'string' ? err : err?.message || '';
+    27	  if (!msg) return 'Authentication encountered a temporary issue. Please try again.';
+    28	  if (
+    29	    msg.includes('<!doctype') ||
+    30	    msg.includes('Unexpected token') ||
+    31	    msg.includes('not valid JSON') ||
+    32	    msg.includes('502') ||
+    33	    msg.includes('503')
+    34	  ) {
+    35	    return 'Authentication service momentarily reconnecting. You can sign in smoothly.';
+    36	  }
+    37	  return msg;
+    38	}
+    39	
+    40	export const AuthPage: React.FC = () => {
+    41	  const { signIn, signUp, requestPasswordReset, resetPassword, showToast } =
+    42	    useApp();
+    43	
+    44	  const [mode, setMode] = useState<AuthMode>(() => {
+    45	    if (typeof window !== "undefined") {
+    46	      const hash = window.location.hash.toLowerCase();
+    47	      if (hash.includes("forgot")) return "forgot";
+    48	      if (hash.includes("signup")) return "signup";
+    49	    }
+    50	    return "signin";
+    51	  });
+    52	  const [loading, setLoading] = useState(false);
+    53	  const [error, setError] = useState<string | null>(null);
+    54	  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+    55	
+    56	  // Form Fields
+    57	  const [name, setName] = useState("");
+    58	  const [email, setEmail] = useState("");
+    59	  const [password, setPassword] = useState("");
+    60	  const [confirmPassword, setConfirmPassword] = useState("");
+    61	  const [showPassword, setShowPassword] = useState(false);
+    62	
+    63	  // Forgot password flow
+    64	  const [resetCode, setResetCode] = useState("");
+    65	  const [newPassword, setNewPassword] = useState("");
+    66	  const [resetStep, setResetStep] = useState<1 | 2>(1);
+    67	
+    68	  useEffect(() => {
+    69	    const onHashChange = () => {
+    70	      const hash = window.location.hash.toLowerCase();
+    71	      if (hash.includes("forgot")) {
+    72	        setMode("forgot");
+    73	        setError(null);
+    74	      } else if (hash.includes("signup")) {
+    75	        setMode("signup");
+    76	        setError(null);
+    77	      } else if (hash.includes("signin") || hash === "" || hash === "#") {
+    78	        setMode("signin");
+    79	        setError(null);
+    80	      }
+    81	    };
+    82	    window.addEventListener("hashchange", onHashChange);
+    83	    return () => window.removeEventListener("hashchange", onHashChange);
+    84	  }, []);
+    85	
+    86	  const handleSignIn = async (e: React.FormEvent) => {
+    87	    e.preventDefault();
+    88	    setError(null);
+    89	    if (!email || !password) {
+    90	      setError("Please enter your email and password.");
+    91	      return;
+    92	    }
+    93	
+    94	    setLoading(true);
+    95	    try {
+    96	      await signIn(email, password);
+    97	    } catch (err: any) {
+    98	      setError(sanitizeAuthError(err));
+    99	    } finally {
+   100	      setLoading(false);
+   101	    }
+   102	  };
+   103	
+   104	  const handleSignUp = async (e: React.FormEvent) => {
+   105	    e.preventDefault();
+   106	    setError(null);
+   107	
+   108	    if (!name.trim()) {
+   109	      setError("Please enter your full name.");
+   110	      return;
+   111	    }
+   112	    if (!email || !email.includes("@")) {
+   113	      setError("Please enter a valid email address.");
+   114	      return;
+   115	    }
+   116	    if (!password) {
+   117	      setError("Please enter a password.");
+   118	      return;
+   119	    }
+   120	
+   121	    if (password !== confirmPassword) {
+   122	      setError("Passwords do not match.");
+   123	      return;
+   124	    }
+   125	
+   126	    setLoading(true);
+   127	    try {
+   128	      await signUp(name, email, password, confirmPassword);
+   129	    } catch (err: any) {
+   130	      setError(sanitizeAuthError(err));
+   131	    } finally {
+   132	      setLoading(false);
+   133	    }
+   134	  };
+   135	
+   136	  const handleRequestReset = async (e: React.FormEvent) => {
+   137	    e.preventDefault();
+   138	    setError(null);
+   139	    if (!email) {
+   140	      setError("Please enter your email address.");
+   141	      return;
+   142	    }
+   143	
+   144	    setLoading(true);
+   145	    try {
+   146	      const res = await requestPasswordReset(email);
+   147	      setSuccessMessage(res.message);
+   148	      if (res.resetCode) {
+   149	        setResetCode(res.resetCode);
+   150	      }
+   151	      setResetStep(2);
+   152	      showToast({
+   153	        title: "Reset Code Dispatched",
+   154	        description: "Check your code below to update your password.",
+   155	        type: "info",
+   156	      });
+   157	    } catch (err: any) {
+   158	      setError(sanitizeAuthError(err));
+   159	    } finally {
+   160	      setLoading(false);
+   161	    }
+   162	  };
+   163	
+   164	  const handleConfirmReset = async (e: React.FormEvent) => {
+   165	    e.preventDefault();
+   166	    setError(null);
+   167	    if (!resetCode || !newPassword) {
+   168	      setError("Please enter the reset code and your new password.");
+   169	      return;
+   170	    }
+   171	    if (newPassword.length < 4) {
+   172	      setError("New password must be at least 4 characters.");
+   173	      return;
+   174	    }
+   175	
+   176	    setLoading(true);
+   177	    try {
+   178	      const msg = await resetPassword(email, resetCode, newPassword);
+   179	      showToast({
+   180	        title: "Password Updated",
+   181	        description: msg,
+   182	        type: "success",
+   183	      });
+   184	      setMode("signin");
+   185	      setPassword(newPassword);
+   186	      setSuccessMessage("Password reset successfully. You may now sign in.");
+   187	      setResetStep(1);
+   188	    } catch (err: any) {
+   189	      setError(sanitizeAuthError(err));
+   190	    } finally {
+   191	      setLoading(false);
+   192	    }
+   193	  };
+   194	
+   195	  const fillDemoSupervisor = () => {
+   196	    setMode("signin");
+   197	    setEmail("nitinsingla256@gmail.com");
+   198	    setPassword("");
+   199	    setSuccessMessage("Admin email loaded. Enter your secure password.");
+   200	  };
+   201	
+   202	  return (
+   203	    <div className="min-h-screen w-full flex bg-gray-50 text-gray-900 overflow-hidden">
+   204	      {/* Left Column - Marketing/Branding (Hidden on mobile) */}
+   205	      <div className="hidden lg:flex flex-col w-1/2 relative bg-gray-50 px-12 xl:px-24 py-16 justify-between border-r border-gray-200">
+   206	        {/* Brand */}
+   207	        <div className="flex items-center gap-3">
+   208	          <div className="w-10 h-10 rounded-xl bg-white border border-gray-200 flex items-center justify-center shadow-sm relative">
+   209	            <span className="font-serif text-lg font-bold tracking-widest text-gray-900">
+   210	              PN
+   211	            </span>
+   212	          </div>
+   213	          <span className="font-serif text-xl tracking-[0.2em] font-semibold uppercase">
+   214	            PN
+   215	          </span>
+   216	        </div>
+   217	
+   218	        {/* Hero Content */}
+   219	        <div className="max-w-md mt-12">
+   220	          <h1 className="text-4xl xl:text-5xl font-serif text-gray-900 leading-tight mb-4">
+   221	            Your Wardrobe.
+   222	            <br />
+   223	            Reimagined by{" "}
+   224	            <span className="text-emerald-500 font-sans font-semibold">AI</span>
+   225	            .
+   226	          </h1>
+   227	          <p className="text-gray-500 mb-10 text-base">
+   228	            Upload what you own. Let AI understand your wardrobe and create
+   229	            outfits that actually make sense for you.
+   230	          </p>
+   231	
+   232	          <div className="relative rounded-3xl overflow-hidden aspect-[4/3] bg-gray-100 shadow-xl mb-12 border border-gray-200">
+   233	            <img
+   234	              src="https://images.unsplash.com/photo-1558769132-cb1fac08c044?auto=format&fit=crop&q=80&w=1000"
+   235	              alt="Curated Wardrobe"
+   236	              className="w-full h-full object-cover"
+   237	            />
+   238	          </div>
+   239	
+   240	          <div className="grid grid-cols-3 gap-6">
+   241	            <div>
+   242	              <Sparkles className="w-5 h-5 text-emerald-500 mb-2" />
+   243	              <h3 className="text-xs font-semibold text-gray-900 mb-1">
+   244	                AI-Powered
+   245	                <br />
+   246	                Identification
+   247	              </h3>
+   248	            </div>
+   249	            <div>
+   250	              <UserIcon className="w-5 h-5 text-emerald-500 mb-2" />
+   251	              <h3 className="text-xs font-semibold text-gray-900 mb-1">
+   252	                Smart Outfit
+   253	                <br />
+   254	                Recommendations
+   255	              </h3>
+   256	            </div>
+   257	            <div>
+   258	              <CheckCircle2 className="w-5 h-5 text-emerald-500 mb-2" />
+   259	              <h3 className="text-xs font-semibold text-gray-900 mb-1">
+   260	                Personal Style
+   261	                <br />
+   262	                Learning
+   263	              </h3>
+   264	            </div>
+   265	          </div>
+   266	        </div>
+   267	
+   268	        <div></div>
+   269	      </div>
+   270	
+   271	      {/* Right Column - Auth Form */}
+   272	      <div className="w-full lg:w-1/2 flex items-center justify-center bg-white p-6 relative h-screen overflow-y-auto">
+   273	        <div className="w-full max-w-[420px] py-12">
+   274	          {/* Mobile-only Branding Header */}
+   275	          <div className="flex lg:hidden flex-col items-center text-center mb-8">
+   276	            <div className="w-14 h-14 rounded-2xl bg-gray-50 border border-gray-200 flex items-center justify-center shadow-sm mb-3">
+   277	              <span className="font-serif text-xl font-bold tracking-widest text-gray-900">
+   278	                PN
+   279	              </span>
+   280	            </div>
+   281	            <h1 className="text-xl font-serif tracking-[0.25em] text-gray-900 font-semibold uppercase">
+   282	              PN
+   283	            </h1>
+   284	          </div>
+   285	
+   286	          {/* Auth Box Container */}
+   287	          <div>
+   288	            }
+   289	                          </div>
+   290	                          <div className="text-[10px] text-gray-500 grid grid-cols-2 gap-1 mt-1">
+   291	                            <span
+   292	                              className={
+   293	                                password.length >= 8 ? "text-emerald-600" : ""
+   294	                              }
+   295	                            >
+   296	                              ✓ Min 8 characters
+   297	                            </span>
+   298	                            <span
+   299	                              className={
+   300	                                /[A-Z]/.test(password) ? "text-emerald-600" : ""
+   301	                              }
+   302	                            >
+   303	                              ✓ Uppercase letter
+   304	                            </span>
+   305	                            <span
+   306	                              className={
+   307	                                /[a-z]/.test(password) ? "text-emerald-600" : ""
+   308	                              }
+   309	                            >
+   310	                              ✓ Lowercase letter
+   311	                            </span>
+   312	                            <span
+   313	                              className={
+   314	                                /[0-9!@#$%^&*]/.test(password)
+   315	                                  ? "text-emerald-600"
+   316	                                  : ""
+   317	                              }
+   318	                            >
+   319	                              ✓ Number / Special
+   320	                            </span>
+   321	                          </div>
+   322	                        </div>
+   323	                      )}
+   324	                    </div>
+   325	
+   326	                    <div>
+   327	                      <label className="block text-xs font-medium text-gray-700 mb-1.5">
+   328	                        Confirm password
+   329	                      </label>
+   330	                      <div className="relative">
+   331	                        <input
+   332	                          type={showPassword ? "text" : "password"}
+   333	                          required
+   334	                          value={confirmPassword}
+   335	                          onChange={(e) => setConfirmPassword(e.target.value)}
+   336	                          placeholder="••••••••"
+   337	                          className="w-full bg-white border border-gray-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl pl-3 pr-10 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition"
+   338	                        />
+   339	                      </div>
+   340	                    </div>
+   341	
+   342	                    <div className="flex items-start pt-2">
+   343	                      <label className="flex items-start gap-2 cursor-pointer group mt-1">
+   344	                        <input
+   345	                          type="checkbox"
+   346	                          required
+   347	                          className="w-4 h-4 mt-0.5 rounded border-gray-300 text-emerald-500 focus:ring-emerald-500 bg-white cursor-pointer"
+   348	                        />
+   349	                        <span className="text-xs text-gray-500 group-hover:text-gray-700 transition leading-snug">
+   350	                          I agree to the{" "}
+   351	                          <span className="text-emerald-600 hover:underline">
+   352	                            Terms & Conditions
+   353	                          </span>{" "}
+   354	                          and{" "}
+   355	                          <span className="text-emerald-600 hover:underline">
+   356	                            Privacy Policy
+   357	                          </span>
+   358	                        </span>
+   359	                      </label>
+   360	                    </div>
+   361	
+   362	                    
+   363	                    {/* Error Banner */}
+   364	                    {error && (
+   365	                      <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 flex items-start gap-2.5 text-red-700 text-xs">
+   366	                        <AlertCircle className="w-4 h-4 shrink-0 text-red-500 mt-0.5" />
+   367	                        <span>{error}</span>
+   368	                      </div>
+   369	                    )}
+   370	                    
+   371	                    {/* Success Banner */}
+   372	                    {successMessage && (
+   373	                      <div className="mb-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200 flex items-start gap-2.5 text-emerald-700 text-xs">
+   374	                        <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-500 mt-0.5" />
+   375	                        <span>{successMessage}</span>
+   376	                      </div>
+   377	                    )}
+   378	
+   379	                    <div className="pt-2">
+   380	                      <button
+   381	                        type="submit"
+   382	                        disabled={loading}
+   383	                        className="w-full bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-medium h-12 rounded-xl transition flex items-center justify-center disabled:opacity-70 gap-2 shadow-sm"
+   384	                      >
+   385	                        {loading ? "Creating Account..." : "Create Account"}
+   386	                      </button>
+   387	                    </div>
+   388	                  </form>
+   389	
+   390	                  <div className="mt-8 text-center pt-6">
+   391	                    <p className="text-sm text-gray-500">
+   392	                      Already have an account?{" "}
+   393	                      <a
+   394	                        href="#signin"
+   395	                        id="login-link"
+   396	                        role="link"
+   397	                        data-testid="login-link"
+   398	                        onClick={(e) => {
+   399	                          e.preventDefault();
+   400	                          setError(null);
+   401	                          setMode("signin");
+   402	                          if (typeof window !== "undefined") {
+   403	                            window.location.hash = "signin";
+   404	                          }
+   405	                        }}
+   406	                        className="text-emerald-600 hover:text-emerald-700 font-medium transition cursor-pointer"
+   407	                      >
+   408	                        Log in
+   409	                      </a>
+   410	                    </p>
+   411	                  </div>
+   412	                </div>
+   413	              )}
+   414	
+   415	              {/* ================= FORGOT PASSWORD ================= */}
+   416	              {mode === "forgot" && (
+   417	                <div
+   418	                  key="forgot"
+   419	                  
+   420	                  
+   421	                  
+   422	                  
+   423	                >
+   424	                  <div className="mb-8 text-center lg:text-left">
+   425	                    <h2 className="text-3xl font-medium text-gray-900 tracking-tight">
+   426	                      Recover Access
+   427	                    </h2>
+   428	                    <p className="text-sm text-gray-500 mt-2">
+   429	                      {resetStep === 1
+   430	                        ? "Enter your email to receive a secure recovery code."
+   431	                        : "Enter the code sent to your email and a new password."}
+   432	                    </p>
+   433	                  </div>
+   434	
+   435	                  {resetStep === 1 ? (
+   436	                    <form onSubmit={handleRequestReset} className="space-y-4">
+   437	                      <div>
+   438	                        <label className="block text-xs font-medium text-gray-700 mb-1.5">
+   439	                          Email address
+   440	                        </label>
+   441	                        <input
+   442	                          type="email"
+   443	                          required
+   444	                          value={email}
+   445	                          onChange={(e) => setEmail(e.target.value)}
+   446	                          placeholder="you@example.com"
+   447	                          className="w-full bg-white border border-gray-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition"
+   448	                        />
+   449	                      </div>
+   450	
+   451	                      <div className="pt-4 flex flex-col gap-3">
+   452	                        <button
+   453	                          type="submit"
+   454	                          disabled={loading}
+   455	                          className="w-full bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-medium h-12 rounded-xl transition flex items-center justify-center disabled:opacity-70 gap-2 shadow-sm"
+   456	                        >
+   457	                          {loading ? "Sending..." : "Send Recovery Code"}
+   458	                        </button>
+   459	
+   460	                        <a
+   461	                          href="#signin"
+   462	                          id="back-to-login-link"
+   463	                          role="link"
+   464	                          onClick={(e) => {
+   465	                            e.preventDefault();
+   466	                            setError(null);
+   467	                            setMode("signin");
+   468	                            if (typeof window !== "undefined") {
+   469	                              window.location.hash = "signin";
+   470	                            }
+   471	                          }}
+   472	                          className="w-full bg-transparent hover:bg-gray-50 text-gray-500 border border-gray-200 font-medium h-12 rounded-xl transition flex items-center justify-center cursor-pointer"
+   473	                        >
+   474	                          Cancel
+   475	                        </a>
+   476	                      </div>
+   477	                    </form>
+   478	                  ) : (
+   479	                    <form onSubmit={handleConfirmReset} className="space-y-4">
+   480	                      <div>
+   481	                        <label className="block text-xs font-medium text-gray-700 mb-1.5">
+   482	                          Recovery code
+   483	                        </label>
+   484	                        <input
+   485	                          type="text"
+   486	                          required
+   487	                          value={resetCode}
+   488	                          onChange={(e) => setResetCode(e.target.value)}
+   489	                          placeholder="Enter 6-digit code"
+   490	                          className="w-full bg-white border border-gray-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition"
+   491	                        />
+   492	                      </div>
+   493	
+   494	                      <div>
+   495	                        <label className="block text-xs font-medium text-gray-700 mb-1.5">
+   496	                          New password
+   497	                        </label>
+   498	                        <div className="relative">
+   499	                          <input
+   500	                            type={showPassword ? "text" : "password"}
+   501	                            required
+   502	                            value={newPassword}
+   503	                            onChange={(e) => setNewPassword(e.target.value)}
+   504	                            placeholder="••••••••"
+   505	                            className="w-full bg-white border border-gray-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl pl-3 pr-10 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition"
+   506	                          />
+   507	                          <button
+   508	                            type="button"
+   509	                            onClick={() => setShowPassword(!showPassword)}
+   510	                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+   511	                          >
+   512	                            {showPassword ? (
+   513	                              <EyeOff className="w-4 h-4" />
+   514	                            ) : (
+   515	                              <Eye className="w-4 h-4" />
+   516	                            )}
+   517	                          </button>
+   518	                        </div>
+   519	                      </div>
+   520	
+   521	                      <div className="pt-4 flex flex-col gap-3">
+   522	                        <button
+   523	                          type="submit"
+   524	                          disabled={loading}
+   525	                          className="w-full bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-medium h-12 rounded-xl transition flex items-center justify-center disabled:opacity-70 gap-2 shadow-sm"
+   526	                        >
+   527	                          {loading ? "Resetting..." : "Reset Password"}
+   528	                        </button>
+   529	
+   530	                        <button
+   531	                          type="button"
+   532	                          onClick={() => {
+   533	                            setResetStep(1);
+   534	                            setResetCode("");
+   535	                          }}
+   536	                          className="w-full bg-transparent hover:bg-gray-50 text-gray-500 border border-gray-200 font-medium h-12 rounded-xl transition flex items-center justify-center"
+   537	                        >
+   538	                          Back to Email
+   539	                        </button>
+   540	                      </div>
+   541	                    </form>
+   542	                  )}
+   543	                </div>
+   544	              )}
+   545	            </div>
+   546	          </div>
+   547	
+   548	          <div className="mt-12 pt-6 flex justify-between items-center text-[10px] text-gray-400 max-w-[420px] mx-auto w-full">
+   549	            <div className="flex gap-4">
+   550	              <span className="flex items-center gap-1.5 font-medium">
+   551	                <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" /> Secure
+   552	                & Private
+   553	              </span>
+   554	              <span className="flex items-center gap-1.5 font-medium">
+   555	                <Sparkles className="w-3.5 h-3.5 text-emerald-500" /> AI
+   556	                Personalization
+   557	              </span>
+   558	            </div>
+   559	            <button
+   560	              type="button"
+   561	              onClick={fillDemoSupervisor}
+   562	              className="hover:text-emerald-500 transition-colors underline decoration-dotted"
+   563	            >
+   564	              Demo Supervisor
+   565	            </button>
+   566	          </div>
+   567	        </div>
+   568	      </div>
+   569	    </div>
+   570	  );
+   571	};

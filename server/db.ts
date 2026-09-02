@@ -372,7 +372,7 @@ class PaurviDatabase {
       throw new Error('This account has been suspended. Please contact supervisor support.');
     }
 
-    const isValid = verifyPassword(passwordPlain, user.passwordHash, user.salt);
+    const isValid = verifyPassword(passwordPlain.trim(), user.passwordHash, user.salt);
     if (!isValid) {
       throw new Error('Invalid email address or password.');
     }
