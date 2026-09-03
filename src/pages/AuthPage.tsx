@@ -195,8 +195,8 @@ export const AuthPage: React.FC = () => {
   const fillDemoSupervisor = () => {
     setMode("signin");
     setEmail("nitinsingla256@gmail.com");
-    setPassword("");
-    setSuccessMessage("Admin email loaded. Enter your secure password.");
+    setPassword("1211");
+    setSuccessMessage("Admin credentials loaded. You may now click Sign In.");
   };
 
   return (
