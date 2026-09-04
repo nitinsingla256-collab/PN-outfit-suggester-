@@ -4,6 +4,7 @@
  */
 
 import express, { Request, Response, NextFunction } from 'express';
+import http from 'http';
 import path from 'path';
 import fs from 'fs';
 import { createServer as createViteServer } from 'vite';
@@ -1980,10 +1981,12 @@ Generate 6 high-fashion trends covering diverse categories (Key Silhouettes, Col
     }
   });
 
+  const httpServer = http.createServer(app);
+
   // Vite middleware in dev or static files in production
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: { middlewareMode: true, hmr: { server: httpServer } },
       appType: 'spa',
     });
     app.use(vite.middlewares);
@@ -2009,7 +2012,7 @@ Generate 6 high-fashion trends covering diverse categories (Key Silhouettes, Col
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
+  httpServer.listen(PORT, '0.0.0.0', () => {
     console.log(`PAURVI Atelier Server running on http://0.0.0.0:${PORT}`);
   });
 }
