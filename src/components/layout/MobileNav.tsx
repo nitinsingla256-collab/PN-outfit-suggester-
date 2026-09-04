@@ -52,22 +52,22 @@ export function MobileNav() {
       {isMoreMenuOpen && (
         <div className="lg:hidden fixed inset-0 z-50 flex items-end justify-center">
           <div
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm"
+            className="fixed inset-0 bg-slate-950/70 transition-opacity"
             onClick={() => setIsMoreMenuOpen(false)}
           />
-          <div className="relative w-full max-w-md bg-white border-t border-gray-200 rounded-t-3xl p-6 pb-8 z-10 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between pb-3 border-b border-gray-200">
-              <span className="text-xs font-semibold uppercase tracking-wider text-gray-600">
-                More Features
+          <div className="relative w-full max-w-md bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 rounded-t-2xl p-5 pb-8 z-10 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                Atelier Directory
               </span>
               <button
                 onClick={() => setIsMoreMenuOpen(false)}
-                className="p-1 rounded-lg text-gray-600 hover:text-gray-900"
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2.5">
               {moreTabs.map(tab => {
                 if (tab.supervisor && user.role !== 'supervisor' && user.role !== 'admin') {
                   return null;
@@ -82,15 +82,15 @@ export function MobileNav() {
                       e.preventDefault();
                       handleMoreNavigation(tab.route);
                     }}
-                    className={`flex items-center gap-3 p-3.5 rounded-2xl border text-left text-xs font-medium transition-all ${
+                    className={`flex items-center gap-2.5 p-3 rounded-xl border text-left text-xs font-medium transition-colors ${
                       isActive
-                        ? 'bg-gray-100 text-gray-900 border-emerald-500/40'
+                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 border-emerald-500/40 shadow-2xs'
                         : tab.supervisor
-                        ? 'bg-emerald-50/20 text-emerald-700 border-emerald-200/30'
-                        : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                        ? 'bg-emerald-50/50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200/50 dark:border-emerald-800/50'
+                        : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50'
                     }`}
                   >
-                    <Icon className={`w-4 h-4 ${tab.supervisor ? 'text-emerald-500' : 'text-emerald-500'}`} />
+                    <Icon className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                     <span>{tab.label}</span>
                   </button>
                 );
@@ -103,7 +103,7 @@ export function MobileNav() {
       {/* Main Bottom Nav Bar */}
       <nav
         aria-label="Mobile Bottom Navigation"
-        className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-gray-200 px-2 py-1.5 pb-safe flex items-center justify-around shadow-sm"
+        className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-[#090D16]/95 border-t border-slate-200/80 dark:border-slate-800/80 px-2 py-1.5 pb-safe flex items-center justify-around shadow-2xs"
       >
         {mainTabs.map(tab => {
           const Icon = tab.icon;
@@ -116,18 +116,18 @@ export function MobileNav() {
                 e.preventDefault();
                 navigateTo(tab.route);
               }}
-              className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all relative flex-1 ${
-                isActive ? 'text-emerald-500' : 'text-gray-600 hover:text-gray-800'
+              className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-colors relative flex-1 ${
+                isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
               }`}
             >
-              <div className={`p-1 rounded-lg ${tab.highlight && isActive ? 'bg-emerald-500/15' : ''}`}>
-                <Icon className={`w-5 h-5 ${tab.highlight ? 'text-emerald-500' : ''}`} />
+              <div className={`p-1 rounded-lg ${tab.highlight && isActive ? 'bg-emerald-50 dark:bg-emerald-950/50' : ''}`}>
+                <Icon className="w-4.5 h-4.5" />
               </div>
-              <span className={`text-[10px] tracking-tight mt-0.5 ${isActive ? 'font-semibold' : 'font-medium'}`}>
+              <span className={`text-[10px] tracking-tight mt-0.5 ${isActive ? 'font-semibold' : 'font-normal'}`}>
                 {tab.label}
               </span>
               {isActive && (
-                <div className="absolute -bottom-1 w-1 h-1 rounded-full bg-emerald-500" />
+                <div className="absolute -bottom-0.5 w-1 h-1 rounded-full bg-emerald-600 dark:bg-emerald-400" />
               )}
             </button>
           );
@@ -140,18 +140,18 @@ export function MobileNav() {
             e.preventDefault();
             setIsMoreMenuOpen(true);
           }}
-          className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all relative flex-1 ${
-            isMoreActive ? 'text-emerald-500' : 'text-gray-600 hover:text-gray-800'
+          className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-colors relative flex-1 ${
+            isMoreActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
           }`}
         >
           <div className="p-1 rounded-lg">
-            <MoreHorizontal className="w-5 h-5" />
+            <MoreHorizontal className="w-4.5 h-4.5" />
           </div>
-          <span className={`text-[10px] tracking-tight mt-0.5 ${isMoreActive ? 'font-semibold' : 'font-medium'}`}>
+          <span className={`text-[10px] tracking-tight mt-0.5 ${isMoreActive ? 'font-semibold' : 'font-normal'}`}>
             More
           </span>
           {isMoreActive && (
-            <div className="absolute -bottom-1 w-1 h-1 rounded-full bg-emerald-500" />
+            <div className="absolute -bottom-0.5 w-1 h-1 rounded-full bg-emerald-600 dark:bg-emerald-400" />
           )}
         </button>
       </nav>

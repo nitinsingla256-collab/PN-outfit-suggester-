@@ -258,24 +258,30 @@
 }
 
 @layer utilities {
+  .editorial-card {
+    @apply bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-xs rounded-2xl transition-all duration-200;
+  }
   .glass-panel {
-    @apply bg-white/80 backdrop-blur-xl border border-white/60 shadow-xs;
+    @apply bg-white/95 dark:bg-slate-900/95 border border-slate-200/80 dark:border-slate-800/80 shadow-xs;
   }
   .glass-dropdown {
-    @apply bg-white/95 backdrop-blur-2xl border border-slate-200/80 shadow-2xl;
+    @apply bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl rounded-2xl;
   }
   .hover-3d {
-    @apply transition-all duration-300 ease-out hover:-translate-y-1 hover:scale-[1.01] hover:shadow-xl hover:shadow-slate-900/5;
+    @apply transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md hover:shadow-slate-900/5;
   }
   .hover-image-3d {
-    @apply transition-transform duration-700 ease-out hover:scale-105;
+    @apply transition-transform duration-500 ease-out hover:scale-103;
   }
   
-  .animate-pulse-slow {
-    animation: pulse 8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  .editorial-heading {
+    @apply font-serif text-xl sm:text-2xl font-normal tracking-tight text-slate-900 dark:text-slate-100;
   }
-  .animate-pulse-slower {
-    animation: pulse 12s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  .editorial-subheading {
+    @apply text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed;
+  }
+  .editorial-tag {
+    @apply text-[10px] uppercase tracking-[0.18em] font-semibold text-slate-500 dark:text-slate-400;
   }
 }
 

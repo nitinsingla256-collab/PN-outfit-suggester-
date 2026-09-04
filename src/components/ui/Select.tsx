@@ -34,16 +34,16 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           <select
             ref={ref}
             id={selectId}
-            className={`w-full appearance-none bg-white text-gray-900 text-sm rounded-xl px-3.5 py-2.5 pr-10 transition-all duration-150 border cursor-pointer ${
+            className={`w-full appearance-none bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-sm rounded-xl px-3.5 py-2.5 pr-10 transition-colors duration-150 border cursor-pointer ${
               error
                 ? 'border-rose-500/80 focus:border-rose-500 focus:ring-1 focus:ring-rose-500/30'
-                : 'border-gray-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 hover:border-gray-300'
+                : 'border-slate-200 dark:border-slate-800 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600/30 hover:border-slate-300 dark:hover:border-slate-700'
             } focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
             {...props}
           >
             {options
               ? options.map(opt => (
-                  <option key={opt.value} value={opt.value} disabled={opt.disabled} className="bg-white text-gray-800">
+                  <option key={opt.value} value={opt.value} disabled={opt.disabled} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
                     {opt.label}
                   </option>
                 ))

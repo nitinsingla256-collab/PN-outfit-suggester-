@@ -16,13 +16,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const isDark = theme === 'Midnight Luxury';
 
   return (
-    <div className="flex min-h-screen bg-gray-50 text-gray-900 antialiased selection:bg-emerald-500/20 selection:text-emerald-500 relative overflow-hidden transition-colors duration-300">
-      {/* Dynamic Atmospheric Background - Simplified to prevent GPU OOM crash */}
-      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+    <div className="flex min-h-screen bg-[#FAFAFA] dark:bg-[#090D16] text-slate-900 dark:text-slate-100 antialiased selection:bg-emerald-500/20 selection:text-emerald-600 dark:selection:text-emerald-400 relative overflow-hidden transition-colors duration-200">
+      {/* Dynamic Atmospheric Background - Static GPU-safe subtle backdrop */}
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden" aria-hidden="true">
         {isDark ? (
-          <div className="absolute inset-0 bg-gradient-to-br from-indigo-950/20 via-slate-900 to-emerald-950/20" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#090D16] via-[#0D1322] to-[#090D16]" />
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-gray-50 to-emerald-50/30" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#FAFAFA] via-[#F8F9FA] to-[#F3F4F6]" />
         )}
       </div>
       {/* Desktop Sidebar */}
@@ -31,11 +31,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 pb-24 lg:pb-10 relative z-10">
         <Navbar />
-        <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
           {children}
         </main>
       </div>
-
 
       {/* Mobile Navigation */}
       <MobileNav />

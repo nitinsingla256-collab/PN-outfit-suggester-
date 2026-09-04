@@ -23,21 +23,21 @@ export function Card({
   ...props
 }: CardProps) {
   const variantStyles = {
-    default: 'bg-white border border-slate-200/80 text-slate-900 shadow-2xs',
-    elevated: 'bg-white border border-slate-200/80 text-slate-900 shadow-lg shadow-slate-900/5',
-    glass: 'bg-white/85 backdrop-blur-xl border border-white/60 text-slate-900 shadow-sm',
-    linen: 'bg-gradient-to-b from-stone-50/80 via-white to-slate-50/60 border border-stone-200/70 text-slate-900',
-    'gold-accent': 'bg-white border border-emerald-500/30 text-slate-900 shadow-sm hover:border-emerald-500/50',
-    'luxury-dark': 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 border border-slate-700/60 text-white shadow-xl',
+    default: 'bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 text-slate-900 dark:text-slate-100 shadow-2xs',
+    elevated: 'bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 text-slate-900 dark:text-slate-100 shadow-sm',
+    glass: 'bg-white/95 dark:bg-slate-900/95 border border-slate-200/80 dark:border-slate-800 text-slate-900 dark:text-slate-100 shadow-2xs',
+    linen: 'bg-stone-50/60 dark:bg-slate-900 border border-stone-200/80 dark:border-slate-800 text-slate-900 dark:text-slate-100',
+    'gold-accent': 'bg-white dark:bg-slate-900 border border-emerald-500/30 text-slate-900 dark:text-slate-100 shadow-2xs hover:border-emerald-500/50',
+    'luxury-dark': 'bg-slate-950 dark:bg-slate-900 border border-slate-800 text-slate-100 shadow-md',
   };
 
   const hoverStyle = hoverEffect
-    ? 'transition-all duration-300 hover:border-emerald-400/50 hover:shadow-xl hover:shadow-slate-900/5 hover:-translate-y-0.5'
+    ? 'transition-all duration-200 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-sm hover:-translate-y-0.5'
     : '';
 
   return (
     <div
-      className={`rounded-3xl p-6 sm:p-7 ${variantStyles[variant]} ${hoverStyle} ${className}`}
+      className={`rounded-2xl p-5 sm:p-6 ${variantStyles[variant]} ${hoverStyle} ${className}`}
       onClick={onClick}
       {...props}
     >
@@ -52,7 +52,7 @@ export function CardHeader({
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={`flex items-center justify-between mb-5 pb-1 ${className}`} {...props}>
+    <div className={`flex items-center justify-between mb-4 pb-1 ${className}`} {...props}>
       {children}
     </div>
   );
@@ -64,7 +64,7 @@ export function CardTitle({
   ...props
 }: React.HTMLAttributes<HTMLHeadingElement>) {
   return (
-    <h3 className={`text-base sm:text-lg font-bold tracking-tight text-slate-900 font-editorial ${className}`} {...props}>
+    <h3 className={`text-base sm:text-lg font-serif font-normal tracking-tight text-slate-900 dark:text-slate-100 ${className}`} {...props}>
       {children}
     </h3>
   );
@@ -76,7 +76,7 @@ export function CardDescription({
   ...props
 }: React.HTMLAttributes<HTMLParagraphElement>) {
   return (
-    <p className={`text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed ${className}`} {...props}>
+    <p className={`text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 leading-relaxed ${className}`} {...props}>
       {children}
     </p>
   );
