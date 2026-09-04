@@ -60,7 +60,7 @@ export function Navbar() {
   };
 
   return (
-    <header className="sticky top-0 z-20 bg-gray-50/90 backdrop-blur-md border-b border-gray-200 px-4 sm:px-6 py-3.5 flex items-center justify-between gap-4">
+    <header className="sticky top-0 z-20 bg-gray-50 border-b border-gray-200 px-4 sm:px-6 py-3.5 flex items-center justify-between gap-4 shadow-xs">
       {/* Mobile Logo & Breadcrumb / Desktop Title */}
       <div className="flex items-center gap-3 min-w-0">
         <div className="lg:hidden flex items-center gap-2 cursor-pointer" onClick={() => navigateTo('/')}>

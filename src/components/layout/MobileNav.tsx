@@ -103,7 +103,7 @@ export function MobileNav() {
       {/* Main Bottom Nav Bar */}
       <nav
         aria-label="Mobile Bottom Navigation"
-        className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-lg border-t border-gray-200 px-2 py-1.5 pb-safe flex items-center justify-around"
+        className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-gray-200 px-2 py-1.5 pb-safe flex items-center justify-around shadow-sm"
       >
         {mainTabs.map(tab => {
           const Icon = tab.icon;

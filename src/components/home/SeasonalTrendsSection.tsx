@@ -187,7 +187,7 @@ export function SeasonalTrendsSection({ className = "" }: SeasonalTrendsSectionP
       {/* 2. Editorial Headline & Key Insights Banner */}
       {report && (
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 text-white p-6 sm:p-7 border border-slate-800 shadow-xl">
-          <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-gradient-to-bl from-emerald-500/15 to-transparent rounded-full pointer-events-none" />
           <div className="relative z-10 space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-700/60 pb-3">
               <div className="flex items-center gap-2">
@@ -223,7 +223,7 @@ export function SeasonalTrendsSection({ className = "" }: SeasonalTrendsSectionP
                 {report.keyTakeaways.map((takeaway, idx) => (
                   <div
                     key={idx}
-                    className="flex items-start gap-2.5 p-3 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xs text-xs text-slate-200"
+                    className="flex items-start gap-2.5 p-3 rounded-2xl bg-white/10 border border-white/10 text-xs text-slate-200"
                   >
                     <div className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5 font-bold font-mono text-[10px]">
                       0{idx + 1}

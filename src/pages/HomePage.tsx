@@ -201,8 +201,8 @@ export function HomePage() {
     <div className="space-y-10">
       {/* 1. Personalized Editorial Header */}
       <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 text-white rounded-3xl p-6 sm:p-8 shadow-xl border border-slate-700/50">
-        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/3 -mb-20 w-72 h-72 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 bg-gradient-to-bl from-emerald-500/15 via-emerald-500/5 to-transparent rounded-full pointer-events-none" />
+        <div className="absolute bottom-0 left-1/3 -mb-20 w-72 h-72 bg-gradient-to-tr from-teal-500/15 via-teal-500/5 to-transparent rounded-full pointer-events-none" />
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
@@ -572,7 +572,7 @@ export function HomePage() {
                         referrerPolicy="no-referrer"
                       />
                       <div className="absolute top-2.5 right-2.5">
-                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-white/95 text-slate-900 backdrop-blur-md shadow-xs">
+                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-white text-slate-900 shadow-xs border border-slate-100">
                           {outfit.occasion}
                         </span>
                       </div>
@@ -625,7 +625,7 @@ export function HomePage() {
 
       {/* 7. AI Stylist Call to Action */}
       <div className="rounded-3xl border border-slate-700/60 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 text-white p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-xl relative overflow-hidden">
-        <div className="absolute right-0 bottom-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute right-0 bottom-0 w-64 h-64 bg-gradient-to-tl from-emerald-500/15 to-transparent rounded-full pointer-events-none" />
         <div className="space-y-2 text-center sm:text-left relative z-10">
           <div className="flex items-center justify-center sm:justify-start gap-2">
             <Sparkles className="w-4 h-4 text-emerald-400" />

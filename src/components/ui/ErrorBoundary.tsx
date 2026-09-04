@@ -45,16 +45,28 @@ export class ErrorBoundary extends Component<Props, State> {
             <p className="text-sm text-red-700 mb-6">
               {this.props.fallbackMessage || "We encountered an unexpected error while loading this section."}
             </p>
-            <button
-              onClick={() => {
-                this.setState({ hasError: false, error: null });
-                window.location.reload();
-              }}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-red-200 text-red-700 text-sm font-semibold rounded-lg hover:bg-red-50 transition-colors"
-            >
-              <RefreshCw className="w-4 h-4" />
-              Reload Application
-            </button>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  this.setState({ hasError: false, error: null });
+                  window.location.reload();
+                }}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-red-200 text-red-700 text-sm font-semibold rounded-lg hover:bg-red-50 transition-colors"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Reload Application
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  window.location.href = '/?safe=1';
+                }}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white text-sm font-semibold rounded-lg hover:bg-red-700 transition-colors shadow-xs"
+              >
+                Open Safe Mode
+              </button>
+            </div>
           </div>
         </div>
       );

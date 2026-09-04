@@ -25,6 +25,7 @@ import { AddClothingModal } from './components/wardrobe/AddClothingModal';
 import { ClothingDetailModal } from './components/wardrobe/ClothingDetailModal';
 import { CreateLookModal } from './components/outfits/CreateLookModal';
 import { FirstLoginMeasurementsModal } from './components/profile/FirstLoginMeasurementsModal';
+import { SafeModeScreen } from './components/ui/SafeModeScreen';
 
 function PageLoadingSkeleton() {
   return (
@@ -145,6 +146,15 @@ export function AppContent() {
 }
 
 export default function App() {
+  const isSafeMode = typeof window !== 'undefined' && (
+    window.location.search.includes('safe=1') ||
+    window.location.hash.includes('safe=1')
+  );
+
+  if (isSafeMode) {
+    return <SafeModeScreen />;
+  }
+
   return (
     <ErrorBoundary
       fallbackTitle="Application Recovery"

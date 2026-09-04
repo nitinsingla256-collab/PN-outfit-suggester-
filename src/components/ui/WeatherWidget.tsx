@@ -62,29 +62,23 @@ export function WeatherWidget({ className = "" }: { className?: string }) {
 
   return (
     <div
-      
-      
-      className={`relative overflow-hidden rounded-2xl bg-white/40 backdrop-blur-2xl border border-white/40 p-5 shadow-[0_8px_30px_rgba(0,0,0,0.12)] ${className}`}
+      className={`relative overflow-hidden rounded-2xl bg-white/90 border border-slate-200/80 p-5 shadow-sm ${className}`}
     >
-      <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-emerald-300/30 blur-3xl rounded-full pointer-events-none"></div>
+      <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-gradient-to-bl from-emerald-200/40 to-transparent rounded-full pointer-events-none"></div>
 
-      <div className="flex items-center justify-between pb-2 border-b border-white/20 mb-3">
-        <span className="text-[10px] uppercase font-bold tracking-widest text-emerald-800/70 flex items-center gap-1.5">
+      <div className="flex items-center justify-between pb-2 border-b border-slate-100 mb-3">
+        <span className="text-[10px] uppercase font-bold tracking-widest text-emerald-800/80 flex items-center gap-1.5">
           <MapPin className="w-3 h-3" />
           {weather.locationName || "Live Location"}
         </span>
-        <div
-          
-          
-        >
+        <div>
           <Sparkles className="w-3 h-3 text-emerald-500/50" />
         </div>
       </div>
 
       <div className="flex items-center gap-4 relative z-10">
         <div
-          
-          className="p-3 rounded-2xl bg-gradient-to-br from-white/60 to-white/20 shadow-inner border border-white/50 text-emerald-600 backdrop-blur-md"
+          className="p-3 rounded-2xl bg-emerald-50/80 border border-emerald-100/80 text-emerald-600 shadow-xs"
         >
           {weather.isRaining ? (
             <CloudRain className="w-7 h-7" />
