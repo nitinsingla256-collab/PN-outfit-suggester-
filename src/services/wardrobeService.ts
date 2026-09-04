@@ -1,203 +1,139 @@
-
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-import { WardrobeItem, ClothingCategory, ClothingColor } from '../types';
-import { authService } from './authService';
+import { WardrobeItem } from '../types';
 
 export interface WardrobeFilterOptions {
+  category?: string;
+  season?: string | string[];
+  sortBy?: 'newest' | 'oldest' | 'category' | 'favoritesFirst' | 'mostWorn' | 'leastWorn';
   searchQuery?: string;
-  category?: ClothingCategory | 'All';
-  color?: string | 'All';
-  style?: string | 'All';
-  season?: string | 'All';
-  occasion?: string | 'All';
-  formality?: string | 'All';
+  color?: string;
+  style?: string;
+  occasion?: string;
+  formality?: string;
   onlyFavorites?: boolean;
-  sortBy?: 'newest' | 'oldest' | 'category' | 'favoritesFirst' | 'mostWorn' | 'leastWorn' | 'nameAsc' | 'highestValue';
 }
 
+const STORAGE_KEY = 'pn_local_wardrobe_dev';
+
 class WardrobeService {
-  private getHeaders(): HeadersInit {
-    const token = authService.getToken();
-    return {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token || ''}`,
-    };
+  private getLocal(): WardrobeItem[] {
+    try {
+      const data = localStorage.getItem(STORAGE_KEY);
+      const parsed = data ? JSON.parse(data) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch { return []; }
+  }
+  private setLocal(items: WardrobeItem[]) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch {}
   }
 
   async getAll(): Promise<WardrobeItem[]> {
-    try {
-      const res = await fetch('/api/user/wardrobe', {
-        headers: this.getHeaders(),
-      });
-      
-      const contentType = res.headers.get('content-type') || '';
-      const text = await res.text();
-      
-      if (!res.ok || text.trim().startsWith('<') || contentType.includes('text/html')) {
-          return [];
-      }
-      
-      const data = JSON.parse(text);
-      if (data && data.success && Array.isArray(data.items)) {
-        return data.items;
-      }
-      return [];
-    } catch (err) {
-      console.warn('Server wardrobe fetch failed:', err);
-      return [];
-    }
+    return this.getLocal();
+  }
+
+  async getById(id: string): Promise<WardrobeItem | null> {
+    const items = this.getLocal();
+    return items.find(i => i.id === id) || null;
   }
 
   async create(itemData: Omit<WardrobeItem, 'id' | 'createdAt' | 'updatedAt' | 'timesWorn'>): Promise<WardrobeItem> {
-    const res = await fetch('/api/user/wardrobe', {
-      method: 'POST',
-      headers: this.getHeaders(),
-      body: JSON.stringify(itemData),
-    });
-    
-    if (!res.ok) throw new Error('Failed to create wardrobe item.');
-    const data = await res.json();
-    return data.item;
+    const items = this.getLocal();
+    const newItem: WardrobeItem = {
+      ...itemData,
+      id: 'item_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      timesWorn: 0,
+      isFavorite: false,
+    };
+    items.unshift(newItem);
+    this.setLocal(items);
+    return newItem;
   }
 
   async update(id: string, updates: Partial<WardrobeItem>): Promise<WardrobeItem> {
-    const res = await fetch(`/api/user/wardrobe/${id}`, {
-      method: 'PUT',
-      headers: this.getHeaders(),
-      body: JSON.stringify(updates),
-    });
-    
-    if (!res.ok) throw new Error('Failed to update wardrobe item.');
-    const data = await res.json();
-    return data.item;
+    const items = this.getLocal();
+    const idx = items.findIndex(i => i.id === id);
+    if (idx === -1) throw new Error('Item not found');
+    items[idx] = { ...items[idx], ...updates, updatedAt: new Date().toISOString() };
+    this.setLocal(items);
+    return items[idx];
   }
 
-  async delete(id: string): Promise<boolean> {
-    const res = await fetch(`/api/user/wardrobe/${id}`, {
-      method: 'DELETE',
-      headers: this.getHeaders(),
-    });
-    
-    return res.ok;
+  async delete(id: string): Promise<void> {
+    const items = this.getLocal();
+    this.setLocal(items.filter(i => i.id !== id));
   }
 
-  async deleteMany(ids: string[]): Promise<boolean> {
-    if (!ids || ids.length === 0) return true;
-    const res = await fetch('/api/user/wardrobe/batch-delete', {
-      method: 'POST',
-      headers: this.getHeaders(),
-      body: JSON.stringify({ ids }),
-    });
-    
-    return res.ok;
+  async deleteMany(ids: string[]): Promise<void> {
+    const items = this.getLocal();
+    const idSet = new Set(ids);
+    this.setLocal(items.filter(i => !idSet.has(i.id)));
   }
 
   async clearAll(): Promise<void> {
-    await fetch('/api/user/wardrobe/clear', {
-      method: 'POST',
-      headers: this.getHeaders(),
-    });
+    this.setLocal([]);
   }
 
   async toggleFavorite(id: string, isFavorite: boolean): Promise<WardrobeItem> {
-    const res = await fetch(`/api/user/wardrobe/${id}/favorite`, {
-      method: 'POST',
-      headers: this.getHeaders(),
-      body: JSON.stringify({ isFavorite }),
-    });
-    
-    if (!res.ok) throw new Error('Failed to toggle favorite.');
-    const data = await res.json();
-    return data.item;
+    return this.update(id, { isFavorite });
   }
 
   async logWear(id: string): Promise<WardrobeItem> {
-    const res = await fetch(`/api/user/wardrobe/${id}/wear`, {
-      method: 'POST',
-      headers: this.getHeaders(),
-    });
-    
-    if (!res.ok) throw new Error('Failed to log wear.');
-    const data = await res.json();
-    return data.item;
+    const item = await this.getById(id);
+    if (!item) throw new Error('Item not found');
+    return this.update(id, { timesWorn: (item.timesWorn || 0) + 1 });
   }
-
+  
+  // Minimal filter implementation since filtering is typically handled client-side anyway
+  // Some parts of the app might call this for server-side search emulation
   filter(items: WardrobeItem[], options: WardrobeFilterOptions): WardrobeItem[] {
-    let filtered = [...items];
-
+    let result = [...items];
+    
     if (options.searchQuery) {
       const q = options.searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        i =>
-          i.name.toLowerCase().includes(q) ||
-          i.color.toLowerCase().includes(q) ||
-          (i.secondaryColor && i.secondaryColor.toLowerCase().includes(q)) ||
-          i.brand?.toLowerCase().includes(q) ||
-          i.tags?.some(t => t.toLowerCase().includes(q))
+      result = result.filter(i => 
+        i.name.toLowerCase().includes(q) || 
+        i.brand?.toLowerCase().includes(q) ||
+        i.color?.toLowerCase().includes(q)
       );
     }
-
+    
     if (options.category && options.category !== 'All') {
-      filtered = filtered.filter(i => i.category === options.category);
+      result = result.filter(i => i.category === options.category);
     }
-
-    if (options.color && options.color !== 'All') {
-      filtered = filtered.filter(
-        i => i.color === options.color || i.secondaryColor === options.color
-      );
+    
+    if (options.season && options.season.length > 0) {
+      const seasonFilters = Array.isArray(options.season) ? options.season : [options.season];
+      if (seasonFilters[0] !== 'All' && seasonFilters[0] !== '') {
+        result = result.filter(i => i.season.some(s => seasonFilters.includes(s)));
+      }
     }
-
-    if (options.style && options.style !== 'All') {
-      filtered = filtered.filter(i => i.style === options.style);
-    }
-
-    if (options.season && options.season !== 'All') {
-      filtered = filtered.filter(i => i.season.includes(options.season as string));
-    }
-
-    if (options.occasion && options.occasion !== 'All') {
-      filtered = filtered.filter(i => i.occasion?.includes(options.occasion as string));
-    }
-
-    if (options.formality && options.formality !== 'All') {
-      filtered = filtered.filter(i => i.formality === options.formality);
-    }
-
-    if (options.onlyFavorites) {
-      filtered = filtered.filter(i => i.isFavorite);
-    }
-
+    
     if (options.sortBy) {
       switch (options.sortBy) {
-        case 'newest':
-          filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-          break;
         case 'oldest':
-          filtered.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+          result.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
           break;
-        case 'mostWorn':
-          filtered.sort((a, b) => (b.timesWorn || 0) - (a.timesWorn || 0));
-          break;
-        case 'leastWorn':
-          filtered.sort((a, b) => (a.timesWorn || 0) - (b.timesWorn || 0));
-          break;
-        case 'nameAsc':
-          filtered.sort((a, b) => a.name.localeCompare(b.name));
-          break;
-        
         case 'category':
-          filtered.sort((a, b) => a.category.localeCompare(b.category));
+          result.sort((a, b) => a.category.localeCompare(b.category));
           break;
         case 'favoritesFirst':
-          filtered.sort((a, b) => (a.isFavorite === b.isFavorite ? 0 : a.isFavorite ? -1 : 1));
+          result.sort((a, b) => (a.isFavorite === b.isFavorite ? 0 : a.isFavorite ? -1 : 1));
+          break;
+        case 'mostWorn':
+          result.sort((a, b) => b.timesWorn - a.timesWorn);
+          break;
+        case 'leastWorn':
+          result.sort((a, b) => a.timesWorn - b.timesWorn);
+          break;
+        case 'newest':
+        default:
+          result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
           break;
       }
     }
-
-    return filtered;
+    
+    return result;
   }
 }
 

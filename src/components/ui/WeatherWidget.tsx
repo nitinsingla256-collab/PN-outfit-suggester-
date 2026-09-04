@@ -21,7 +21,9 @@ export function WeatherWidget({ className = "" }: { className?: string }) {
       const local = localStorage.getItem(`pn_weather_${locKey}`);
       if (local) {
         const parsed = JSON.parse(local);
-        if (parsed?.data) return parsed.data;
+        if (parsed?.data && typeof parsed.data === 'object' && typeof parsed.data.temperatureCelsius === 'number') {
+          return parsed.data;
+        }
       }
     } catch {}
     return {

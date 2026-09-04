@@ -113,7 +113,7 @@ export function PlannerPage() {
   }, [year, month]);
 
   // Selected date plans
-  const selectedPlans = plans.filter((p) => p.date === selectedDateStr);
+  const selectedPlans = (Array.isArray(plans) ? plans : []).filter((p) => p && typeof p === "object" && p.date === selectedDateStr);
 
   return (
     <div className="space-y-8">
@@ -214,7 +214,7 @@ export function PlannerPage() {
           <div className="grid grid-cols-7 gap-1.5">
             {calendarDays.map((day, idx) => {
               const isSelected = day.dateStr === selectedDateStr;
-              const hasPlans = plans.some((p) => p.date === day.dateStr);
+              const hasPlans = (Array.isArray(plans) ? plans : []).some((p) => p && typeof p === "object" && p.date === day.dateStr);
 
               return (
                 <button

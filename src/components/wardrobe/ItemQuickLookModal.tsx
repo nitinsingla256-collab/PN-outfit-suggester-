@@ -200,10 +200,13 @@ export function ItemQuickLookModal({
             <div className="md:col-span-5 bg-slate-950 p-6 flex flex-col justify-between text-white relative overflow-hidden">
               <div className="relative aspect-[3/4] w-full rounded-2xl overflow-hidden shadow-lg border border-slate-800 bg-slate-900 mb-4">
                 <img
-                  src={item.imageUrl}
+                  src={item.imageUrl || 'https://images.unsplash.com/photo-1550639525-c97d455acf70?auto=format&fit=crop&q=80&w=300'}
                   alt={item.name}
                   className="w-full h-full object-cover"
                   referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1550639525-c97d455acf70?auto=format&fit=crop&q=80&w=300';
+                  }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent pointer-events-none" />
                 

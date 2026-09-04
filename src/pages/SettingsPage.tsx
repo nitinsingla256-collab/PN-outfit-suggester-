@@ -38,11 +38,38 @@ export function SettingsPage() {
     showToast,
     openMeasurementsModal,
     navigateTo,
+    updateUser,
   } = useApp();
 
-  const [currency, setCurrency] = useState("EUR");
-  const [units, setUnits] = useState("Metric (°C, cm)");
-  const [stylingRisk, setStylingRisk] = useState("Curated Classic");
+  const [currency, setCurrency] = useState(user?.preferences?.currency || "EUR");
+  const [units, setUnits] = useState(user?.preferences?.measurementSystem || "Metric (°C, cm)");
+  const [stylingRisk, setStylingRisk] = useState(user?.preferences?.stylingRisk || "Curated Classic");
+
+  const handlePreferenceChange = async (key: string, value: string) => {
+    if (key === 'currency') setCurrency(value);
+    if (key === 'units') setUnits(value);
+    if (key === 'stylingRisk') setStylingRisk(value);
+
+    try {
+      await updateUser({
+        preferences: {
+          ...(user?.preferences || {} as any),
+          [key === 'units' ? 'measurementSystem' : key]: value,
+        },
+      });
+      showToast({
+        title: "Preference Updated",
+        description: "Your settings have been saved successfully.",
+        type: "success",
+      });
+    } catch (err) {
+      showToast({
+        title: "Error",
+        description: "Failed to save preference.",
+        type: "error",
+      });
+    }
+  };
 
   const handleThemeChange = (newTheme: ThemeMode) => {
     if (newTheme === theme) return;
@@ -342,7 +369,7 @@ export function SettingsPage() {
             <Select
               label="Valuation Currency"
               value={currency}
-              onChange={(e) => setCurrency(e.target.value)}
+              onChange={(e) => handlePreferenceChange('currency', e.target.value)}
             >
               <option value="EUR" className="bg-white">
                 EUR (€) - Euro
@@ -364,7 +391,7 @@ export function SettingsPage() {
             <Select
               label="Measurement System"
               value={units}
-              onChange={(e) => setUnits(e.target.value)}
+              onChange={(e) => handlePreferenceChange('units', e.target.value)}
             >
               <option value="Metric (°C, cm)" className="bg-white">
                 Metric (°C, cm)
@@ -430,7 +457,7 @@ export function SettingsPage() {
             <Select
               label="Styling Risk & Experimentation"
               value={stylingRisk}
-              onChange={(e) => setStylingRisk(e.target.value)}
+              onChange={(e) => handlePreferenceChange('stylingRisk', e.target.value)}
             >
               <option value="Safe & Minimal" className="bg-white">
                 Strictly Minimal & Safe

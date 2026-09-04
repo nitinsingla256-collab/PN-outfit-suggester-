@@ -1170,6 +1170,17 @@ function StylistPageContent() {
                                       alt={piece.item.name}
                                       className="w-full h-full object-cover"
                                       referrerPolicy="no-referrer"
+                                      onError={(e) => {
+                                        const target = e.target as HTMLImageElement;
+                                        target.style.display = 'none';
+                                        const parent = target.parentElement;
+                                        if (parent && !parent.querySelector('.fallback-icon')) {
+                                          const fallback = document.createElement('div');
+                                          fallback.className = 'w-full h-full flex flex-col items-center justify-center text-gray-400 p-2 text-center fallback-icon';
+                                          fallback.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-1"><path d="M20.38 3.46L16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"/></svg><span class="text-[10px]">Suggested</span>';
+                                          parent.appendChild(fallback);
+                                        }
+                                      }}
                                     />
                                   ) : (
                                     <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 p-2 text-center">
@@ -1404,7 +1415,7 @@ function StylistPageContent() {
                     {/* Pieces Mini Row */}{" "}
                     <div className="flex items-center gap-2 pt-1">
                       {" "}
-                      {outfit.items.slice(0, 4).map((piece, pIdx) => {
+                      {(outfit.items || []).slice(0, 4).map((piece, pIdx) => {
                         const itemObj = wardrobe.find(
                           (w) => w.id === piece.itemId,
                         );
@@ -1421,6 +1432,17 @@ function StylistPageContent() {
                                 alt={itemObj.name}
                                 className="w-full h-full object-cover"
                                 referrerPolicy="no-referrer"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = 'none';
+                                  const parent = target.parentElement;
+                                  if (parent && !parent.querySelector('.fallback-icon')) {
+                                    const fallback = document.createElement('div');
+                                    fallback.className = 'w-full h-full flex items-center justify-center text-gray-400 fallback-icon';
+                                    fallback.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.38 3.46L16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"/></svg>';
+                                    parent.appendChild(fallback);
+                                  }
+                                }}
                               />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-gray-400">

@@ -184,11 +184,11 @@ export function CreateLookModal() {
                 >
                   <div className="relative aspect-square w-full rounded-lg overflow-hidden bg-white">
                     <img
-                      src={item.imageUrl}
+                      src={item.imageUrl || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=300'}
                       alt={item.name}
                       className="w-full h-full object-cover"
                       referrerPolicy="no-referrer"
-                    />
+                    onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=300'; }} />
                     {isSelected && (
                       <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-emerald-500 text-gray-50 flex items-center justify-center shadow">
                         <Check className="w-3 h-3 stroke-[3]" />

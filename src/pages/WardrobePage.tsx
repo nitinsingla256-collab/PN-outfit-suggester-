@@ -805,10 +805,13 @@ export function WardrobePage() {
                   {/* Image Container */}
                   <div className="relative aspect-[3/4] bg-slate-100 overflow-hidden">
                     <img
-                      src={item.imageUrl}
+                      src={item.imageUrl || 'https://images.unsplash.com/photo-1550639525-c97d455acf70?auto=format&fit=crop&q=80&w=300'}
                       alt={item.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
                       referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1550639525-c97d455acf70?auto=format&fit=crop&q=80&w=300';
+                      }}
                     />
 
                     {/* Gradient shade on bottom of image for readability */}

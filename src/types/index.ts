@@ -202,6 +202,9 @@ export interface UserPreferences {
   dislikedColors: ClothingColor[];
   preferredFits: ClothingFit[];
   temperatureUnit: 'Celsius' | 'Fahrenheit';
+  currency?: string;
+  measurementSystem?: string;
+  stylingRisk?: string;
   theme: 'Dark' | 'Light' | 'System' | ThemeMode;
   notifications: {
     dailySuggestions: boolean;

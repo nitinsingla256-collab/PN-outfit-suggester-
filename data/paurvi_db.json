@@ -9,7 +9,7 @@
       "role": "supervisor",
       "status": "Active",
       "joinedDate": "2026-08-29",
-      "lastActive": "2026-09-03T11:15:28.765Z",
+      "lastActive": "2026-09-03T11:22:59.498Z",
       "pronouns": "she/they",
       "bio": "Lead Atelier Supervisor & Haute Horlogerie Archivist.",
       "location": "Paris, France",
@@ -346,6 +346,18 @@
       "userId": "usr_1788434136737_ffcac08e",
       "createdAt": "2026-09-03T11:15:36.746Z",
       "expiresAt": "2026-10-03T11:15:36.746Z"
+    },
+    {
+      "token": "paurvi_tok_1072c98abfd4470d0c4ff20c3fa8d8021b352f031c86a7dcf462c7bec3a1d6ed",
+      "userId": "usr_supervisor_paurvi",
+      "createdAt": "2026-09-03T11:21:14.680Z",
+      "expiresAt": "2026-10-03T11:21:14.680Z"
+    },
+    {
+      "token": "paurvi_tok_1649f53a055e8efe711baecff9b837926d02913c28163b90433f7c410cd8c40e",
+      "userId": "usr_supervisor_paurvi",
+      "createdAt": "2026-09-03T11:22:59.498Z",
+      "expiresAt": "2026-10-03T11:22:59.498Z"
     }
   ],
   "wardrobes": {
@@ -389,6 +401,24 @@
     "usr_1788434136737_ffcac08e": []
   },
   "activityLogs": [
+    {
+      "id": "log_1788434579498_c02841",
+      "userId": "usr_supervisor_paurvi",
+      "userName": "Nitin Singla (Admin)",
+      "userEmail": "nitinsingla256@gmail.com",
+      "action": "User signed into PAURVI",
+      "category": "AUTH",
+      "timestamp": "2026-09-03T11:22:59.498Z"
+    },
+    {
+      "id": "log_1788434474680_6cc311",
+      "userId": "usr_supervisor_paurvi",
+      "userName": "Nitin Singla (Admin)",
+      "userEmail": "nitinsingla256@gmail.com",
+      "action": "User signed into PAURVI",
+      "category": "AUTH",
+      "timestamp": "2026-09-03T11:21:14.680Z"
+    },
     {
       "id": "log_1788434136746_8291f5",
       "userId": "usr_1788434136737_ffcac08e",

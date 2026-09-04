@@ -238,13 +238,13 @@ export function OutfitsPage() {
                   {outfit.imageUrl && (
                     <div className="relative aspect-[16/10] rounded-2xl overflow-hidden mb-4 bg-slate-100 border border-slate-200/90 shadow-2xs">
                       <img
-                        src={outfit.imageUrl}
+                        src={outfit.imageUrl || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=300'}
                         alt={outfit.name}
                         className="w-full h-full object-cover"
                         referrerPolicy="no-referrer"
                         
                         
-                      />
+                      onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=300'; }} />
 
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none" />
 
@@ -311,11 +311,11 @@ export function OutfitsPage() {
                             className="w-11 h-11 rounded-xl overflow-hidden shrink-0 border border-slate-200/90 bg-slate-50 shadow-2xs relative group/piece cursor-pointer"
                           >
                             <img
-                              src={item.imageUrl}
+                              src={item.imageUrl || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=300'}
                               alt={item.name}
                               className="w-full h-full object-cover"
                               referrerPolicy="no-referrer"
-                            />
+                            onError={(e) => { (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=300'; }} />
                             <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover/piece:opacity-100 transition-opacity flex items-center justify-center">
                               <Eye className="w-3 h-3 text-white" />
                             </div>

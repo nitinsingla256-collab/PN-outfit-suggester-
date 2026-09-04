@@ -25,8 +25,8 @@ export function FavoritesPage() {
 
   const [activeTab, setActiveTab] = useState<"pieces" | "outfits">("pieces");
 
-  const favoritePieces = wardrobe.filter((item) => item.isFavorite);
-  const favoriteOutfits = outfits.filter((outfit) => outfit.isFavorite);
+  const favoritePieces = wardrobe.filter((item) => item?.isFavorite);
+  const favoriteOutfits = outfits.filter((outfit) => outfit?.isFavorite);
 
   return (
     <div className="space-y-6">
@@ -209,7 +209,7 @@ export function FavoritesPage() {
 
               <div className="pt-4 mt-4 border-t border-gray-200 flex items-center justify-between text-xs">
                 <span className="text-gray-500 font-mono">
-                  {outfit.items.length} pieces attached
+                  {outfit.items?.length || 0} pieces attached
                 </span>
                 <Button
                   variant="ghost"

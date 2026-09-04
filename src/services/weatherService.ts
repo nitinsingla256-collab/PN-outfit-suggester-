@@ -35,13 +35,19 @@ const CACHE_TTL_MS = 25 * 60 * 1000; // 25 minutes
 function getCachedWeather(key: string): WeatherData | null {
   try {
     const mem = weatherMemoryCache[key];
-    if (mem && Date.now() - mem.timestamp < CACHE_TTL_MS) {
+    if (mem && mem.data && typeof mem.timestamp === 'number' && Date.now() - mem.timestamp < CACHE_TTL_MS) {
       return mem.data;
     }
     const local = localStorage.getItem(`pn_weather_${key}`);
     if (local) {
       const parsed = JSON.parse(local);
-      if (parsed && Date.now() - parsed.timestamp < CACHE_TTL_MS) {
+      if (
+        parsed &&
+        parsed.data &&
+        typeof parsed.data === 'object' &&
+        typeof parsed.timestamp === 'number' &&
+        Date.now() - parsed.timestamp < CACHE_TTL_MS
+      ) {
         weatherMemoryCache[key] = parsed;
         return parsed.data;
       }
@@ -97,24 +103,28 @@ export const weatherService = {
       } catch (e) {
         throw new Error("Invalid weather response format");
       }
-      const current = data.current;
+      
+      const current = data?.current;
+      if (!current || typeof current.temperature_2m !== 'number') {
+        throw new Error("Missing current weather data");
+      }
 
       const isRaining =
-        current.precipitation > 0 || current.rain > 0 || current.showers > 0;
+        (current.precipitation || 0) > 0 || (current.rain || 0) > 0 || (current.showers || 0) > 0;
       let condition = "Clear";
-      if (current.cloud_cover > 80) condition = "Overcast";
-      else if (current.cloud_cover > 50) condition = "Cloudy";
-      else if (current.cloud_cover > 20) condition = "Partly Cloudy";
+      if ((current.cloud_cover || 0) > 80) condition = "Overcast";
+      else if ((current.cloud_cover || 0) > 50) condition = "Cloudy";
+      else if ((current.cloud_cover || 0) > 20) condition = "Partly Cloudy";
 
       if (isRaining) condition = "Rain";
-      if (current.snowfall > 0) condition = "Snow";
+      if ((current.snowfall || 0) > 0) condition = "Snow";
 
       const weatherResult: WeatherData = {
         temperatureCelsius: Math.round(current.temperature_2m),
-        feelsLikeCelsius: Math.round(current.apparent_temperature),
+        feelsLikeCelsius: Math.round(current.apparent_temperature || current.temperature_2m),
         condition,
         isRaining,
-        windSpeed: current.wind_speed_10m,
+        windSpeed: current.wind_speed_10m || 0,
         lastUpdated: new Date().toISOString(),
         locationName,
       };

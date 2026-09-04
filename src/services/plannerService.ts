@@ -1,75 +1,52 @@
-
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
 import { PlannedOutfit } from '../types';
-import { authService } from './authService';
+
+const STORAGE_KEY = 'pn_local_planner_dev';
 
 class PlannerService {
-  private getHeaders(): HeadersInit {
-    const token = authService.getToken();
-    return {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token || ''}`,
-    };
+  private getLocal(): PlannedOutfit[] {
+    try {
+      const data = localStorage.getItem(STORAGE_KEY);
+      const parsed = data ? JSON.parse(data) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch { return []; }
+  }
+  private setLocal(items: PlannedOutfit[]) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch {}
   }
 
   async getAll(): Promise<PlannedOutfit[]> {
-    try {
-      const res = await fetch('/api/user/plans', {
-        headers: this.getHeaders(),
-      });
-      
-      const contentType = res.headers.get('content-type') || '';
-      const text = await res.text();
-      
-      if (!res.ok || text.trim().startsWith('<') || contentType.includes('text/html')) {
-          return [];
-      }
-      
-      const data = JSON.parse(text);
-      if (data && data.success && Array.isArray(data.plans)) {
-        return data.plans;
-      }
-      return [];
-    } catch (err) {
-      console.warn('Server planner fetch failed:', err);
-      return [];
-    }
+    return this.getLocal();
   }
 
-  async create(planData: Omit<PlannedOutfit, 'id' | 'createdAt' | 'isCompleted'>): Promise<PlannedOutfit> {
-    const res = await fetch('/api/user/plans', {
-      method: 'POST',
-      headers: this.getHeaders(),
-      body: JSON.stringify(planData),
-    });
-    
-    if (!res.ok) throw new Error('Failed to create planned outfit.');
-    const data = await res.json();
-    return data.plan;
+  async create(data: Omit<PlannedOutfit, 'id' | 'createdAt' | 'isCompleted'>): Promise<PlannedOutfit> {
+    const items = this.getLocal();
+    const newItem: PlannedOutfit = {
+      ...data,
+      id: 'plan_' + Date.now(),
+      createdAt: new Date().toISOString(),
+      isCompleted: false,
+    };
+    items.unshift(newItem);
+    this.setLocal(items);
+    return newItem;
   }
 
   async update(id: string, updates: Partial<PlannedOutfit>): Promise<PlannedOutfit> {
-    const res = await fetch(`/api/user/plans/${id}`, {
-      method: 'PUT',
-      headers: this.getHeaders(),
-      body: JSON.stringify(updates),
-    });
-    
-    if (!res.ok) throw new Error('Failed to update planned outfit.');
-    const data = await res.json();
-    return data.plan;
+    const items = this.getLocal();
+    const idx = items.findIndex(i => i.id === id);
+    if (idx === -1) throw new Error('Plan not found');
+    items[idx] = { ...items[idx], ...updates };
+    this.setLocal(items);
+    return items[idx];
   }
 
-  async delete(id: string): Promise<boolean> {
-    const res = await fetch(`/api/user/plans/${id}`, {
-      method: 'DELETE',
-      headers: this.getHeaders(),
-    });
-    
-    return res.ok;
+  async delete(id: string): Promise<void> {
+    const items = this.getLocal();
+    this.setLocal(items.filter(i => i.id !== id));
+  }
+
+  async clearAll(): Promise<void> {
+    this.setLocal([]);
   }
 }
 

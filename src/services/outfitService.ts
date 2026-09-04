@@ -1,166 +1,74 @@
+import { Outfit } from '../types';
 
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-import { Outfit, WardrobeItem } from '../types';
-import { authService } from './authService';
-
-export interface OutfitFilterOptions {
-  searchQuery?: string;
-  season?: string | 'All';
-  occasion?: string | 'All';
-  onlyFavorites?: boolean;
-  sortBy?: 'newest' | 'oldest' | 'nameAsc' | 'mostWorn';
-}
+const STORAGE_KEY = 'pn_local_outfits_dev';
 
 class OutfitService {
-  private getHeaders(): HeadersInit {
-    const token = authService.getToken();
-    return {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token || ''}`,
-    };
+  private getLocal(): Outfit[] {
+    try {
+      const data = localStorage.getItem(STORAGE_KEY);
+      const parsed = data ? JSON.parse(data) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch { return []; }
+  }
+  private setLocal(items: Outfit[]) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch {}
   }
 
   async getAll(): Promise<Outfit[]> {
-    try {
-      const res = await fetch('/api/user/outfits', {
-        headers: this.getHeaders(),
-      });
-      
-      const contentType = res.headers.get('content-type') || '';
-      const text = await res.text();
-      
-      if (!res.ok || text.trim().startsWith('<') || contentType.includes('text/html')) {
-          return [];
-      }
-      
-      const data = JSON.parse(text);
-      if (data && data.success && Array.isArray(data.outfits)) {
-        return data.outfits;
-      }
-      return [];
-    } catch (err) {
-      console.warn('Server outfit fetch failed:', err);
-      return [];
-    }
+    return this.getLocal();
   }
 
-  async create(outfitData: Omit<Outfit, 'id' | 'createdAt' | 'updatedAt' | 'timesWorn'>): Promise<Outfit> {
-    const res = await fetch('/api/user/outfits', {
-      method: 'POST',
-      headers: this.getHeaders(),
-      body: JSON.stringify(outfitData),
-    });
-    
-    if (!res.ok) throw new Error('Failed to create outfit.');
-    const data = await res.json();
-    return data.outfit;
+  async getById(id: string): Promise<Outfit | null> {
+    return this.getLocal().find(i => i.id === id) || null;
+  }
+
+  async create(data: Omit<Outfit, 'id' | 'createdAt' | 'updatedAt' | 'timesWorn'>): Promise<Outfit> {
+    const items = this.getLocal();
+    const newItem: Outfit = {
+      ...data,
+      id: 'outfit_' + Date.now(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      timesWorn: 0,
+      isFavorite: false,
+    };
+    items.unshift(newItem);
+    this.setLocal(items);
+    return newItem;
   }
 
   async update(id: string, updates: Partial<Outfit>): Promise<Outfit> {
-    const res = await fetch(`/api/user/outfits/${id}`, {
-      method: 'PUT',
-      headers: this.getHeaders(),
-      body: JSON.stringify(updates),
-    });
-    
-    if (!res.ok) throw new Error('Failed to update outfit.');
-    const data = await res.json();
-    return data.outfit;
+    const items = this.getLocal();
+    const idx = items.findIndex(i => i.id === id);
+    if (idx === -1) throw new Error('Outfit not found');
+    items[idx] = { ...items[idx], ...updates, updatedAt: new Date().toISOString() };
+    this.setLocal(items);
+    return items[idx];
   }
 
-  async delete(id: string): Promise<boolean> {
-    const res = await fetch(`/api/user/outfits/${id}`, {
-      method: 'DELETE',
-      headers: this.getHeaders(),
-    });
-    
-    return res.ok;
+  async delete(id: string): Promise<void> {
+    const items = this.getLocal();
+    this.setLocal(items.filter(i => i.id !== id));
   }
-
-  async deleteMany(ids: string[]): Promise<boolean> {
-    if (!ids || ids.length === 0) return true;
-    const res = await fetch('/api/user/outfits/batch-delete', {
-      method: 'POST',
-      headers: this.getHeaders(),
-      body: JSON.stringify({ ids }),
-    });
-    
-    return res.ok;
+  
+  async deleteMany(ids: string[]): Promise<void> {
+    const items = this.getLocal();
+    const idSet = new Set(ids);
+    this.setLocal(items.filter(i => !idSet.has(i.id)));
   }
 
   async clearAll(): Promise<void> {
-    await fetch('/api/user/outfits/clear', {
-      method: 'POST',
-      headers: this.getHeaders(),
-    });
+    this.setLocal([]);
   }
 
   async toggleFavorite(id: string, isFavorite: boolean): Promise<Outfit> {
-    const res = await fetch(`/api/user/outfits/${id}/favorite`, {
-      method: 'POST',
-      headers: this.getHeaders(),
-      body: JSON.stringify({ isFavorite }),
-    });
-    
-    if (!res.ok) throw new Error('Failed to toggle favorite.');
-    const data = await res.json();
-    return data.outfit;
+    return this.update(id, { isFavorite });
   }
 
   async logWear(id: string): Promise<Outfit> {
-    const res = await fetch(`/api/user/outfits/${id}/wear`, {
-      method: 'POST',
-      headers: this.getHeaders(),
-    });
-    
-    if (!res.ok) throw new Error('Failed to log wear.');
-    const data = await res.json();
-    return data.outfit;
-  }
-
-  filter(outfits: Outfit[], options: OutfitFilterOptions): Outfit[] {
-    let filtered = [...outfits];
-
-    if (options.searchQuery) {
-      const q = options.searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        o => o.name.toLowerCase().includes(q) || o.description?.toLowerCase().includes(q)
-      );
-    }
-
-    if (options.season && options.season !== 'All') {
-      filtered = filtered.filter(o => o.season?.includes(options.season as string));
-    }
-
-    if (options.occasion && options.occasion !== 'All') {
-      filtered = filtered.filter(o => o.occasion?.includes(options.occasion as string));
-    }
-
-    if (options.onlyFavorites) {
-      filtered = filtered.filter(o => o.isFavorite);
-    }
-
-    if (options.sortBy) {
-      switch (options.sortBy) {
-        case 'newest':
-          filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-          break;
-        case 'oldest':
-          filtered.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-          break;
-        case 'mostWorn':
-          filtered.sort((a, b) => (b.timesWorn || 0) - (a.timesWorn || 0));
-          break;
-        case 'nameAsc':
-          filtered.sort((a, b) => a.name.localeCompare(b.name));
-          break;
-      }
-    }
-
-    return filtered;
+    const item = await this.getById(id);
+    if (!item) throw new Error('Outfit not found');
+    return this.update(id, { timesWorn: (item.timesWorn || 0) + 1 });
   }
 }
 

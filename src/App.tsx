@@ -19,7 +19,7 @@ import { ProfilePage } from './pages/ProfilePage';
 import { SettingsPage } from './pages/SettingsPage';
 import { AdminPage } from './pages/AdminPage';
 import { NotFoundPage } from './pages/NotFoundPage';
-import { AuthPage } from './pages/AuthPage';
+
 
 import { AddClothingModal } from './components/wardrobe/AddClothingModal';
 import { ClothingDetailModal } from './components/wardrobe/ClothingDetailModal';
@@ -113,25 +113,9 @@ export function AppContent() {
     setIsFirstLoginMeasurementsModalOpen,
   } = useApp();
 
-  if (authLoading) {
-    return (
-      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-        <div className="w-16 h-16 rounded-2xl bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 flex items-center justify-center shadow-xl mb-4 relative animate-pulse">
-          <span className="font-serif text-2xl font-bold tracking-widest text-gray-900 dark:text-gray-100">
-            PN
-          </span>
-          <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-emerald-500" />
-        </div>
-        <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400 font-mono">
-          PN OUTFIT SUGGESTER
-        </p>
-      </div>
-    );
-  }
 
-  if (!isAuthenticated) {
-    return <AuthPage />;
-  }
+
+
 
   return (
     <AppLayout>

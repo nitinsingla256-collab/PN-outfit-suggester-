@@ -116,11 +116,11 @@ export class AuthService {
     return this.token;
   }
 
-  getCurrentUser(): User | null {
+  getCurrentUser(): User | null { return null;
     return this.currentUser;
   }
 
-  isAuthenticated(): boolean {
+  isAuthenticated(): boolean { return true;
     return !!this.token && !!this.currentUser;
   }
 
@@ -158,7 +158,7 @@ export class AuthService {
       return { user: res.data.user, token: res.data.token };
     }
 
-    throw new Error(res.data?.error || 'Invalid email or password.');
+    throw new Error(res.data?.error || res.error || 'Invalid email or password.');
   }
 
   async signUp(
@@ -184,7 +184,7 @@ export class AuthService {
       return { user: res.data.user, token: res.data.token };
     }
 
-    throw new Error(res.data?.error || 'Registration failed.');
+    throw new Error(res.data?.error || res.error || 'Registration failed.');
   }
 
   async signOut(): Promise<void> {

@@ -34,7 +34,8 @@ import {
 
 export function ProfilePage() {
   const { user, updateUser, showToast } = useApp();
-
+  const [imgError, setImgError] = useState(false);
+  
   // Basic Profile State
   const [name, setName] = useState(user.name);
   const [email, setEmail] = useState(user.email);
@@ -210,12 +211,13 @@ export function ProfilePage() {
           <div className="flex flex-col sm:flex-row items-center gap-6 pb-6 border-b border-slate-100">
             <div className="relative">
               <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-emerald-500 bg-slate-100 shadow-md">
-                {user.avatarUrl ? (
+                {user.avatarUrl && !imgError ? (
                   <img
                     src={user.avatarUrl}
                     alt={user.name}
                     className="w-full h-full object-cover"
                     referrerPolicy="no-referrer"
+                    onError={() => setImgError(true)}
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-slate-400">
