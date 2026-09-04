@@ -13,6 +13,7 @@ import { Badge } from '../ui/Badge';
 import { ClothingCategory, ClothingFit, ClothingFormality, Season } from '../../types';
 import { useApp } from '../../context/AppContext';
 import { aiStylistService, GarmentAnalysisResult } from '../../services/aiStylistService';
+import { optimizeImage, FALLBACK_GARMENT_IMAGE } from '../../utils/imageOptimizer';
 import {
   Sparkles,
   UploadCloud,
@@ -250,7 +251,7 @@ export function AddClothingModal() {
     });
   };
 
-  // Process files (single or multiple)
+  // Process files (single or multiple) with client-side image optimization
   const handleFiles = async (files: FileList | File[]) => {
     const validImageFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
 
@@ -270,7 +271,15 @@ export function AddClothingModal() {
       for (let i = 0; i < validImageFiles.length; i++) {
         const file = validImageFiles[i];
         try {
-          const b64 = await readFileAsDataUrl(file);
+          // Client-side image optimization pipeline (resize to <=1280px, compress to WebP/JPEG)
+          let b64: string;
+          try {
+            const opt = await optimizeImage(file, { maxDimension: 1280, quality: 0.82 });
+            b64 = opt.dataUrl;
+          } catch {
+            b64 = await readFileAsDataUrl(file);
+          }
+
           // Derive clean name from file name
           const cleanName = file.name
             .replace(/\.[^/.]+$/, '')
@@ -282,7 +291,7 @@ export function AddClothingModal() {
             name: cleanName || `Piece #${batchItems.length + i + 1}`,
             imageUrl: b64,
             imageBase64: b64,
-            mimeType: file.type || 'image/jpeg',
+            mimeType: 'image/webp',
             category: 'Tops',
             type: 'Shirt',
             color: 'Navy',
@@ -307,21 +316,32 @@ export function AddClothingModal() {
 
       showToast({
         title: 'Images Loaded',
-        description: `Loaded ${newItems.length} image(s). You have ${merged.length} pieces in the batch queue.`,
+        description: `Loaded ${newItems.length} optimized image(s). You have ${merged.length} pieces in the batch queue.`,
         type: 'info',
       });
 
       // Automatically trigger batch AI analysis on new items
       triggerBatchAIAnalysis(newItems, merged);
     } else {
-      // Single file workflow
+      // Single file workflow with optimization
       const file = validImageFiles[0];
-      const result = await readFileAsDataUrl(file);
-      setImageBase64(result);
-      setImageUrl(result);
-      setErrors(prev => ({ ...prev, imageUrl: '' }));
-      setCurrentStep('ai_review');
-      await triggerAIAnalysis({ base64: result, mimeType: file.type });
+      try {
+        const opt = await optimizeImage(file, { maxDimension: 1280, quality: 0.82 });
+        const result = opt.dataUrl;
+        setImageBase64(result);
+        setImageUrl(result);
+        setErrors(prev => ({ ...prev, imageUrl: '' }));
+        setCurrentStep('ai_review');
+        await triggerAIAnalysis({ base64: result, mimeType: 'image/webp' });
+      } catch (err: any) {
+        console.error('Image optimization failed, falling back to direct read:', err);
+        const raw = await readFileAsDataUrl(file);
+        setImageBase64(raw);
+        setImageUrl(raw);
+        setErrors(prev => ({ ...prev, imageUrl: '' }));
+        setCurrentStep('ai_review');
+        await triggerAIAnalysis({ base64: raw, mimeType: file.type });
+      }
     }
   };
 
@@ -466,6 +486,17 @@ export function AddClothingModal() {
         .map(t => t.trim())
         .filter(Boolean);
 
+      // Ensure image is optimized before saving
+      let finalImageUrl = imageUrl.trim();
+      if (finalImageUrl.startsWith('data:image/')) {
+        try {
+          const opt = await optimizeImage(finalImageUrl, { maxDimension: 1280, quality: 0.82 });
+          finalImageUrl = opt.dataUrl;
+        } catch (e) {
+          console.warn('Image optimization skipped on save:', e);
+        }
+      }
+
       await addWardrobeItem({
         name: name.trim(),
         category,
@@ -482,7 +513,7 @@ export function AddClothingModal() {
         season: selectedSeasons,
         occasion: selectedOccasions,
         tags: parsedTags.length > 0 ? parsedTags : ['Wardrobe Essential', category],
-        imageUrl: imageUrl.trim(),
+        imageUrl: finalImageUrl,
         isFavorite: false,
         careInstructions: careInstructions.trim() || undefined,
       });
@@ -515,6 +546,16 @@ export function AddClothingModal() {
       let successCount = 0;
 
       for (const item of batchItems) {
+        let finalImageUrl = item.imageUrl.trim();
+        if (finalImageUrl.startsWith('data:image/')) {
+          try {
+            const opt = await optimizeImage(finalImageUrl, { maxDimension: 1280, quality: 0.82 });
+            finalImageUrl = opt.dataUrl;
+          } catch (e) {
+            console.warn('Batch image optimization skipped:', e);
+          }
+        }
+
         await addWardrobeItem({
           name: item.name.trim(),
           category: item.category,
@@ -531,7 +572,7 @@ export function AddClothingModal() {
           season: item.season,
           occasion: item.occasion,
           tags: item.tags.length > 0 ? item.tags : ['Wardrobe Essential', item.category],
-          imageUrl: item.imageUrl,
+          imageUrl: finalImageUrl,
           isFavorite: false,
           careInstructions: item.careInstructions,
         });
@@ -548,8 +589,8 @@ export function AddClothingModal() {
     } catch (err: any) {
       console.error(err);
       showToast({
-        title: 'Batch Save Error',
-        description: err.message || 'Some items could not be saved.',
+        title: 'Batch Save Interrupted',
+        description: err.message || 'Error occurred while saving batch items.',
         type: 'error',
       });
     } finally {
@@ -810,7 +851,7 @@ export function AddClothingModal() {
                       <button
                         type="button"
                         onClick={() => removeBatchItem(item.id)}
-                        className="absolute top-2 right-2 p-1.5 rounded-full bg-black/60 hover:bg-rose-600 text-white backdrop-blur-xs transition-colors"
+                        className="absolute top-2 right-2 p-1.5 rounded-full bg-black/75 hover:bg-rose-600 text-white transition-colors"
                         title="Remove image from batch"
                       >
                         <Trash2 className="w-3 h-3" />
@@ -819,16 +860,16 @@ export function AddClothingModal() {
                       {/* Status Tag */}
                       <div className="absolute bottom-2 left-2">
                         {item.status === 'analyzing' ? (
-                          <span className="px-2 py-0.5 rounded-md bg-amber-500/90 text-white text-[10px] font-semibold flex items-center gap-1 backdrop-blur-xs">
+                          <span className="px-2 py-0.5 rounded-md bg-amber-500 text-white text-[10px] font-semibold flex items-center gap-1 shadow-xs">
                             <Sparkles className="w-2.5 h-2.5 animate-spin" />
                             Analyzing...
                           </span>
                         ) : item.confidence ? (
-                          <span className="px-2 py-0.5 rounded-md bg-emerald-600/90 text-white text-[10px] font-semibold backdrop-blur-xs">
+                          <span className="px-2 py-0.5 rounded-md bg-emerald-600 text-white text-[10px] font-semibold shadow-xs">
                             {item.confidence}% Match
                           </span>
                         ) : (
-                          <span className="px-2 py-0.5 rounded-md bg-gray-800/80 text-gray-200 text-[10px] font-semibold backdrop-blur-xs">
+                          <span className="px-2 py-0.5 rounded-md bg-gray-900 text-gray-200 text-[10px] font-semibold shadow-xs">
                             Pending AI
                           </span>
                         )}
@@ -945,7 +986,7 @@ export function AddClothingModal() {
                   )}
 
                   {isAnalyzing && (
-                    <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-xs flex flex-col items-center justify-center text-white p-4 text-center">
+                    <div className="absolute inset-0 bg-gray-950/80 flex flex-col items-center justify-center text-white p-4 text-center">
                       <Sparkles className="w-8 h-8 text-amber-300 animate-spin mb-3" />
                       <p className="text-sm font-medium">AI Analyzing Garment...</p>
                       <p className="text-xs text-gray-300 mt-1">Identifying cut, material, and colorway</p>
@@ -1293,7 +1334,7 @@ export function AddClothingModal() {
 
         {/* BATCH ITEM DETAIL MODAL (Quick edit single item inside batch) */}
         {selectedBatchItemForEdit && (
-          <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
             <div className="bg-white rounded-3xl p-6 max-w-lg w-full space-y-4 shadow-2xl border border-gray-200 animate-fadeIn">
               <div className="flex items-center justify-between pb-3 border-b border-gray-200">
                 <h4 className="text-base font-bold text-gray-900">Customize Piece Metadata</h4>

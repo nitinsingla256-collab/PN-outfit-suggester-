@@ -92,16 +92,54 @@ export class AIStylistService {
     request: AIStylistRequest,
     wardrobePool: WardrobeItem[]
   ): Promise<AIStylistResponse> {
+    // Strip large Base64 / image data to make request payload ultra-compact and fast
+    const compactPool = (wardrobePool || []).map(item => ({
+      id: item.id,
+      name: item.name,
+      category: item.category,
+      type: item.type || item.subcategory,
+      color: item.color,
+      pattern: item.pattern || 'Solid',
+      material: item.material,
+      style: item.style,
+      formality: item.formality,
+      fit: item.fit,
+      season: item.season,
+      timesWorn: item.timesWorn || 0,
+      isFavorite: !!item.isFavorite,
+    }));
+
     const res = await this.safePost<{ success: boolean; recommendation?: AIStylistResponse }>(
       '/api/gemini/stylist',
       {
         ...request,
-        wardrobePool,
+        wardrobePool: compactPool,
       }
     );
 
     if (res.ok && res.data?.success && res.data?.recommendation) {
-      return res.data.recommendation;
+      const rec = res.data.recommendation;
+      // Re-hydrate local piece items from full wardrobePool so images & details display correctly
+      const hydrateList = (pieces: any[]) => {
+        return (pieces || []).map((p: any) => {
+          const matched = wardrobePool.find(w => w.id === p.itemId || (p.item && w.id === p.item.id));
+          return {
+            ...p,
+            item: matched || p.item,
+            isOwned: !!matched || p.isOwned,
+          };
+        });
+      };
+
+      rec.pieces = hydrateList(rec.pieces);
+      if (rec.looks && rec.looks.length > 0) {
+        rec.looks = rec.looks.map((look: any) => ({
+          ...look,
+          pieces: hydrateList(look.pieces),
+        }));
+      }
+
+      return rec;
     }
 
     // Client-side intelligent styling fallback calibrated to the user's actual items

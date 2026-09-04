@@ -87,6 +87,13 @@ const STYLES: StyleVibe[] = [
   "Romantic",
 ];
 
+const STYLING_STAGES = [
+  { label: "Scanning digital wardrobe inventory...", subtext: "Filtering available garments and checking exclusions" },
+  { label: "Matching silhouette & color harmonies...", subtext: "Evaluating color theory, textures, and tone pairings" },
+  { label: "Calibrating weather & dress code nuances...", subtext: "Balancing thermal comfort, layering, and formality" },
+  { label: "Finalizing bespoke curated ensemble...", subtext: "Composing tailored styling tips and accessories" },
+];
+
 function StylistPageContent() {
   const {
     wardrobe,
@@ -122,6 +129,8 @@ function StylistPageContent() {
   const [showAdvancedInputs, setShowAdvancedInputs] =
     useState(false); /* Result & Active Look Option */
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isGeneratingMore, setIsGeneratingMore] = useState(false);
+  const [generatingStage, setGeneratingStage] = useState(0);
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [lastUsedPrompt, setLastUsedPrompt] = useState<string | undefined>(undefined);
   const [generationResult, setGenerationResult] =
@@ -129,6 +138,17 @@ function StylistPageContent() {
   const [selectedLookIndex, setSelectedLookIndex] = useState<number>(0);
   const [savedLookIds, setSavedLookIds] = useState<Record<string, string>>({});
   const [wornLookIds, setWornLookIds] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (!isGenerating && !isGeneratingMore) {
+      setGeneratingStage(0);
+      return;
+    }
+    const timer = setInterval(() => {
+      setGeneratingStage((prev) => (prev < 3 ? prev + 1 : prev));
+    }, 700);
+    return () => clearInterval(timer);
+  }, [isGenerating, isGeneratingMore]);
 
   /* Concierge Chat State - messages array tracking conversation history */
   const [messages, setMessages] = useState<
@@ -212,14 +232,19 @@ function StylistPageContent() {
   const handleGenerate = async (
     e?: React.FormEvent,
     overridePrompt?: string,
+    generateMore = false,
   ) => {
     if (e) e.preventDefault();
     const promptToUse = overridePrompt !== undefined ? overridePrompt : naturalQuery;
     setLastUsedPrompt(promptToUse);
     setGenerationError(null);
-    try {
+    if (generateMore) {
+      setIsGeneratingMore(true);
+    } else {
       setIsGenerating(true);
-      setSelectedLookIndex(0);
+    }
+    setSelectedLookIndex(0);
+    try {
       const request: AIStylistRequest = {
         naturalQuery: promptToUse || undefined,
         occasion: occasion as OccasionType,
@@ -234,7 +259,7 @@ function StylistPageContent() {
         mustIncludeItemIds,
         excludeItemIds,
         additionalNotes: additionalNotes || undefined,
-        generateMultipleLooks: true,
+        generateMultipleLooks: generateMore,
       };
       const result = await aiStylistService.generateOutfitRecommendation(
         request,
@@ -243,8 +268,8 @@ function StylistPageContent() {
       setGenerationResult(result);
       setGenerationError(null);
       showToast({
-        title: "Outfits Synthesized",
-        description: `Generated tailored looks with ${result.confidenceScore || 96}% styling score.`,
+        title: generateMore ? "3 Distinct Looks Synthesized" : "Curated Look Synthesized",
+        description: `Generated tailored ensemble with ${result.confidenceScore || 96}% styling score.`,
         type: "success",
       });
     } catch (err: any) {
@@ -258,6 +283,7 @@ function StylistPageContent() {
       });
     } finally {
       setIsGenerating(false);
+      setIsGeneratingMore(false);
     }
   };
   const handleQuickPromptClick = (promptText: string) => {
@@ -486,9 +512,9 @@ function StylistPageContent() {
           {" "}
           <div className="relative w-24 h-24 mb-4 flex items-center justify-center">
             {" "}
-            {/* Soft background glow */}{" "}
+            {/* Soft background glow - GPU safe */}
             <div
-              className={`absolute inset-0 rounded-full blur-2xl transition-all duration-700 ${isChatLoading || isGenerating ? "bg-emerald-400/40 scale-150" : "bg-emerald-200/20 scale-100"}`}
+              className={`absolute inset-0 rounded-full transition-all duration-700 ${isChatLoading || isGenerating || isGeneratingMore ? "bg-emerald-100 scale-125" : "bg-emerald-50 scale-100"}`}
             ></div>{" "}
             {/* Core element */}{" "}
             <div
@@ -810,9 +836,8 @@ function StylistPageContent() {
                   </div>
                 )}{" "}
               </div>{" "}
-              {/* Submit Button */}{" "}
+              {/* Submit Button */}
               <div className="pt-2">
-                {" "}
                 <Button
                   type="submit"
                   variant="primary"
@@ -820,25 +845,48 @@ function StylistPageContent() {
                   className="w-full rounded-2xl py-3 justify-center shadow-sm"
                   leftIcon={<Sparkles className="w-4 h-4" />}
                 >
-                  {" "}
-                  Generate 3 Styled Looks{" "}
-                </Button>{" "}
-              </div>{" "}
-            </form>{" "}
+                  Generate Curated Look
+                </Button>
+              </div>
+            </form>
             {/* Right Column: 3 Looks Display & Details (8 cols) */}
             <div className="lg:col-span-8 space-y-6">
               {isGenerating ? (
-                <div className="bg-white rounded-3xl border border-gray-200 p-12 text-center shadow-sm space-y-4">
-                  <div className="w-16 h-16 rounded-3xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto animate-pulse">
+                <div className="bg-white rounded-3xl border border-gray-200 p-8 sm:p-12 text-center shadow-sm space-y-6">
+                  <div className="w-16 h-16 rounded-3xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
                     <Sparkles className="w-8 h-8 animate-spin" />
                   </div>
-                  <h3 className="text-lg font-bold text-gray-900 font-editorial">
-                    Styling Your Looks...
-                  </h3>
-                  <p className="text-xs sm:text-sm text-gray-500 max-w-md mx-auto">
-                    Analyzing silhouette proportions, textile harmonies, and
-                    occasion criteria across your catalogued wardrobe.
-                  </p>
+                  <div className="space-y-2">
+                    <h3 className="text-xl font-bold text-gray-900 font-editorial">
+                      {STYLING_STAGES[generatingStage]?.label || "Styling Your Look..."}
+                    </h3>
+                    <p className="text-xs sm:text-sm text-gray-500 max-w-md mx-auto leading-relaxed">
+                      {STYLING_STAGES[generatingStage]?.subtext || "Calibrating silhouette drape, textile harmonies, and occasion criteria."}
+                    </p>
+                  </div>
+                  {/* Staged Progress Indicator */}
+                  <div className="max-w-xs mx-auto space-y-2.5">
+                    <div className="flex items-center justify-between text-[11px] text-gray-400 font-mono">
+                      <span>Step {generatingStage + 1} of 4</span>
+                      <span>{Math.round(((generatingStage + 1) / 4) * 100)}%</span>
+                    </div>
+                    <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                      <div
+                        className="bg-emerald-600 h-2 rounded-full transition-all duration-500"
+                        style={{ width: `${((generatingStage + 1) / 4) * 100}%` }}
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 gap-1.5 pt-1">
+                      {STYLING_STAGES.map((s, idx) => (
+                        <div
+                          key={s.label}
+                          className={`h-1 rounded-full transition-all ${
+                            idx <= generatingStage ? "bg-emerald-600" : "bg-gray-200"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </div>
                 </div>
               ) : generationError ? (
                 /* User-Friendly Error State */
@@ -886,8 +934,8 @@ function StylistPageContent() {
                   <p className="text-xs sm:text-sm text-gray-500 max-w-lg mx-auto">
                     {" "}
                     Set your occasion and weather on the left, then click{" "}
-                    <strong>"Generate 3 Styled Looks"</strong>. Our AI stylist
-                    will create 3 distinct looks using exclusively your
+                    <strong>"Generate Curated Look"</strong>. Our AI stylist
+                    will create tailored looks using exclusively your
                     catalogued garments.{" "}
                   </p>{" "}
                   {wardrobe.length === 0 && (
@@ -922,6 +970,30 @@ function StylistPageContent() {
                       </div>{" "}
                     </div>
                   )}{" "}
+                  {/* Option to Generate 3 Looks when only 1 is loaded */}
+                  {availableLooks.length <= 1 && (
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200">
+                      <div>
+                        <h4 className="text-sm font-bold text-gray-900 font-editorial">
+                          Primary Curated Look Ready
+                        </h4>
+                        <p className="text-xs text-gray-600 mt-0.5">
+                          Want more variety? Generate 3 distinct styling options (Safe & Refined, Modern, and Statement).
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        isLoading={isGeneratingMore}
+                        onClick={() => handleGenerate(undefined, undefined, true)}
+                        leftIcon={<Layers className="w-3.5 h-3.5" />}
+                        className="shrink-0 bg-white hover:bg-emerald-50 border-emerald-300 text-emerald-800"
+                      >
+                        Explore 3 Styled Looks
+                      </Button>
+                    </div>
+                  )}
                   {/* 3 Looks Selector Tabs (Safe, Modern, Statement) */}{" "}
                   {availableLooks.length > 1 && (
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

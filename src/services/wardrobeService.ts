@@ -23,7 +23,23 @@ class WardrobeService {
     } catch { return []; }
   }
   private setLocal(items: WardrobeItem[]) {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch {}
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    } catch (err: any) {
+      const isQuota =
+        err?.name === 'QuotaExceededError' ||
+        err?.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+        err?.code === 22 ||
+        err?.code === 1014;
+
+      if (isQuota) {
+        console.error('LocalStorage QuotaExceededError in WardrobeService:', err);
+        throw new Error(
+          'Browser storage limit reached. Please optimize images or remove older pieces before saving new items.'
+        );
+      }
+      throw err;
+    }
   }
 
   async getAll(): Promise<WardrobeItem[]> {
@@ -45,8 +61,9 @@ class WardrobeService {
       timesWorn: 0,
       isFavorite: false,
     };
-    items.unshift(newItem);
-    this.setLocal(items);
+    const updated = [newItem, ...items];
+    // Persist first before returning
+    this.setLocal(updated);
     return newItem;
   }
 
@@ -54,9 +71,11 @@ class WardrobeService {
     const items = this.getLocal();
     const idx = items.findIndex(i => i.id === id);
     if (idx === -1) throw new Error('Item not found');
-    items[idx] = { ...items[idx], ...updates, updatedAt: new Date().toISOString() };
-    this.setLocal(items);
-    return items[idx];
+    const updatedItem = { ...items[idx], ...updates, updatedAt: new Date().toISOString() };
+    const updatedItems = [...items];
+    updatedItems[idx] = updatedItem;
+    this.setLocal(updatedItems);
+    return updatedItem;
   }
 
   async delete(id: string): Promise<void> {

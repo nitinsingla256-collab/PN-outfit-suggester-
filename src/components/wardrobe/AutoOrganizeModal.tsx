@@ -6,6 +6,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { WardrobeAutoOrganizeResult, WardrobeClusterGroup, WardrobeItem } from '../../types';
+import { FALLBACK_GARMENT_IMAGE } from '../../utils/imageOptimizer';
 import { Button } from '../ui/Button';
 import {
   Sparkles,
@@ -53,24 +54,16 @@ export function AutoOrganizeModal({
       <div className="fixed inset-0 z-60 flex items-center justify-center p-3 sm:p-6 overflow-y-auto pb-24 lg:pb-6">
         {/* Backdrop */}
         <div
-          
-          
-          
           onClick={onClose}
-          className="fixed inset-0 bg-slate-950/80 backdrop-blur-md transition-opacity"
+          className="fixed inset-0 bg-slate-950/80 transition-opacity"
         />
 
         {/* Modal Window */}
         <div
-          
-          
-          
-          
           className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden z-10 my-auto flex flex-col max-h-[88vh]"
         >
           {/* Header Banner */}
-          <div className="relative bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 text-white p-6 sm:p-7 border-b border-slate-800 shrink-0">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="relative bg-slate-950 text-white p-6 sm:p-7 border-b border-slate-800 shrink-0">
             <div className="flex items-start justify-between relative z-10">
               <div className="space-y-1.5 pr-4">
                 <div className="flex items-center gap-2">
@@ -290,17 +283,22 @@ export function AutoOrganizeModal({
                         >
                           <div className="aspect-[3/4] relative bg-slate-100 overflow-hidden">
                             <img
-                              src={item.imageUrl}
+                              src={item.imageUrl || FALLBACK_GARMENT_IMAGE}
                               alt={item.name}
+                              loading="lazy"
+                              decoding="async"
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                               referrerPolicy="no-referrer"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = FALLBACK_GARMENT_IMAGE;
+                              }}
                             />
                             <div className="absolute bottom-1.5 left-1.5 right-1.5 flex items-center justify-between">
-                              <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-md bg-white/90 text-slate-900 backdrop-blur-xs">
+                              <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-md bg-white/95 text-slate-900 shadow-2xs">
                                 {item.category}
                               </span>
                               {item.color && (
-                                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-md bg-slate-900/80 text-white backdrop-blur-xs">
+                                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-md bg-slate-900 text-white shadow-2xs">
                                   {item.color}
                                 </span>
                               )}

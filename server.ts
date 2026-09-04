@@ -626,11 +626,14 @@ ${hint ? `User context/hint: "${hint}"` : ''}
       additionalNotes,
       mustIncludeItemIds = [],
       excludeItemIds = [],
-      generateMultipleLooks = true,
+      generateMultipleLooks = false,
     } = req.body || {};
 
     const userId = req.user!.id;
-    const userWardrobe = db.getWardrobe(userId);
+    const clientWardrobePool = Array.isArray(req.body.wardrobePool) && req.body.wardrobePool.length > 0
+      ? req.body.wardrobePool
+      : null;
+    const userWardrobe = clientWardrobePool || db.getWardrobe(userId);
     const userOutfits = db.getOutfits(userId);
     const userWearHistory = (db as any).data.wearHistory[userId] || [];
 
@@ -640,6 +643,7 @@ ${hint ? `User context/hint: "${hint}"` : ''}
 
     try {
 
+      // Compact representation: omit imageUrl and unnecessary fields to make prompt lightweight and fast
       const itemsSummary = availableItems.map((item: any) => ({
         id: item.id,
         name: item.name,
@@ -652,7 +656,6 @@ ${hint ? `User context/hint: "${hint}"` : ''}
         formality: item.formality || 'Smart Casual',
         fit: item.fit || 'Regular',
         season: item.season || ['All-Season'],
-        imageUrl: item.imageUrl,
         timesWorn: item.timesWorn || 0,
         isFavorite: !!item.isFavorite,
         isMustInclude: mustIncludeItemIds.includes(item.id),
@@ -712,23 +715,74 @@ Provide:
   - gapAnalysis: Any missing category disclosure or empty string.
   - score: Overall styling score (integer between 88 and 99).
   - scoreBreakdown: Object with { colorHarmony: number, occasionFit: number, weatherMatch: number, coherence: number }.
-
+${
+  generateMultipleLooks
+    ? `
 - Multiple Looks (generate 3 options when possible using user's wardrobe pieces):
   - LOOK 01: "SAFE & REFINED" (Timeless, foolproof harmony)
   - LOOK 02: "MODERN" (Contemporary proportions, trending textures)
   - LOOK 03: "STATEMENT" (High-impact focal point, bold pairing)
+`
+    : ''
+}
 `;
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-flash-latest',
-        contents: prompt,
-        config: {
-          responseMimeType: 'application/json',
-          responseSchema: {
+      const schemaProperties: any = {
+        outfitName: { type: Type.STRING },
+        summary: { type: Type.STRING },
+        pieces: {
+          type: Type.ARRAY,
+          items: {
             type: Type.OBJECT,
             properties: {
-              outfitName: { type: Type.STRING },
-              summary: { type: Type.STRING },
+              category: { type: Type.STRING },
+              itemId: { type: Type.STRING, nullable: true },
+              role: { type: Type.STRING },
+              suggestedDescription: { type: Type.STRING },
+              isOwned: { type: Type.BOOLEAN },
+            },
+            required: ['category', 'role', 'suggestedDescription', 'isOwned'],
+          },
+        },
+        whyItWorks: { type: Type.STRING },
+        bestFor: {
+          type: Type.OBJECT,
+          properties: {
+            occasion: { type: Type.STRING },
+            time: { type: Type.STRING },
+            weather: { type: Type.STRING },
+          },
+          required: ['occasion', 'time', 'weather'],
+        },
+        styleNotes: {
+          type: Type.ARRAY,
+          items: { type: Type.STRING },
+        },
+        alternativeLookSuggestion: { type: Type.STRING },
+        gapAnalysis: { type: Type.STRING },
+        score: { type: Type.INTEGER },
+        scoreBreakdown: {
+          type: Type.OBJECT,
+          properties: {
+            colorHarmony: { type: Type.INTEGER },
+            occasionFit: { type: Type.INTEGER },
+            weatherMatch: { type: Type.INTEGER },
+            coherence: { type: Type.INTEGER },
+          },
+          required: ['colorHarmony', 'occasionFit', 'weatherMatch', 'coherence'],
+        },
+      };
+
+      if (generateMultipleLooks) {
+        schemaProperties.looks = {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              id: { type: Type.STRING },
+              lookType: { type: Type.STRING },
+              title: { type: Type.STRING },
+              subtitle: { type: Type.STRING },
               pieces: {
                 type: Type.ARRAY,
                 items: {
@@ -757,8 +811,6 @@ Provide:
                 type: Type.ARRAY,
                 items: { type: Type.STRING },
               },
-              alternativeLookSuggestion: { type: Type.STRING },
-              gapAnalysis: { type: Type.STRING },
               score: { type: Type.INTEGER },
               scoreBreakdown: {
                 type: Type.OBJECT,
@@ -770,59 +822,20 @@ Provide:
                 },
                 required: ['colorHarmony', 'occasionFit', 'weatherMatch', 'coherence'],
               },
-              looks: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    id: { type: Type.STRING },
-                    lookType: { type: Type.STRING },
-                    title: { type: Type.STRING },
-                    subtitle: { type: Type.STRING },
-                    pieces: {
-                      type: Type.ARRAY,
-                      items: {
-                        type: Type.OBJECT,
-                        properties: {
-                          category: { type: Type.STRING },
-                          itemId: { type: Type.STRING, nullable: true },
-                          role: { type: Type.STRING },
-                          suggestedDescription: { type: Type.STRING },
-                          isOwned: { type: Type.BOOLEAN },
-                        },
-                        required: ['category', 'role', 'suggestedDescription', 'isOwned'],
-                      },
-                    },
-                    whyItWorks: { type: Type.STRING },
-                    bestFor: {
-                      type: Type.OBJECT,
-                      properties: {
-                        occasion: { type: Type.STRING },
-                        time: { type: Type.STRING },
-                        weather: { type: Type.STRING },
-                      },
-                      required: ['occasion', 'time', 'weather'],
-                    },
-                    styleNotes: {
-                      type: Type.ARRAY,
-                      items: { type: Type.STRING },
-                    },
-                    score: { type: Type.INTEGER },
-                    scoreBreakdown: {
-                      type: Type.OBJECT,
-                      properties: {
-                        colorHarmony: { type: Type.INTEGER },
-                        occasionFit: { type: Type.INTEGER },
-                        weatherMatch: { type: Type.INTEGER },
-                        coherence: { type: Type.INTEGER },
-                      },
-                      required: ['colorHarmony', 'occasionFit', 'weatherMatch', 'coherence'],
-                    },
-                  },
-                  required: ['id', 'lookType', 'title', 'subtitle', 'pieces', 'whyItWorks', 'bestFor', 'styleNotes', 'score', 'scoreBreakdown'],
-                },
-              },
             },
+            required: ['id', 'lookType', 'title', 'subtitle', 'pieces', 'whyItWorks', 'bestFor', 'styleNotes', 'score', 'scoreBreakdown'],
+          },
+        };
+      }
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-flash-latest',
+        contents: prompt,
+        config: {
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: schemaProperties,
             required: [
               'outfitName',
               'summary',
@@ -855,11 +868,38 @@ Provide:
 
       const primaryPieces = hydratePieces(parsed.pieces);
 
-      // Hydrate multiple looks
-      const hydratedLooks = (parsed.looks || []).map((look: any) => ({
-        ...look,
-        pieces: hydratePieces(look.pieces),
-      }));
+      // Hydrate multiple looks or synthesize primary look option
+      let hydratedLooks: any[] = [];
+      if (parsed.looks && parsed.looks.length > 0) {
+        hydratedLooks = parsed.looks.map((look: any) => ({
+          ...look,
+          pieces: hydratePieces(look.pieces),
+        }));
+      } else {
+        hydratedLooks = [
+          {
+            id: 'primary-curated',
+            lookType: 'CURATED LOOK',
+            title: parsed.outfitName || 'Signature Curated Ensemble',
+            subtitle: 'Balanced silhouette, quiet luxury harmony',
+            pieces: primaryPieces,
+            whyItWorks: parsed.whyItWorks || 'Harmonious silhouette and textile pairings.',
+            bestFor: parsed.bestFor || {
+              occasion: occasion,
+              time: time,
+              weather: `${temperatureCelsius}°C, Clear`,
+            },
+            styleNotes: parsed.styleNotes || [],
+            score: parsed.score || 96,
+            scoreBreakdown: parsed.scoreBreakdown || {
+              colorHarmony: 98,
+              occasionFit: 96,
+              weatherMatch: 95,
+              coherence: 97,
+            },
+          }
+        ];
+      }
 
       const result = {
         id: `ai_rec_${Date.now()}`,

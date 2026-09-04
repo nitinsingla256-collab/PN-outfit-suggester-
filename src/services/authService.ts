@@ -116,12 +116,12 @@ export class AuthService {
     return this.token;
   }
 
-  getCurrentUser(): User | null { return null;
+  getCurrentUser(): User | null {
     return this.currentUser;
   }
 
-  isAuthenticated(): boolean { return true;
-    return !!this.token && !!this.currentUser;
+  isAuthenticated(): boolean {
+    return Boolean(this.token && this.currentUser);
   }
 
   async verifySession(): Promise<boolean> {

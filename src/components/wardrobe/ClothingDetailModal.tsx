@@ -11,6 +11,7 @@ import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { useApp } from '../../context/AppContext';
 import { ClothingCategory, ClothingFit, ClothingFormality, Season } from '../../types';
+import { FALLBACK_GARMENT_IMAGE } from '../../utils/imageOptimizer';
 import {
   Heart,
   Trash2,
@@ -186,29 +187,34 @@ export function ClothingDetailModal() {
           <div className="sm:col-span-5 space-y-3">
             <div className="relative aspect-[3/4] rounded-3xl overflow-hidden bg-slate-100 dark:bg-white border border-slate-200 dark:border-gray-200 shadow-sm group">
               <img
-                src={item.imageUrl}
+                src={item.imageUrl || FALLBACK_GARMENT_IMAGE}
                 alt={item.name}
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover"
                 referrerPolicy="no-referrer"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = FALLBACK_GARMENT_IMAGE;
+                }}
               />
               <button
                 type="button"
                 onClick={() => toggleWardrobeFavorite(item.id)}
-                className={`absolute top-3 right-3 p-2.5 rounded-full backdrop-blur-md transition-all ${
+                className={`absolute top-3 right-3 p-2.5 rounded-full transition-all shadow-xs ${
                   item.isFavorite
-                    ? 'bg-rose-500 text-gray-900 shadow-md'
-                    : 'bg-gray-100 text-gray-900/80 hover:text-gray-900'
+                    ? 'bg-rose-500 text-white shadow-md'
+                    : 'bg-white/95 text-slate-700 hover:bg-white hover:text-rose-500'
                 }`}
               >
                 <Heart className={`w-4 h-4 ${item.isFavorite ? 'fill-current' : ''}`} />
               </button>
 
               <div className="absolute bottom-3 left-3 flex flex-wrap gap-1.5">
-                <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-white/90 dark:bg-white/90 text-slate-900 dark:text-gray-900 backdrop-blur-sm border border-slate-200/50 dark:border-gray-300/50 shadow-xs">
+                <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-white/95 text-slate-900 border border-slate-200/50 shadow-xs">
                   {item.color}
                 </span>
                 {item.type && (
-                  <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-white/80 dark:bg-white/80 text-slate-700 dark:text-gray-700 backdrop-blur-sm">
+                  <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-slate-950/85 text-white shadow-xs">
                     {item.type}
                   </span>
                 )}

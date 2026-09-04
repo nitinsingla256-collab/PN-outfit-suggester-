@@ -29,7 +29,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <Sidebar />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 pb-24 lg:pb-10 relative z-10">
+      <div className="flex-1 flex flex-col min-w-0 pb-32 lg:pb-10 relative z-10">
         <Navbar />
         <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
           {children}

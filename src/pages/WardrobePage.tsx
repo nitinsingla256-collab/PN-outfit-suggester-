@@ -17,6 +17,7 @@ import { AutoOrganizeModal } from '../components/wardrobe/AutoOrganizeModal';
 import { ClothingCategory, WardrobeItem, WardrobeAutoOrganizeResult } from '../types';
 import { wardrobeService, WardrobeFilterOptions } from '../services/wardrobeService';
 import { aiStylistService } from '../services/aiStylistService';
+import { FALLBACK_GARMENT_IMAGE } from '../utils/imageOptimizer';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Search,
@@ -399,7 +400,7 @@ export function WardrobePage() {
 
       {/* Confirmation Modal for Empty Wardrobe */}
       {isConfirmingClearAll && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
             <div className="w-12 h-12 rounded-2xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600">
               <AlertTriangle className="w-6 h-6" />
@@ -437,9 +438,7 @@ export function WardrobePage() {
       {/* Batch Select Toolbar (When active) */}
       {isSelectMode && (
         <div
-          
-          
-          className="bg-emerald-950/90 text-emerald-100 border border-emerald-700/60 p-4 rounded-2xl flex flex-wrap items-center justify-between gap-3 shadow-lg backdrop-blur-md"
+          className="bg-emerald-950 text-emerald-100 border border-emerald-700/80 p-4 rounded-2xl flex flex-wrap items-center justify-between gap-3 shadow-lg"
         >
           <div className="flex items-center gap-3">
             <span className="font-semibold text-xs text-white">
@@ -805,12 +804,14 @@ export function WardrobePage() {
                   {/* Image Container */}
                   <div className="relative aspect-[3/4] bg-slate-100 overflow-hidden">
                     <img
-                      src={item.imageUrl || 'https://images.unsplash.com/photo-1550639525-c97d455acf70?auto=format&fit=crop&q=80&w=300'}
+                      src={item.imageUrl || FALLBACK_GARMENT_IMAGE}
                       alt={item.name}
+                      loading="lazy"
+                      decoding="async"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
                       referrerPolicy="no-referrer"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1550639525-c97d455acf70?auto=format&fit=crop&q=80&w=300';
+                        (e.target as HTMLImageElement).src = FALLBACK_GARMENT_IMAGE;
                       }}
                     />
 
@@ -826,7 +827,7 @@ export function WardrobePage() {
                             e.stopPropagation();
                             setQuickLookItem(item);
                           }}
-                          className="pointer-events-auto px-3.5 py-1.5 rounded-full bg-slate-950/85 hover:bg-slate-900 text-white text-xs font-semibold backdrop-blur-md shadow-lg border border-white/20 flex items-center gap-1.5 transition-all transform translate-y-2 group-hover:translate-y-0 hover:scale-105 active:scale-95"
+                          className="pointer-events-auto px-3.5 py-1.5 rounded-full bg-slate-950/95 hover:bg-slate-900 text-white text-xs font-semibold shadow-lg border border-white/20 flex items-center gap-1.5 transition-all transform translate-y-2 group-hover:translate-y-0 hover:scale-105 active:scale-95"
                           title="Quick Look"
                         >
                           <Eye className="w-3.5 h-3.5 text-emerald-400" />
@@ -839,7 +840,7 @@ export function WardrobePage() {
                     {isSelectMode && (
                       <div
                         onClick={e => toggleItemSelection(item.id, e)}
-                        className="absolute top-3 left-3 z-20 p-2 rounded-xl bg-white/90 backdrop-blur-md shadow-md cursor-pointer hover:bg-white transition-all"
+                        className="absolute top-3 left-3 z-20 p-2 rounded-xl bg-white/95 shadow-md cursor-pointer hover:bg-white transition-all"
                       >
                         {isSelected ? (
                           <CheckSquare className="w-5 h-5 text-emerald-600" />
@@ -859,7 +860,7 @@ export function WardrobePage() {
                             e.stopPropagation();
                             setItemPendingDelete(item.id);
                           }}
-                          className="p-2 rounded-full bg-white/80 hover:bg-rose-500 hover:text-white text-slate-600 backdrop-blur-md transition-all shadow-xs"
+                          className="p-2 rounded-full bg-white/90 hover:bg-rose-500 hover:text-white text-slate-600 transition-all shadow-xs"
                           title="Remove item"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -873,10 +874,10 @@ export function WardrobePage() {
                           e.stopPropagation();
                           toggleWardrobeFavorite(item.id);
                         }}
-                        className={`p-2 rounded-full backdrop-blur-md transition-all shadow-xs ${
+                        className={`p-2 rounded-full transition-all shadow-xs ${
                           item.isFavorite
                             ? 'bg-rose-500 text-white shadow-md'
-                            : 'bg-white/80 text-slate-700 hover:bg-white hover:text-rose-500'
+                            : 'bg-white/90 text-slate-700 hover:bg-white hover:text-rose-500'
                         }`}
                         title={item.isFavorite ? 'Remove favorite' : 'Add favorite'}
                       >
@@ -887,17 +888,17 @@ export function WardrobePage() {
                     {/* Category & Type Pills (Bottom Left) */}
                     <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-1.5 z-10">
                       <div className="flex flex-wrap gap-1">
-                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-white/95 text-slate-900 backdrop-blur-sm shadow-xs border border-white/40">
+                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-white/95 text-slate-900 shadow-xs border border-white/40">
                           {item.category}
                         </span>
                         {item.type && (
-                          <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-900/80 text-white backdrop-blur-sm">
+                          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-slate-950/85 text-white">
                             {item.type}
                           </span>
                         )}
                       </div>
 
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-white/90 text-slate-800 backdrop-blur-sm">
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-white/95 text-slate-800 shadow-xs">
                         {item.color}
                       </span>
                     </div>
@@ -906,7 +907,7 @@ export function WardrobePage() {
                     {isPendingDelete && (
                       <div
                         onClick={e => e.stopPropagation()}
-                        className="absolute inset-0 bg-slate-950/85 backdrop-blur-sm z-30 p-4 flex flex-col items-center justify-center text-center space-y-3 animate-in fade-in duration-150"
+                        className="absolute inset-0 bg-slate-950/90 z-30 p-4 flex flex-col items-center justify-center text-center space-y-3 animate-in fade-in duration-150"
                       >
                         <Trash2 className="w-8 h-8 text-rose-400" />
                         <p className="text-xs text-white font-medium">

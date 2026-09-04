@@ -7,6 +7,7 @@ import React, { useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { WardrobeItem } from '../../types';
 import { useApp } from '../../context/AppContext';
+import { FALLBACK_GARMENT_IMAGE } from '../../utils/imageOptimizer';
 import {
   X,
   Sparkles,
@@ -150,33 +151,23 @@ export function ItemQuickLookModal({
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
         {/* Backdrop */}
         <div
-          
-          
-          
-          
           onClick={onClose}
-          className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm"
+          className="fixed inset-0 bg-slate-950/70"
         />
 
         {/* Modal Window */}
         <div
-          
-          
-          
-          
           className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-slate-200/90 overflow-hidden z-10 my-auto"
         >
           {/* Header Action Bar */}
           <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
             {/* Favorite toggle */}
             <button
-              
-              
               onClick={() => toggleWardrobeFavorite(item.id)}
-              className={`p-2.5 rounded-full backdrop-blur-md transition-colors shadow-sm ${
+              className={`p-2.5 rounded-full transition-colors shadow-sm ${
                 item.isFavorite
                   ? 'bg-rose-500 text-white'
-                  : 'bg-white/90 text-slate-700 hover:text-rose-500 hover:bg-white border border-slate-200/60'
+                  : 'bg-white/95 text-slate-700 hover:text-rose-500 hover:bg-white border border-slate-200/60'
               }`}
               title={item.isFavorite ? 'Favorited' : 'Add to Favorites'}
             >
@@ -185,10 +176,8 @@ export function ItemQuickLookModal({
 
             {/* Close Button */}
             <button
-              
-              
               onClick={onClose}
-              className="p-2.5 rounded-full bg-white/90 hover:bg-slate-100 text-slate-600 hover:text-slate-900 backdrop-blur-md transition-colors border border-slate-200/60 shadow-sm"
+              className="p-2.5 rounded-full bg-white/95 hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors border border-slate-200/60 shadow-sm"
               title="Close"
             >
               <X className="w-4 h-4" />
@@ -200,12 +189,14 @@ export function ItemQuickLookModal({
             <div className="md:col-span-5 bg-slate-950 p-6 flex flex-col justify-between text-white relative overflow-hidden">
               <div className="relative aspect-[3/4] w-full rounded-2xl overflow-hidden shadow-lg border border-slate-800 bg-slate-900 mb-4">
                 <img
-                  src={item.imageUrl || 'https://images.unsplash.com/photo-1550639525-c97d455acf70?auto=format&fit=crop&q=80&w=300'}
+                  src={item.imageUrl || FALLBACK_GARMENT_IMAGE}
                   alt={item.name}
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover"
                   referrerPolicy="no-referrer"
                   onError={(e) => {
-                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1550639525-c97d455acf70?auto=format&fit=crop&q=80&w=300';
+                    (e.target as HTMLImageElement).src = FALLBACK_GARMENT_IMAGE;
                   }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent pointer-events-none" />
