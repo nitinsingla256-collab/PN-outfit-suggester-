@@ -17,20 +17,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen bg-gray-50 text-gray-900 antialiased selection:bg-emerald-500/20 selection:text-emerald-500 relative overflow-hidden transition-colors duration-300">
-      {/* Dynamic Atmospheric Background */}
+      {/* Dynamic Atmospheric Background - Simplified to prevent GPU OOM crash */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
         {isDark ? (
-          <>
-            <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-emerald-500/10 blur-[140px] animate-pulse-slow"></div>
-            <div className="absolute top-[30%] -right-[10%] w-[45%] h-[60%] rounded-full bg-indigo-950/40 blur-[130px] animate-pulse-slower"></div>
-            <div className="absolute -bottom-[20%] left-[20%] w-[60%] h-[50%] rounded-full bg-emerald-950/25 blur-[160px] animate-pulse-slow"></div>
-          </>
+          <div className="absolute inset-0 bg-gradient-to-br from-indigo-950/20 via-slate-900 to-emerald-950/20" />
         ) : (
-          <>
-            <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-emerald-100/40 blur-[120px] animate-pulse-slow"></div>
-            <div className="absolute top-[40%] -right-[10%] w-[40%] h-[60%] rounded-full bg-slate-100/50 blur-[100px] animate-pulse-slower"></div>
-            <div className="absolute -bottom-[20%] left-[20%] w-[60%] h-[50%] rounded-full bg-emerald-50/50 blur-[150px] animate-pulse-slow"></div>
-          </>
+          <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-gray-50 to-emerald-50/30" />
         )}
       </div>
       {/* Desktop Sidebar */}

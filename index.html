@@ -59,7 +59,9 @@
         showGlobalError('Error: ' + e.message + '\n' + e.filename + ':' + e.lineno + '\n\nStack:\n' + (e.error ? e.error.stack : 'No stack'));
       });
       window.addEventListener('unhandledrejection', function(e) {
-        showGlobalError('Unhandled Promise Rejection:\n' + (e.reason && e.reason.stack ? e.reason.stack : (e.reason ? e.reason.message : String(e.reason))));
+        var msg = String(e.reason && e.reason.message ? e.reason.message : e.reason);
+        if (msg.includes('WebSocket') || msg.includes('vite')) return;
+        showGlobalError('Unhandled Promise Rejection:\n' + (e.reason && e.reason.stack ? e.reason.stack : msg));
       });
       
       // Fallback monitor: if root is empty after 5 seconds, show error
