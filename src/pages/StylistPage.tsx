@@ -18,6 +18,7 @@ import {
 } from "../types";
 import { aiStylistService } from "../services/aiStylistService";
 import { weatherService } from "../services/weatherService";
+import { isStyleProfileComplete } from "../utils/profileValidation";
 import {
   Sparkles,
   Calendar,
@@ -142,18 +143,11 @@ function StylistPageContent() {
   const [selectedLookIndex, setSelectedLookIndex] = useState<number>(0);
   const [savedLookIds, setSavedLookIds] = useState<Record<string, string>>({});
   const [wornLookIds, setWornLookIds] = useState<Record<string, boolean>>({});
-  const [showOnboardingModal, setShowOnboardingModal] = useState(false);
   const [swappingPieceCategory, setSwappingPieceCategory] = useState<string | null>(null);
 
   useEffect(() => {
     handleAutoWeather();
   }, [user.location]);
-
-  useEffect(() => {
-    if (user.profile?.isCompleted && showOnboardingModal) {
-      setShowOnboardingModal(false);
-    }
-  }, [user.profile?.isCompleted]);
 
   useEffect(() => {
     if (!isGenerating && !isGeneratingMore) {
@@ -329,15 +323,6 @@ function StylistPageContent() {
     generateMore = false,
   ) => {
     if (e) e.preventDefault();
-    if (!user.profile?.isCompleted) {
-      showToast({
-        title: "Style Profile Required",
-        description: "Please complete your Personal Style Profile first to ensure recommendations match your undertone, face shape, and silhouette preferences.",
-        type: "info",
-      });
-      setShowOnboardingModal(true);
-      return;
-    }
     const promptToUse = overridePrompt !== undefined ? overridePrompt : naturalQuery;
     setLastUsedPrompt(promptToUse);
     setGenerationError(null);
@@ -581,6 +566,22 @@ function StylistPageContent() {
       setIsChatLoading(false);
     }
   };
+  const profileComplete = isStyleProfileComplete(user.profile);
+
+  if (!profileComplete) {
+    return (
+      <div className="max-w-4xl mx-auto py-8">
+        <div className="mb-8 text-center space-y-3">
+          <h1 className="text-3xl font-bold font-editorial text-slate-900">Style Profile Required</h1>
+          <p className="text-slate-500 max-w-xl mx-auto text-sm">
+            Complete your personal style profile once before using PN Stylist. This ensures all recommendations are grounded in your actual characteristics, preferences, and verified wardrobe.
+          </p>
+        </div>
+        <PersonalStyleProfileCard />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {" "}
@@ -732,35 +733,15 @@ function StylistPageContent() {
                 </span>{" "}
               </div>{" "}
               {/* Profile Calibration Status Indicator */}
-              {user.profile?.isCompleted ? (
-                <div className="p-3 bg-emerald-50/80 border border-emerald-200/90 rounded-2xl flex items-start gap-2.5">
-                  <Sparkles className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <div className="text-xs text-emerald-950 leading-tight">
-                    <span className="font-semibold block">Personalized Palette & Proportions</span>
-                    <span className="text-emerald-700 text-[11px]">
-                      {user.profile.visualAnalysis?.skinTone ? `${user.profile.visualAnalysis.skinTone} undertone` : 'Custom palette'} · {user.profile.visualAnalysis?.faceShape ? `${user.profile.visualAnalysis.faceShape} face` : 'Tailored collars'} · {user.profile.preferredFit} fit
-                    </span>
-                  </div>
+              <div className="p-3 bg-emerald-50/80 border border-emerald-200/90 rounded-2xl flex items-start gap-2.5">
+                <Sparkles className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <div className="text-xs text-emerald-950 leading-tight">
+                  <span className="font-semibold block">Personalized Palette & Proportions</span>
+                  <span className="text-emerald-700 text-[11px]">
+                    {user.profile?.visualAnalysis?.skinTone ? `${user.profile.visualAnalysis.skinTone} undertone` : 'Custom palette'} · {user.profile?.visualAnalysis?.faceShape ? `${user.profile.visualAnalysis.faceShape} face` : 'Tailored collars'} · {user.profile?.preferredFit || 'Tailored'} fit
+                  </span>
                 </div>
-              ) : (
-                <div className="p-3.5 bg-amber-50/90 border border-amber-200 rounded-2xl space-y-2">
-                  <div className="flex items-center gap-2 text-amber-900 font-semibold text-xs">
-                    <Lock className="w-4 h-4 text-amber-600 shrink-0" />
-                    <span>Personal Style Profile Required</span>
-                  </div>
-                  <p className="text-[11px] text-amber-800 leading-snug">
-                    Personalized styling requires your Style Profile (face geometry, skin undertone, and fit preferences) to tailor recommendations.
-                  </p>
-                  <Button
-                    type="button"
-                    size="sm"
-                    className="w-full bg-amber-600 hover:bg-amber-700 text-white text-xs rounded-xl shadow-xs py-2"
-                    onClick={() => setShowOnboardingModal(true)}
-                  >
-                    Set Up Style Profile Now
-                  </Button>
-                </div>
-              )}
+              </div>
               {/* Natural Query / Occasion Input */}{" "}
               <Input
                 label="What are you styling for?"
@@ -972,27 +953,15 @@ function StylistPageContent() {
               </div>{" "}
               {/* Submit Button */}
               <div className="pt-2">
-                {!user.profile?.isCompleted ? (
-                  <Button
-                    type="button"
-                    variant="primary"
-                    onClick={() => setShowOnboardingModal(true)}
-                    className="w-full rounded-2xl py-3 justify-center shadow-sm bg-amber-600 hover:bg-amber-700 text-white"
-                    leftIcon={<Lock className="w-4 h-4" />}
-                  >
-                    Complete Style Profile to Generate
-                  </Button>
-                ) : (
-                  <Button
-                    type="submit"
-                    variant="primary"
-                    isLoading={isGenerating}
-                    className="w-full rounded-2xl py-3 justify-center shadow-sm"
-                    leftIcon={<Sparkles className="w-4 h-4" />}
-                  >
-                    Generate Curated Look
-                  </Button>
-                )}
+                <Button
+                  type="submit"
+                  variant="primary"
+                  isLoading={isGenerating}
+                  className="w-full rounded-2xl py-3 justify-center shadow-sm"
+                  leftIcon={<Sparkles className="w-4 h-4" />}
+                >
+                  Generate Curated Look
+                </Button>
               </div>
             </form>
             {/* Right Column: 3 Looks Display & Details (8 cols) */}
@@ -1877,39 +1846,6 @@ function StylistPageContent() {
               Send
             </Button>
           </form>
-        </div>
-      )}
-
-      {/* Mandatory Onboarding Style Profile Modal */}
-      {showOnboardingModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
-          <div className="relative w-full max-w-3xl my-6 bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
-            <div className="flex items-center justify-between p-4 px-6 border-b border-slate-100 bg-slate-50">
-              <div className="flex items-center gap-2">
-                <span className="p-1.5 rounded-lg bg-emerald-100 text-emerald-700">
-                  <Sparkles className="w-4 h-4" />
-                </span>
-                <div>
-                  <h3 className="font-bold text-sm text-slate-900 font-editorial">
-                    Personal Style Profile Setup
-                  </h3>
-                  <p className="text-[11px] text-slate-500">
-                    Mandatory calibration for authentic, tailored recommendations
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowOnboardingModal(false)}
-                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-xl hover:bg-slate-200/50 transition text-sm font-semibold"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="max-h-[80vh] overflow-y-auto p-4 sm:p-6">
-              <PersonalStyleProfileCard />
-            </div>
-          </div>
         </div>
       )}
     </div>

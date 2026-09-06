@@ -621,7 +621,7 @@ Extract the following JSON attributes:
 - hasMultipleItems: boolean (true if multiple distinct clothing items are visible, like shirt + trousers + shoes in one photo)
 - isClothingItem: boolean (true if the image contains clothing/accessories)
 - name: Refined garment title (e.g. "Classic Denim Shirt", "Leather Chelsea Boots", "Silver Watch")
-- category: One of ['Tops', 'Bottoms', 'Outerwear', 'Dresses', 'Footwear', 'Bags', 'Accessories', 'Jewelry', 'Activewear', 'Formalwear']
+- category: One of ['Tops', 'Bottoms', 'Outerwear', 'Dresses', 'Footwear', 'Bags', 'Accessories', 'Jewelry', 'Activewear', 'Formalwear']. IMPORTANT: Sunglasses -> Accessories, Watch -> Accessories, Belt -> Accessories, Shoes -> Footwear, Trousers -> Bottoms, Shirt -> Tops, Blazer -> Outerwear, Suit -> Formalwear. NEVER map Sunglasses, Watches, or Belts to Tops!
 - type: Specific clothing type (e.g. 'Shirt', 'T-shirt', 'Polo', 'Sweater', 'Hoodie', 'Jacket', 'Blazer', 'Coat', 'Trousers', 'Jeans', 'Chinos', 'Shorts', 'Shoes', 'Boots', 'Sneakers', 'Loafers', 'Watch', 'Belt', 'Scarf', 'Bag', 'Sunglasses')
 - subcategory: Detailed subcategory descriptor (e.g. 'Button-Down Shirt', 'Tailored Blazer', 'Penny Loafers')
 - color: Best matching primary color 

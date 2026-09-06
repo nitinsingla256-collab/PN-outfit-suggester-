@@ -79,6 +79,7 @@ export function WardrobePage() {
   /* Search & Filter State */
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [selectedType, setSelectedType] = useState<string>('All');
   const [selectedColor, setSelectedColor] = useState<string>('All');
   const [selectedStyle, setSelectedStyle] = useState<string>('All');
   const [selectedSeason, setSelectedSeason] = useState<string>('All');
@@ -141,7 +142,7 @@ export function WardrobePage() {
       ? safeWardrobe.filter(w => activeClusterFilter.itemIds.includes(w.id))
       : safeWardrobe;
 
-    return wardrobeService.filter(baseItems || [], {
+    let items = wardrobeService.filter(baseItems || [], {
       searchQuery,
       category: selectedCategory as ClothingCategory | 'All',
       color: selectedColor,
@@ -152,11 +153,18 @@ export function WardrobePage() {
       onlyFavorites,
       sortBy,
     });
+    
+    if (selectedType !== 'All') {
+      items = items.filter(i => i.type?.toLowerCase() === selectedType.toLowerCase());
+    }
+    
+    return items;
   }, [
     wardrobe,
     activeClusterFilter,
     searchQuery,
     selectedCategory,
+    selectedType,
     selectedColor,
     selectedStyle,
     selectedSeason,
@@ -188,6 +196,7 @@ export function WardrobePage() {
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (selectedCategory !== 'All') count++;
+    if (selectedType !== 'All') count++;
     if (selectedColor !== 'All') count++;
     if (selectedStyle !== 'All') count++;
     if (selectedSeason !== 'All') count++;
@@ -198,6 +207,7 @@ export function WardrobePage() {
     return count;
   }, [
     selectedCategory,
+    selectedType,
     selectedColor,
     selectedStyle,
     selectedSeason,
@@ -207,9 +217,17 @@ export function WardrobePage() {
     searchQuery,
   ]);
 
+  const availableSubcategories = useMemo(() => {
+    if (selectedCategory === 'All') return [];
+    const items = wardrobe.filter(i => i.category === selectedCategory && i.type);
+    const types = new Set(items.map(i => i.type!));
+    return Array.from(types).sort();
+  }, [wardrobe, selectedCategory]);
+
   const resetAllFilters = () => {
     setSearchQuery('');
     setSelectedCategory('All');
+    setSelectedType('All');
     setSelectedColor('All');
     setSelectedStyle('All');
     setSelectedSeason('All');
@@ -528,6 +546,35 @@ export function WardrobePage() {
           );
         })}
       </div>
+
+      {/* Subcategory Pills */}
+      {selectedCategory !== 'All' && availableSubcategories.length > 0 && (
+        <div className="flex flex-wrap gap-2 pt-1 pb-2">
+          <button
+            onClick={() => setSelectedType('All')}
+            className={`px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all ${
+              selectedType === 'All'
+                ? 'bg-slate-700 text-white'
+                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+            }`}
+          >
+            All {selectedCategory}
+          </button>
+          {availableSubcategories.map(type => (
+            <button
+              key={type}
+              onClick={() => setSelectedType(type)}
+              className={`px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all ${
+                selectedType === type
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              {type}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* 3. Luxury Search & Filter Bar */}
       <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-sm space-y-4">

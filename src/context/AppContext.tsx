@@ -241,7 +241,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [quickOccasionForStylist, setQuickOccasionForStylist] = useState<OccasionType | null>(null);
 
   const openMeasurementsModal = useCallback(() => {
-    setIsFirstLoginMeasurementsModalOpen(true);
+    setIsFirstLoginMeasurementsModalOpen(false);
   }, []);
 
   // Sync route safely across standalone PWA, mobile Chrome, and embedded iframes
@@ -408,7 +408,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       // Check if user should be asked height & weight
       if (!authedUser.measurements?.hasCompletedFirstLoginMeasurements) {
-        setIsFirstLoginMeasurementsModalOpen(true);
+        setIsFirstLoginMeasurementsModalOpen(false);
       }
 
       showToast({
@@ -436,7 +436,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setPlans([]);
 
       // Prompt new users for height and weight immediately after account creation
-      setIsFirstLoginMeasurementsModalOpen(true);
+      setIsFirstLoginMeasurementsModalOpen(false);
 
       showToast({
         title: 'Account Created',

@@ -255,6 +255,7 @@ export interface PersonalStyleProfile {
   hasPhotoAnalyzed: boolean;
   
   gender?: 'Men' | 'Women' | 'Non-binary' | 'Prefer not to say';
+  age?: number;
 
   // B. Body & Fit Dimensions
   heightCm?: number;

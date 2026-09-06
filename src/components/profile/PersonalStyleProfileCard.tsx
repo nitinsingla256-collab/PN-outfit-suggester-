@@ -1,8 +1,3 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import React, { useState, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import { aiStylistService } from '../../services/aiStylistService';
@@ -14,18 +9,11 @@ import {
 } from '../../types';
 import { Button } from '../ui/Button';
 import { StyleEducationGrid } from '../ui/StyleEducationGrid';
+import { LiveCamera } from '../ui/LiveCamera';
 import {
-  Sparkles,
-  Camera,
-  Upload,
-  Palette,
-  Check,
-  ShieldCheck,
-  RefreshCw,
-  Sliders,
-  ChevronDown,
-  ChevronUp,
-  Info,
+  Sparkles, Camera, Upload, Palette, Check, ShieldCheck, 
+  RefreshCw, Sliders, ChevronDown, ChevronUp, Info,
+  ArrowRight, ArrowLeft
 } from 'lucide-react';
 
 const FACE_SHAPES: FaceShape[] = ['Oval', 'Square', 'Round', 'Heart', 'Oblong', 'Diamond'];
@@ -39,19 +27,21 @@ const POPULAR_COLORS = [
   'Sage', 'Brown', 'Beige', 'Sky Blue', 'Grey', 'Terracotta', 'Forest Green'
 ];
 const POPULAR_STYLES = [
-  'Smart Casual', 'Old money', 'Minimal', 'Classic', 'Casual', 'Streetwear', 'Formal', 'Edgy'
+  'Smart Casual', 'Old money', 'Minimal', 'Classic', 'Casual', 'Streetwear', 'Formal', 'Sporty', 'Edgy'
 ];
+
+type OnboardingStep = 1 | 2 | 3 | 4 | 5 | 6;
 
 export function PersonalStyleProfileCard() {
   const { user, updateUser, showToast } = useApp();
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [step, setStep] = useState<OnboardingStep>(1);
 
   const existingProfile: PersonalStyleProfile = user.profile || {
     hasPhotoAnalyzed: false,
     preferredFit: 'Tailored',
-    preferredColors: ['Navy', 'Charcoal', 'Camel', 'Ivory'],
+    preferredColors: [],
     dislikedColors: [],
-    preferredStyles: ['Smart Casual', 'Minimal'],
+    preferredStyles: [],
     defaultFormality: 'Smart Casual',
     lifestyleOccasions: ['Work', 'Dinner', 'Casual'],
     isCompleted: false,
@@ -59,71 +49,59 @@ export function PersonalStyleProfileCard() {
 
   const [profile, setProfile] = useState<PersonalStyleProfile>(existingProfile);
   const [isAnalyzingPhoto, setIsAnalyzingPhoto] = useState(false);
-  const [showManualTuning, setShowManualTuning] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // File upload handler
-  const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const nextStep = () => setStep((s) => Math.min(s + 1, 6) as OnboardingStep);
+  const prevStep = () => setStep((s) => Math.max(s - 1, 1) as OnboardingStep);
 
-    if (!file.type.startsWith('image/')) {
-      showToast({
-        title: 'Invalid File',
-        description: 'Please select a valid image file (JPEG, PNG, or WebP).',
-        type: 'error',
-      });
-      return;
-    }
-
+  const handlePhotoCapture = async (base64Data: string) => {
     setIsAnalyzingPhoto(true);
     try {
-      const reader = new FileReader();
-      reader.onload = async () => {
-        try {
-          const base64Data = reader.result as string;
-          const analysis: VisualStyleAnalysis = await aiStylistService.analyzeStylePhoto(
-            base64Data,
-            file.type
-          );
-
-          const updated: PersonalStyleProfile = {
-            ...profile,
-            visualAnalysis: {
-              ...analysis,
-              photoThumbnail: base64Data.length < 300000 ? base64Data : undefined,
-              photoUploadedAt: new Date().toISOString(),
-            },
-            hasPhotoAnalyzed: true,
-            isCompleted: true,
-            lastConfirmedAt: new Date().toISOString(),
-          };
-
-          setProfile(updated);
-          await updateUser({ profile: updated });
-
-          showToast({
-            title: 'Visual Analysis Complete',
-            description: `Calibrated for ${analysis.faceShape} face shape and ${analysis.skinTone} undertone.`,
-            type: 'success',
-          });
-        } catch (err: any) {
-          showToast({
-            title: 'Analysis Deferred',
-            description: err.message || 'Could not analyze image. Default palette applied.',
-            type: 'error',
-          });
-        } finally {
-          setIsAnalyzingPhoto(false);
-        }
-      };
-      reader.readAsDataURL(file);
-    } catch (err) {
+      const analysis: VisualStyleAnalysis = await aiStylistService.analyzeStylePhoto(
+        base64Data,
+        'image/jpeg'
+      );
+      setProfile(prev => ({
+        ...prev,
+        visualAnalysis: {
+          ...analysis,
+          photoThumbnail: base64Data.length < 300000 ? base64Data : undefined,
+          photoUploadedAt: new Date().toISOString(),
+        },
+        hasPhotoAnalyzed: true,
+      }));
+      showToast({
+        title: 'Analysis Complete',
+        description: 'Review your visual style profile.',
+        type: 'success',
+      });
+      nextStep();
+    } catch (err: any) {
+      showToast({
+        title: 'Analysis Failed',
+        description: err.message || 'Could not analyze image. Try again.',
+        type: 'error',
+      });
+    } finally {
       setIsAnalyzingPhoto(false);
     }
   };
 
-  const handleSaveManual = async () => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      showToast({ title: 'Invalid File', description: 'Please select an image.', type: 'error' });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      handlePhotoCapture(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSaveFinal = async () => {
     setIsSaving(true);
     try {
       const updated: PersonalStyleProfile = {
@@ -131,12 +109,16 @@ export function PersonalStyleProfileCard() {
         isCompleted: true,
         lastConfirmedAt: new Date().toISOString(),
       };
-      setProfile(updated);
       await updateUser({ profile: updated });
+      showToast({
+        title: 'Profile Saved',
+        description: 'Your personal style profile is complete.',
+        type: 'success',
+      });
     } catch (e: any) {
       showToast({
         title: 'Save Failed',
-        description: e.message || 'Could not update personal profile.',
+        description: e.message || 'Could not save profile.',
         type: 'error',
       });
     } finally {
@@ -147,472 +129,338 @@ export function PersonalStyleProfileCard() {
   const toggleColorPreference = (color: string) => {
     setProfile(prev => {
       const exists = prev.preferredColors.includes(color);
-      const updated = exists
-        ? prev.preferredColors.filter(c => c !== color)
-        : [...prev.preferredColors, color];
-      // remove from disliked if present
-      const cleanedDisliked = prev.dislikedColors.filter(c => c !== color);
-      return { ...prev, preferredColors: updated, dislikedColors: cleanedDisliked };
+      return {
+        ...prev,
+        preferredColors: exists ? prev.preferredColors.filter(c => c !== color) : [...prev.preferredColors, color]
+      };
     });
   };
 
-  const toggleDislikedColor = (color: string) => {
+  const toggleStyle = (styleName: string) => {
     setProfile(prev => {
-      const exists = prev.dislikedColors.includes(color);
-      const updated = exists
-        ? prev.dislikedColors.filter(c => c !== color)
-        : [...prev.dislikedColors, color];
-      // remove from preferred if present
-      const cleanedPreferred = prev.preferredColors.filter(c => c !== color);
-      return { ...prev, dislikedColors: updated, preferredColors: cleanedPreferred };
-    });
-  };
-
-  const toggleStyle = (style: string) => {
-    setProfile(prev => {
-      const exists = prev.preferredStyles.includes(style);
-      const updated = exists
-        ? prev.preferredStyles.filter(s => s !== style)
-        : [...prev.preferredStyles, style];
-      return { ...prev, preferredStyles: updated };
+      const exists = prev.preferredStyles.includes(styleName);
+      return {
+        ...prev,
+        preferredStyles: exists ? prev.preferredStyles.filter(s => s !== styleName) : [...prev.preferredStyles, styleName]
+      };
     });
   };
 
   return (
-    <div id="personal-style-profile-card" className="bg-white rounded-3xl border border-slate-200/90 shadow-xs overflow-hidden">
-      {/* Header */}
-      <div className="p-6 md:p-8 bg-linear-to-r from-slate-900 to-slate-800 text-white flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono tracking-wider font-semibold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              Sartorial Color & Fit Calibration
-            </span>
-          </div>
-          <h2 className="text-xl md:text-2xl font-bold tracking-tight font-editorial">
-            Personal Style Profile
-          </h2>
-          <p className="text-slate-300 text-sm mt-1 max-w-xl">
-            Grounds the AI Stylist in your unique complexion undertones, face geometry for collar cuts, and silhouette preferences.
-          </p>
+    <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
+      {/* Progress Header */}
+      <div className="bg-slate-50 border-b border-slate-200 p-4 sm:px-8">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Step 0{step} of 06</span>
+          <span className="text-xs font-semibold text-emerald-600">{Math.round((step/6)*100)}% Complete</span>
         </div>
-
-        <div className="flex items-center gap-3">
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handlePhotoSelect}
-            accept="image/*"
-            className="hidden"
-          />
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isAnalyzingPhoto}
-            className="border-slate-600 bg-slate-800/80 text-white hover:bg-slate-700 text-xs font-semibold px-4 py-2.5 rounded-xl shadow-xs"
-          >
-            {isAnalyzingPhoto ? (
-              <>
-                <RefreshCw className="w-4 h-4 mr-2 animate-spin text-emerald-400" />
-                Analyzing Features...
-              </>
-            ) : (
-              <>
-                <Camera className="w-4 h-4 mr-2 text-emerald-400" />
-                {profile.hasPhotoAnalyzed ? 'Retake / Change Photo' : 'Upload Style Photo'}
-              </>
-            )}
-          </Button>
+        <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+          <div className="h-full bg-emerald-600 transition-all duration-500" style={{ width: `${(step/6)*100}%` }} />
         </div>
       </div>
 
-      {/* Main Body */}
-      <div className="p-6 md:p-8 space-y-8">
-        {/* Gender Selection */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-slate-900"></span>
-              Styling Basis
-            </h3>
-          </div>
-          <p className="text-xs text-slate-500 max-w-xl">
-            How should PN tailor your terminology, fit, and clothing suggestions?
-          </p>
-          <div className="flex flex-wrap gap-2.5">
-            {['Men', 'Women', 'Non-binary', 'Prefer not to say'].map((g) => (
-              <button
-                key={g}
-                type="button"
-                onClick={() => setProfile({ ...profile, gender: g as any })}
-                className={`px-4 py-2 rounded-xl text-sm font-medium border transition-colors ${
-                  profile.gender === g
-                    ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
-                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                }`}
-              >
-                {g}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Visual Analysis Results Badge/Banner */}
-        {profile.visualAnalysis ? (
-          <div className="p-5 md:p-6 rounded-2xl bg-linear-to-br from-slate-50 to-slate-100/70 border border-slate-200/90 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/80">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold shadow-xs">
-                  <Sparkles className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-slate-900 font-editorial">
-                    Visual Symmetry & Palette Analysis
-                  </h3>
-                  <p className="text-xs text-slate-500 font-mono">
-                    Calibrated from photo · AI Color Theory
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                  {profile.visualAnalysis.skinTone} Undertone
-                </span>
-                <span className="px-3 py-1 rounded-full text-xs font-bold bg-slate-200 text-slate-800">
-                  {profile.visualAnalysis.faceShape} Face Shape
-                </span>
-              </div>
+      <div className="p-6 sm:p-8">
+        {step === 1 && (
+          <div className="space-y-6 max-w-xl mx-auto">
+            <div className="text-center space-y-2 mb-8">
+              <h2 className="text-2xl font-bold font-editorial text-slate-900">About You</h2>
+              <p className="text-sm text-slate-500">Provide basic details so we can tailor fit and sizing accurately.</p>
             </div>
-
-            <p className="text-sm text-slate-700 leading-relaxed italic bg-white/70 p-3.5 rounded-xl border border-slate-200/60">
-              "{profile.visualAnalysis.analysisNotes}"
-            </p>
-
-            {/* Recommended Palettes & Necklines */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-              <div className="p-4 bg-white rounded-xl border border-slate-200/80">
-                <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-500 block mb-2">
-                  Complimentary Color Harmonizers
-                </span>
-                <div className="flex flex-wrap gap-1.5">
-                  {profile.visualAnalysis.recommendedPalettes.map((col, idx) => (
-                    <span
-                      key={idx}
-                      className="px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100 text-slate-800 border border-slate-200 flex items-center gap-1.5"
-                    >
-                      <span className="w-2 h-2 rounded-full bg-slate-700" />
-                      {col}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              <div className="p-4 bg-white rounded-xl border border-slate-200/80">
-                <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-500 block mb-2">
-                  Proportionate Necklines & Collars
-                </span>
-                <div className="flex flex-wrap gap-1.5">
-                  {profile.visualAnalysis.recommendedNecklines.map((cut, idx) => (
-                    <span
-                      key={idx}
-                      className="px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200/80"
-                    >
-                      {cut}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="p-6 rounded-2xl bg-slate-50 border border-dashed border-slate-300 flex flex-col items-center text-center justify-center space-y-3">
-            <div className="w-12 h-12 rounded-2xl bg-slate-200/80 text-slate-600 flex items-center justify-center">
-              <Camera className="w-6 h-6" />
-            </div>
+            
             <div>
-              <h4 className="text-base font-bold text-slate-800 font-editorial">
-                Unlock Personalized Color & Proportion Grounding
-              </h4>
-              <p className="text-xs text-slate-500 max-w-md mt-1">
-                Upload a clear face photo to automatically detect your skin undertone, contrast level, and most flattering collar styles.
-              </p>
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-2 font-mono">Age</label>
+              <input
+                type="number"
+                min="13" max="120"
+                value={profile.age || ''}
+                onChange={e => setProfile({...profile, age: parseInt(e.target.value) || undefined})}
+                placeholder="e.g. 28"
+                className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              />
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => fileInputRef.current?.click()}
-              className="mt-2 text-xs"
-            >
-              <Upload className="w-3.5 h-3.5 mr-2 text-emerald-600" />
-              Upload Style Photo
-            </Button>
+
+            <div>
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-2 font-mono">Styling Basis (Gender)</label>
+              <div className="flex flex-wrap gap-2">
+                {['Men', 'Women', 'Non-binary', 'Prefer not to say'].map(g => (
+                  <button
+                    key={g}
+                    onClick={() => setProfile({...profile, gender: g as any})}
+                    className={`px-4 py-2.5 rounded-xl text-sm font-medium border transition-all ${
+                      profile.gender === g ? 'bg-slate-900 text-white border-slate-900 shadow-sm' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    {g}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-2 font-mono">Height (cm)</label>
+                <input
+                  type="number"
+                  min="100" max="250"
+                  value={profile.heightCm || ''}
+                  onChange={e => setProfile({...profile, heightCm: parseInt(e.target.value) || undefined})}
+                  placeholder="e.g. 175"
+                  className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-2 font-mono">Weight (kg)</label>
+                <input
+                  type="number"
+                  min="30" max="250"
+                  value={profile.weightKg || ''}
+                  onChange={e => setProfile({...profile, weightKg: parseInt(e.target.value) || undefined})}
+                  placeholder="e.g. 70"
+                  className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+            </div>
+
+            <div className="pt-6">
+              <Button 
+                variant="primary" 
+                className="w-full py-3 rounded-2xl justify-center"
+                disabled={!profile.age || !profile.gender || !profile.heightCm || !profile.weightKg}
+                onClick={nextStep}
+                rightIcon={<ArrowRight className="w-4 h-4" />}
+              >
+                Continue
+              </Button>
+            </div>
           </div>
         )}
 
-        {/* Accordion or Section for Manual Tuning */}
-        <div>
-          <button
-            type="button"
-            onClick={() => setShowManualTuning(prev => !prev)}
-            className="w-full flex items-center justify-between p-4 rounded-xl bg-slate-100/70 hover:bg-slate-100 transition-colors text-left"
-          >
-            <div className="flex items-center gap-2">
-              <Sliders className="w-4 h-4 text-emerald-600" />
-              <span className="text-sm font-bold text-slate-800 font-editorial">
-                Manual Calibration & Sizing Preferences
-              </span>
+        {step === 2 && (
+          <div className="space-y-6 max-w-xl mx-auto">
+            <div className="text-center space-y-2 mb-8">
+              <h2 className="text-2xl font-bold font-editorial text-slate-900">Live Photo</h2>
+              <p className="text-sm text-slate-500">Take a clear photo so PN can personalize your recommendations based on undertone and contrast.</p>
             </div>
-            {showManualTuning ? (
-              <ChevronUp className="w-4 h-4 text-slate-500" />
-            ) : (
-              <ChevronDown className="w-4 h-4 text-slate-500" />
-            )}
-          </button>
+            
+            <LiveCamera 
+              onCapture={handlePhotoCapture} 
+              onUpload={handlePhotoUpload} 
+              isAnalyzing={isAnalyzingPhoto} 
+            />
 
-          {showManualTuning && (
-            <div className="mt-4 p-5 rounded-2xl bg-white border border-slate-200/90 space-y-6">
-              {/* Face Shape & Skin Tone Overrides */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1.5 font-mono">
-                    Face Shape
-                  </label>
-                  <select
-                    value={profile.visualAnalysis?.faceShape || 'Oval'}
-                    onChange={(e) => {
-                      const shape = e.target.value as FaceShape;
-                      setProfile(prev => ({
-                        ...prev,
-                        visualAnalysis: {
-                          ...(prev.visualAnalysis || {
-                            skinTone: 'Neutral',
-                            contrastLevel: 'Medium',
-                            recommendedPalettes: ['Navy', 'Camel', 'Ivory'],
-                            recommendedNecklines: ['Spread collar'],
-                            analysisNotes: 'Manually configured face shape profile.',
-                          }),
-                          faceShape: shape,
-                        },
-                      }));
-                    }}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  >
-                    {FACE_SHAPES.map(f => (
-                      <option key={f} value={f}>{f}</option>
-                    ))}
-                  </select>
-                </div>
+            <div className="pt-6">
+              <Button variant="outline" className="w-full py-3 rounded-2xl justify-center" onClick={prevStep} leftIcon={<ArrowLeft className="w-4 h-4" />}>
+                Back
+              </Button>
+            </div>
+          </div>
+        )}
 
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1.5 font-mono">
-                    Complexion Undertone
-                  </label>
-                  <select
-                    value={profile.visualAnalysis?.skinTone || 'Neutral'}
-                    onChange={(e) => {
-                      const tone = e.target.value as SkinToneUndertone;
-                      setProfile(prev => ({
-                        ...prev,
-                        visualAnalysis: {
-                          ...(prev.visualAnalysis || {
-                            faceShape: 'Oval',
-                            contrastLevel: 'Medium',
-                            recommendedPalettes: ['Navy', 'Camel', 'Ivory'],
-                            recommendedNecklines: ['Spread collar'],
-                            analysisNotes: 'Manually configured skin tone profile.',
-                          }),
-                          skinTone: tone,
-                        },
-                      }));
-                    }}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  >
-                    {SKIN_TONES.map(t => (
-                      <option key={t} value={t}>{t}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
+        {step === 3 && profile.visualAnalysis && (
+          <div className="space-y-6 max-w-xl mx-auto">
+            <div className="text-center space-y-2 mb-8">
+              <h2 className="text-2xl font-bold font-editorial text-slate-900">Your Visual Profile</h2>
+              <p className="text-sm text-slate-500">Review the AI visual analysis. You can adjust any details that don't look quite right.</p>
+            </div>
 
-              {/* Body Proportions */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1.5 font-mono">
-                    Height (cm)
-                  </label>
-                  <input
-                    type="number"
-                    min="100"
-                    max="250"
-                    placeholder="e.g. 175"
-                    value={profile.heightCm || ''}
-                    onChange={(e) => setProfile(p => ({ ...p, heightCm: parseInt(e.target.value) || undefined }))}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1.5 font-mono">
-                    Weight (kg)
-                  </label>
-                  <input
-                    type="number"
-                    min="30"
-                    max="200"
-                    placeholder="e.g. 70"
-                    value={profile.weightKg || ''}
-                    onChange={(e) => setProfile(p => ({ ...p, weightKg: parseInt(e.target.value) || undefined }))}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
-                </div>
-              </div>
-
-              {/* Fit & Sizing */}
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1.5 font-mono">
-                    Preferred Fit
-                  </label>
-                  <select
-                    value={profile.preferredFit}
-                    onChange={(e) => setProfile(p => ({ ...p, preferredFit: e.target.value as any }))}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  >
-                    {FITS.map(f => (
-                      <option key={f} value={f}>{f}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1.5 font-mono">
-                    Top Size
-                  </label>
-                  <select
-                    value={profile.topSize || 'M'}
-                    onChange={(e) => setProfile(p => ({ ...p, topSize: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  >
-                    {TOP_SIZES.map(s => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1.5 font-mono">
-                    Bottom Waist
-                  </label>
-                  <select
-                    value={profile.bottomSize || '32'}
-                    onChange={(e) => setProfile(p => ({ ...p, bottomSize: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  >
-                    {BOTTOM_SIZES.map(s => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1.5 font-mono">
-                    Footwear (EU)
-                  </label>
-                  <select
-                    value={profile.shoeSize || '42'}
-                    onChange={(e) => setProfile(p => ({ ...p, shoeSize: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  >
-                    {SHOE_SIZES.map(s => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Preferred Colors */}
+            <div className="space-y-4">
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-2 font-mono flex items-center justify-between">
-                  <span>Preferred Garment Colors (Prioritize in Looks)</span>
-                  <span className="text-[10px] text-slate-400 font-normal">Click to toggle</span>
-                </label>
-                <div className="flex flex-wrap gap-1.5">
-                  {POPULAR_COLORS.map(col => {
-                    const isSelected = profile.preferredColors.includes(col);
-                    return (
-                      <button
-                        key={col}
-                        type="button"
-                        onClick={() => toggleColorPreference(col)}
-                        className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
-                          isSelected
-                            ? 'bg-slate-900 text-white shadow-xs'
-                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                        }`}
-                      >
-                        {isSelected && <Check className="w-3 h-3 inline mr-1" />}
-                        {col}
-                      </button>
-                    );
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-2 font-mono">Face Shape</label>
+                <select
+                  value={profile.visualAnalysis.faceShape}
+                  onChange={(e) => setProfile({
+                    ...profile,
+                    visualAnalysis: { ...profile.visualAnalysis!, faceShape: e.target.value as FaceShape }
                   })}
-                </div>
-              </div>
-
-              {/* Disliked Colors */}
-              <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-2 font-mono flex items-center justify-between">
-                  <span>Colors to Strictly Exclude</span>
-                  <span className="text-[10px] text-slate-400 font-normal">Never suggest</span>
-                </label>
-                <div className="flex flex-wrap gap-1.5">
-                  {POPULAR_COLORS.map(col => {
-                    const isDisliked = profile.dislikedColors.includes(col);
-                    return (
-                      <button
-                        key={col}
-                        type="button"
-                        onClick={() => toggleDislikedColor(col)}
-                        className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
-                          isDisliked
-                            ? 'bg-rose-700 text-white shadow-xs'
-                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                        }`}
-                      >
-                        {isDisliked && '✕ '}
-                        {col}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Preferred Styles */}
-              <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-2 font-mono">
-                  Preferred Aesthetics
-                </label>
-                <StyleEducationGrid
-                  selectedStyles={profile.preferredStyles}
-                  onToggleStyle={toggleStyle}
-                />
-              </div>
-
-              {/* Save Button */}
-              <div className="pt-2 flex justify-end">
-                <Button
-                  type="button"
-                  variant="primary"
-                  onClick={handleSaveManual}
-                  disabled={isSaving}
-                  className="bg-slate-900 hover:bg-slate-800 text-white text-xs px-5 py-2.5 rounded-xl font-semibold shadow-xs"
+                  className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 >
-                  {isSaving ? 'Saving Profile...' : 'Save Calibration Preferences'}
-                </Button>
+                  {FACE_SHAPES.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-2 font-mono">Skin Undertone</label>
+                <select
+                  value={profile.visualAnalysis.skinTone}
+                  onChange={(e) => setProfile({
+                    ...profile,
+                    visualAnalysis: { ...profile.visualAnalysis!, skinTone: e.target.value as SkinToneUndertone }
+                  })}
+                  className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  {SKIN_TONES.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-2 font-mono">Contrast Level</label>
+                <select
+                  value={profile.visualAnalysis.contrastLevel}
+                  onChange={(e) => setProfile({
+                    ...profile,
+                    visualAnalysis: { ...profile.visualAnalysis!, contrastLevel: e.target.value as any }
+                  })}
+                  className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  {['High', 'Medium', 'Low', 'Soft'].map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
               </div>
             </div>
-          )}
-        </div>
+
+            <div className="flex gap-3 pt-6">
+              <Button variant="outline" className="flex-1 py-3 rounded-2xl justify-center" onClick={prevStep}>Back</Button>
+              <Button variant="primary" className="flex-1 py-3 rounded-2xl justify-center" onClick={nextStep}>Confirm Analysis</Button>
+            </div>
+          </div>
+        )}
+
+        {step === 4 && (
+          <div className="space-y-6">
+            <div className="text-center space-y-2 mb-8 max-w-xl mx-auto">
+              <h2 className="text-2xl font-bold font-editorial text-slate-900">Your Style</h2>
+              <p className="text-sm text-slate-500">Select the aesthetics that match how you want to dress.</p>
+            </div>
+            
+            <StyleEducationGrid
+              selectedStyles={profile.preferredStyles}
+              onToggleStyle={toggleStyle}
+            />
+
+            <div className="flex gap-3 pt-6 max-w-xl mx-auto">
+              <Button variant="outline" className="flex-1 py-3 rounded-2xl justify-center" onClick={prevStep}>Back</Button>
+              <Button 
+                variant="primary" 
+                className="flex-1 py-3 rounded-2xl justify-center" 
+                onClick={nextStep}
+                disabled={profile.preferredStyles.length === 0}
+              >
+                Continue
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {step === 5 && (
+          <div className="space-y-8 max-w-xl mx-auto">
+            <div className="text-center space-y-2 mb-8">
+              <h2 className="text-2xl font-bold font-editorial text-slate-900">Fit & Preferences</h2>
+              <p className="text-sm text-slate-500">Refine your sizing and color palette.</p>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-2 font-mono">Preferred Fit</label>
+              <div className="flex flex-wrap gap-2">
+                {FITS.map(fit => (
+                  <button
+                    key={fit}
+                    onClick={() => setProfile({...profile, preferredFit: fit})}
+                    className={`px-4 py-2.5 rounded-xl text-sm font-medium border transition-all ${
+                      profile.preferredFit === fit ? 'bg-slate-900 text-white border-slate-900 shadow-sm' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    {fit}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-2 font-mono">Sizing</label>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <span className="text-xs text-slate-500 block mb-1">Top</span>
+                  <select
+                    value={profile.topSize || ''}
+                    onChange={(e) => setProfile({...profile, topSize: e.target.value})}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm font-semibold focus:outline-none"
+                  >
+                    <option value="">Select</option>
+                    {TOP_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <span className="text-xs text-slate-500 block mb-1">Bottom</span>
+                  <select
+                    value={profile.bottomSize || ''}
+                    onChange={(e) => setProfile({...profile, bottomSize: e.target.value})}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm font-semibold focus:outline-none"
+                  >
+                    <option value="">Select</option>
+                    {BOTTOM_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <span className="text-xs text-slate-500 block mb-1">Shoe</span>
+                  <select
+                    value={profile.shoeSize || ''}
+                    onChange={(e) => setProfile({...profile, shoeSize: e.target.value})}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm font-semibold focus:outline-none"
+                  >
+                    <option value="">Select</option>
+                    {SHOE_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-2 font-mono">Color Preferences</label>
+              <div className="flex flex-wrap gap-2">
+                {POPULAR_COLORS.map(color => {
+                  const isSelected = profile.preferredColors.includes(color);
+                  return (
+                    <button
+                      key={color}
+                      onClick={() => toggleColorPreference(color)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+                        isSelected ? 'bg-emerald-700 text-white border-emerald-700 shadow-sm' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                      }`}
+                    >
+                      {isSelected && <Check className="w-3 h-3 inline mr-1" />}
+                      {color}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-6">
+              <Button variant="outline" className="flex-1 py-3 rounded-2xl justify-center" onClick={prevStep}>Back</Button>
+              <Button 
+                variant="primary" 
+                className="flex-1 py-3 rounded-2xl justify-center" 
+                onClick={nextStep}
+                disabled={!profile.topSize || !profile.bottomSize || !profile.shoeSize || profile.preferredColors.length === 0}
+              >
+                Continue
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {step === 6 && (
+          <div className="space-y-6 max-w-xl mx-auto text-center">
+            <div className="w-20 h-20 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-4">
+              <ShieldCheck className="w-10 h-10" />
+            </div>
+            <h2 className="text-3xl font-bold font-editorial text-slate-900">Ready to Style</h2>
+            <p className="text-sm text-slate-500 max-w-md mx-auto">
+              Your profile is complete. PN will now use these validated characteristics, precise fits, and visual analysis to generate accurate styling recommendations.
+            </p>
+            
+            <div className="pt-8 flex gap-3">
+              <Button variant="outline" className="flex-1 py-3 rounded-2xl justify-center" onClick={prevStep}>Review</Button>
+              <Button 
+                variant="primary" 
+                className="flex-1 py-3 rounded-2xl justify-center shadow-md bg-emerald-600 hover:bg-emerald-700" 
+                onClick={handleSaveFinal}
+                isLoading={isSaving}
+              >
+                Complete Profile
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
