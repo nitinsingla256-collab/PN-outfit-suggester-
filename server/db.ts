@@ -61,6 +61,7 @@ export interface StoredUser {
     weightUnit?: 'kg' | 'lbs';
     hasCompletedFirstLoginMeasurements?: boolean;
   };
+  profile?: any;
 }
 
 export interface StoredSession {
@@ -496,6 +497,12 @@ class PaurviDatabase {
       user.preferences = {
         ...user.preferences,
         ...updates.preferences,
+      };
+    }
+    if (updates.profile) {
+      user.profile = {
+        ...user.profile,
+        ...updates.profile,
       };
     }
 

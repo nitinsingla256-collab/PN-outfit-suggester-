@@ -233,6 +233,53 @@ export interface UserPreferences {
 export type HeightUnit = 'cm' | 'm' | 'ft_in' | 'in';
 export type WeightUnit = 'kg' | 'lbs';
 
+export type FaceShape = 'Oval' | 'Square' | 'Round' | 'Heart' | 'Oblong' | 'Diamond';
+export type SkinToneUndertone = 'Warm' | 'Cool' | 'Neutral' | 'Olive' | 'Deep Warm' | 'Fair Cool';
+
+export interface VisualStyleAnalysis {
+  faceShape: FaceShape;
+  skinTone: SkinToneUndertone;
+  contrastLevel: 'High' | 'Medium' | 'Low' | 'Soft';
+  hairCharacteristics?: string;
+  recommendedPalettes: string[];
+  recommendedNecklines: string[];
+  analysisNotes: string;
+  photoUploadedAt?: string;
+  photoThumbnail?: string;
+}
+
+export interface PersonalStyleProfile {
+  // A. Visual Style Analysis (from photo or manual selection)
+  visualAnalysis?: VisualStyleAnalysis;
+  hasPhotoAnalyzed: boolean;
+  
+  // B. Body & Fit Dimensions
+  heightCm?: number;
+  heightUnit?: HeightUnit;
+  weightKg?: number;
+  weightUnit?: WeightUnit;
+  chestCm?: number;
+  waistCm?: number;
+  hipsCm?: number;
+  topSize?: string;
+  bottomSize?: string;
+  shoeSize?: string;
+  preferredFit: 'Relaxed' | 'Tailored' | 'Oversized' | 'Slim' | 'Classic';
+  
+  // C. Color Preferences
+  preferredColors: string[];
+  dislikedColors: string[];
+  
+  // D. Style & Formality Aesthetics
+  preferredStyles: string[];
+  defaultFormality: 'Casual' | 'Smart Casual' | 'Business Casual' | 'Formal';
+  lifestyleOccasions: string[];
+  
+  // Status
+  isCompleted: boolean;
+  lastConfirmedAt?: string;
+}
+
 export interface UserMeasurements {
   heightCm?: number;
   heightUnit?: HeightUnit;
@@ -255,6 +302,7 @@ export interface User {
   preferences: UserPreferences;
   role: 'user' | 'admin' | 'supervisor';
   measurements?: UserMeasurements;
+  profile?: PersonalStyleProfile;
 }
 
 export interface AIStylistRequest {
@@ -272,6 +320,7 @@ export interface AIStylistRequest {
   mustIncludeItemIds?: string[];
   excludeItemIds?: string[];
   generateMultipleLooks?: boolean;
+  userProfile?: PersonalStyleProfile;
 }
 
 export interface AIStylistResponse {

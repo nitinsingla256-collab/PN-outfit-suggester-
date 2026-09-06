@@ -230,6 +230,18 @@ async function startServer() {
     }
   });
 
+  // Get Profile
+  app.get('/api/auth/profile', authMiddleware, (req, res) => {
+    try {
+      const user = db.getUserById(req.user!.id);
+      if (!user) return res.status(404).json({ error: 'User not found.' });
+      const { passwordHash, salt, ...safeUser } = user;
+      return res.json({ success: true, user: safeUser });
+    } catch (err: any) {
+      return res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
+
   // ==========================================
   // 3. USER-SCOPED WARDROBE ENDPOINTS
   // ==========================================
@@ -492,8 +504,95 @@ async function startServer() {
   });
 
   // ==========================================
-  // 7. GEMINI AI VISION GARMENT AUTO-CATALOGUING
+  // 7. GEMINI AI VISION GARMENT AUTO-CATALOGUING & PERSONAL STYLE PHOTO ANALYSIS
   // ==========================================
+
+  // Personal Style Photo Visual Analysis
+  app.post('/api/gemini/analyze-style-photo', authMiddleware, async (req, res) => {
+    try {
+      const { imageBase64, mimeType = 'image/jpeg' } = req.body;
+
+      if (!imageBase64) {
+        return res.status(400).json({ error: 'Please provide a face or outfit photo to analyze.' });
+      }
+
+      const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, '');
+      const ai = getAIClient();
+
+      const prompt = `You are PN Atelier's Principal Personal Stylist and Facial Proportions & Color Contrast Expert.
+Analyze this user's photo carefully to understand their natural features for personalized wardrobe styling, flattering color palettes, and collar/neckline recommendations.
+
+CRITICAL ETHICAL & SENSITIVITY DIRECTIVES:
+- NEVER judge, rate, or critique the person's beauty, weight, skin texture, or age.
+- Provide 100% positive, constructive, sartorially empowering fashion and color harmony guidance.
+- Focus purely on: face geometry (for flattering collars/necklines), complexion undertone (for complementary garment colors), and visual contrast level.
+
+Extract the following JSON attributes:
+- faceShape: Exactly one of ['Oval', 'Square', 'Round', 'Heart', 'Oblong', 'Diamond']
+- skinTone: Exactly one of ['Warm', 'Cool', 'Neutral', 'Olive', 'Deep Warm', 'Fair Cool']
+- contrastLevel: Exactly one of ['High', 'Medium', 'Low', 'Soft']
+- hairCharacteristics: Brief 2-5 word descriptor (e.g. 'Dark textured curls', 'Warm honey brunette', 'Sleek dark espresso', 'Silver ash')
+- recommendedPalettes: Array of 4 to 6 specific garment color names that will naturally elevate their complexion (e.g. ['Midnight Navy', 'Rich Camel', 'Forest Green', 'Ivory', 'Deep Burgundy', 'Warm Slate'])
+- recommendedNecklines: Array of 2 to 3 tailored collars, necklines, or lapel cuts that create proportional harmony with their face shape (e.g. ['Open spread collars', 'Structured notched lapels', 'V-neck fine gauge knits'])
+- analysisNotes: 2-3 articulate, constructive sentences explaining how these colors and silhouette choices visually balance and elevate the user's natural features.
+`;
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-flash-latest',
+        contents: [
+          {
+            inlineData: {
+              data: cleanBase64,
+              mimeType: mimeType,
+            },
+          },
+          prompt,
+        ],
+        config: {
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              faceShape: { type: Type.STRING },
+              skinTone: { type: Type.STRING },
+              contrastLevel: { type: Type.STRING },
+              hairCharacteristics: { type: Type.STRING },
+              recommendedPalettes: {
+                type: Type.ARRAY,
+                items: { type: Type.STRING },
+              },
+              recommendedNecklines: {
+                type: Type.ARRAY,
+                items: { type: Type.STRING },
+              },
+              analysisNotes: { type: Type.STRING },
+            },
+            required: ['faceShape', 'skinTone', 'contrastLevel', 'recommendedPalettes', 'recommendedNecklines', 'analysisNotes'],
+          },
+        },
+      });
+
+      const parsed = JSON.parse(response.text || '{}');
+      db.incrementAIRequestCount(req.user!.id, 'Personal Style Visual Analysis', `${parsed.faceShape || 'Analysis'} · ${parsed.skinTone || 'Profile'}`);
+
+      return res.json({ success: true, analysis: parsed });
+    } catch (_error: any) {
+      // Graceful constructive fallback for personal style analysis
+      const fallbackAnalysis = {
+        faceShape: 'Oval',
+        skinTone: 'Neutral',
+        contrastLevel: 'Medium',
+        hairCharacteristics: 'Natural tones',
+        recommendedPalettes: ['Midnight Navy', 'Rich Camel', 'Forest Green', 'Crisp Ivory', 'Charcoal Slate'],
+        recommendedNecklines: ['Classic spread collar shirts', 'Structured notched lapels', 'Fine-gauge crewneck knits'],
+        analysisNotes: 'A balanced neutral undertone offers great sartorial versatility, pairing seamlessly with deep monochromatic blues, warm earth tones, and clean tailored collars.',
+      };
+
+      db.incrementAIRequestCount(req.user!.id, 'Personal Style Visual Analysis', 'Fallback Neutral Palette');
+      return res.json({ success: true, isFallback: true, analysis: fallbackAnalysis });
+    }
+  });
+
   app.post('/api/gemini/analyze-garment', authMiddleware, async (req, res) => {
     try {
       const { imageUrl, imageBase64, mimeType, hint } = req.body;
@@ -642,6 +741,7 @@ ${hint ? `User context/hint: "${hint}"` : ''}
     } = req.body || {};
 
     const userId = req.user!.id;
+    const userProfile = req.body.userProfile || req.user?.profile || (db as any).data.users.find((u: any) => u.id === userId)?.profile;
     const clientWardrobePool = Array.isArray(req.body.wardrobePool) && req.body.wardrobePool.length > 0
       ? req.body.wardrobePool
       : null;
@@ -710,6 +810,22 @@ State clearly in gapAnalysis: "Your wardrobe doesn't currently contain a suitabl
   req.user?.measurements?.heightCm
     ? `Height: ${req.user.measurements.heightCm} cm, Weight: ${req.user.measurements.weightKg || 'Not specified'} kg. Harmonize garment drape, hemlines, and vertical silhouette balance for this stature.`
     : 'Standard proportions'
+}
+${
+  userProfile
+    ? `- PERSONAL STYLE PROFILE (Strict grounding in client features):
+  * Face Shape: ${userProfile.visualAnalysis?.faceShape || 'Balanced'}
+  * Complexion Undertone: ${userProfile.visualAnalysis?.skinTone || 'Neutral'}
+  * Color Contrast Level: ${userProfile.visualAnalysis?.contrastLevel || 'Medium'}
+  * Recommended Palettes for Complexion: ${(userProfile.visualAnalysis?.recommendedPalettes || []).join(', ') || 'Sophisticated neutrals'}
+  * Recommended Necklines/Collars: ${(userProfile.visualAnalysis?.recommendedNecklines || []).join(', ') || 'Classic spread and notched lapels'}
+  * Client Preferred Fit & Silhouette: ${userProfile.preferredFit || 'Tailored'}
+  * Preferred Colors (PRIORITIZE): ${(userProfile.preferredColors || []).join(', ') || 'Client neutrals'}
+  * Disliked Colors (STRICTLY AVOID): ${(userProfile.dislikedColors || []).join(', ') || 'None'}
+  * Sizes: Top: ${userProfile.topSize || 'M'}, Bottom: ${userProfile.bottomSize || '32'}, Footwear: ${userProfile.shoeSize || '42'}
+  * Preferred Aesthetics: ${(userProfile.preferredStyles || []).join(', ') || 'Smart Casual, Minimalist'}
+  NOTE: In 'whyItWorks', explicitly articulate how the chosen colors and neckline/collar flatter the client's ${userProfile.visualAnalysis?.skinTone || 'neutral'} complexion undertone and ${userProfile.visualAnalysis?.faceShape || 'facial'} proportions!`
+    : ''
 }
 - Must-Include Items: ${mustIncludeItemIds.join(', ') || 'None'}
 - Special Notes: ${additionalNotes || 'None'}

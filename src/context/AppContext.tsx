@@ -458,15 +458,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (updates.measurements && prev.measurements) {
         updated.measurements = { ...prev.measurements, ...updates.measurements };
       }
+      if (updates.profile && prev.profile) {
+        updated.profile = { ...prev.profile, ...updates.profile };
+      }
       try {
         window.localStorage.setItem('pn_cached_user_v1', JSON.stringify(updated));
       } catch (e) {}
       return updated;
     });
+
+    try {
+      if (authService.isAuthenticated()) {
+        await authService.updateUserProfile(updates);
+      }
+    } catch (err) {
+      console.warn('Backend profile update deferred:', err);
+    }
     
     showToast({
-      title: 'Preferences Saved',
-      description: 'Your styling parameters and profile have been synchronized.',
+      title: 'Profile Synchronized',
+      description: 'Your personal style metrics and styling parameters have been updated.',
       type: 'success',
     });
   }, [showToast]);

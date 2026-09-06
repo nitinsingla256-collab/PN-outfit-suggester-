@@ -25,6 +25,8 @@ import {
   Season,
   FashionTrendsReport,
   WardrobeAutoOrganizeResult,
+  VisualStyleAnalysis,
+  PersonalStyleProfile,
 } from '../types';
 import { authService } from './authService';
 
@@ -554,6 +556,28 @@ export class AIStylistService {
         { styleName: 'Tailored Minimal', itemCount: Math.ceil(items.length * 0.3), percentage: 30 },
         { styleName: 'Relaxed Weekend', itemCount: Math.max(1, items.length - Math.ceil(items.length * 0.8)), percentage: 20 },
       ],
+    };
+  }
+
+  async analyzeStylePhoto(imageBase64: string, mimeType: string = 'image/jpeg'): Promise<VisualStyleAnalysis> {
+    const res = await this.safePost<{ success: boolean; analysis?: VisualStyleAnalysis }>(
+      '/api/gemini/analyze-style-photo',
+      { imageBase64, mimeType }
+    );
+
+    if (res.ok && res.data?.success && res.data?.analysis) {
+      return res.data.analysis;
+    }
+
+    // Default fallback analysis if offline or rate-limited
+    return {
+      faceShape: 'Oval',
+      skinTone: 'Neutral',
+      contrastLevel: 'Medium',
+      hairCharacteristics: 'Natural tones',
+      recommendedPalettes: ['Midnight Navy', 'Rich Camel', 'Forest Green', 'Crisp Ivory', 'Charcoal Slate'],
+      recommendedNecklines: ['Classic spread collar shirts', 'Structured notched lapels', 'Fine-gauge crewneck knits'],
+      analysisNotes: 'A balanced neutral undertone offers great sartorial versatility, pairing seamlessly with deep monochromatic blues, warm earth tones, and clean tailored collars.',
     };
   }
 }

@@ -9,7 +9,7 @@
       "role": "supervisor",
       "status": "Active",
       "joinedDate": "2026-08-29",
-      "lastActive": "2026-09-05T04:04:32.208Z",
+      "lastActive": "2026-09-06T11:19:28.535Z",
       "pronouns": "she/they",
       "bio": "Lead Atelier Supervisor & Haute Horlogerie Archivist.",
       "location": "Paris, France",
@@ -402,6 +402,96 @@
   },
   "activityLogs": [
     {
+      "id": "log_1788693794926_0fbbf0",
+      "userId": "usr_client_paurvi",
+      "userName": "Client",
+      "userEmail": "client@paurvi.atelier",
+      "action": "AI Stylist request: Outfit Synthesis (\"Curated Minimal Look for Daily Wear\")",
+      "category": "AI_STYLIST",
+      "timestamp": "2026-09-06T11:23:14.927Z"
+    },
+    {
+      "id": "log_1788693773649_50e0eb",
+      "userId": "usr_client_paurvi",
+      "userName": "Client",
+      "userEmail": "client@paurvi.atelier",
+      "action": "AI Stylist request: Outfit Synthesis (\"Curated Minimal Look for Daily Wear\")",
+      "category": "AI_STYLIST",
+      "timestamp": "2026-09-06T11:22:53.650Z"
+    },
+    {
+      "id": "log_1788693642351_0158d9",
+      "userId": "usr_client_paurvi",
+      "userName": "Client",
+      "userEmail": "client@paurvi.atelier",
+      "action": "AI Stylist request: Outfit Synthesis (\"Curated Minimal Look for Daily Wear\")",
+      "category": "AI_STYLIST",
+      "timestamp": "2026-09-06T11:20:42.351Z"
+    },
+    {
+      "id": "log_1788693573376_cfb1da",
+      "userId": "usr_supervisor_paurvi",
+      "userName": "Nitin Singla (Admin)",
+      "userEmail": "nitinsingla256@gmail.com",
+      "action": "AI Stylist request: Outfit Synthesis (\"Curated Minimal Look for Daily Wear\")",
+      "category": "AI_STYLIST",
+      "timestamp": "2026-09-06T11:19:33.376Z"
+    },
+    {
+      "id": "log_1788692969078_e73501",
+      "userId": "usr_supervisor_paurvi",
+      "userName": "Nitin Singla (Admin)",
+      "userEmail": "nitinsingla256@gmail.com",
+      "action": "AI Stylist request: Outfit Synthesis (\"Tailored Minimalist Evening Ensemble\")",
+      "category": "AI_STYLIST",
+      "timestamp": "2026-09-06T11:09:29.078Z"
+    },
+    {
+      "id": "log_1788692361485_f1bbaf",
+      "userId": "usr_supervisor_paurvi",
+      "userName": "Nitin Singla (Admin)",
+      "userEmail": "nitinsingla256@gmail.com",
+      "action": "AI Stylist request: Outfit Synthesis (\"Deconstructed Navy Sartorial\")",
+      "category": "AI_STYLIST",
+      "timestamp": "2026-09-06T10:59:21.485Z"
+    },
+    {
+      "id": "log_1788692228111_a1988a",
+      "userId": "usr_supervisor_paurvi",
+      "userName": "Nitin Singla (Admin)",
+      "userEmail": "nitinsingla256@gmail.com",
+      "action": "AI Stylist request: Outfit Synthesis (\"Curated Minimal Look for Daily Wear\")",
+      "category": "AI_STYLIST",
+      "timestamp": "2026-09-06T10:57:08.111Z"
+    },
+    {
+      "id": "log_1788692210999_403938",
+      "userId": "usr_supervisor_paurvi",
+      "userName": "Nitin Singla (Admin)",
+      "userEmail": "nitinsingla256@gmail.com",
+      "action": "AI Stylist request: Outfit Synthesis (\"Deconstructed Navy Tailoring Look\")",
+      "category": "AI_STYLIST",
+      "timestamp": "2026-09-06T10:56:50.999Z"
+    },
+    {
+      "id": "log_1788692207124_145556",
+      "userId": "usr_supervisor_paurvi",
+      "userName": "Nitin Singla (Admin)",
+      "userEmail": "nitinsingla256@gmail.com",
+      "action": "AI Stylist request: Outfit Synthesis (\"Curated Minimal Look for Daily Wear\")",
+      "category": "AI_STYLIST",
+      "timestamp": "2026-09-06T10:56:47.124Z"
+    },
+    {
+      "id": "log_1788691538405_163e94",
+      "userId": "usr_supervisor_paurvi",
+      "userName": "Nitin Singla (Admin)",
+      "userEmail": "nitinsingla256@gmail.com",
+      "action": "AI Stylist request: Outfit Synthesis (\"Curated Minimal Look for Daily Wear\")",
+      "category": "AI_STYLIST",
+      "timestamp": "2026-09-06T10:45:38.405Z"
+    },
+    {
       "id": "log_1788581434719_91d23b",
       "userId": "usr_client_paurvi",
       "userName": "Client",
@@ -718,8 +808,8 @@
     }
   ],
   "aiRequestsCount": {
-    "usr_supervisor_paurvi": 2,
-    "usr_client_paurvi": 1,
+    "usr_supervisor_paurvi": 9,
+    "usr_client_paurvi": 4,
     "usr_1788189774471_4d3bcaba": 0,
     "usr_1788347656399_e86996db": 0,
     "usr_1788351778534_ba9f4efb": 0,

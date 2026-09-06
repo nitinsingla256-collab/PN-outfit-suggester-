@@ -260,6 +260,7 @@ function StylistPageContent() {
         excludeItemIds,
         additionalNotes: additionalNotes || undefined,
         generateMultipleLooks: generateMore,
+        userProfile: user.profile,
       };
       const result = await aiStylistService.generateOutfitRecommendation(
         request,
@@ -627,6 +628,18 @@ function StylistPageContent() {
                   {wardrobe.length} items ready{" "}
                 </span>{" "}
               </div>{" "}
+              {/* Profile Calibration Status Indicator */}
+              {user.profile?.isCompleted && (
+                <div className="p-3 bg-emerald-50/80 border border-emerald-200/90 rounded-2xl flex items-start gap-2.5">
+                  <Sparkles className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <div className="text-xs text-emerald-950 leading-tight">
+                    <span className="font-semibold block">Personalized Palette & Proportions</span>
+                    <span className="text-emerald-700 text-[11px]">
+                      {user.profile.visualAnalysis?.skinTone ? `${user.profile.visualAnalysis.skinTone} undertone` : 'Custom palette'} · {user.profile.visualAnalysis?.faceShape ? `${user.profile.visualAnalysis.faceShape} face` : 'Tailored collars'} · {user.profile.preferredFit} fit
+                    </span>
+                  </div>
+                </div>
+              )}
               {/* Natural Query / Occasion Input */}{" "}
               <Input
                 label="What are you styling for?"

@@ -10,20 +10,18 @@ import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { ShieldAlert, ArrowLeft } from 'lucide-react';
 
 import { HomePage } from './pages/HomePage';
+import { WardrobePage } from './pages/WardrobePage';
+import { StylistPage } from './pages/StylistPage';
+import { OutfitsPage } from './pages/OutfitsPage';
+import { PlannerPage } from './pages/PlannerPage';
+import { FavoritesPage } from './pages/FavoritesPage';
+import { ProfilePage } from './pages/ProfilePage';
+import { SettingsPage } from './pages/SettingsPage';
+import { AdminPage } from './pages/AdminPage';
+import { AuthPage } from './pages/AuthPage';
+import { NotFoundPage } from './pages/NotFoundPage';
 
-// Route-level lazy imports to avoid eagerly loading heavy dependencies (such as Recharts)
-const WardrobePage = lazy(() => import('./pages/WardrobePage').then(m => ({ default: m.WardrobePage })));
-const StylistPage = lazy(() => import('./pages/StylistPage').then(m => ({ default: m.StylistPage })));
-const OutfitsPage = lazy(() => import('./pages/OutfitsPage').then(m => ({ default: m.OutfitsPage })));
-const PlannerPage = lazy(() => import('./pages/PlannerPage').then(m => ({ default: m.PlannerPage })));
-const FavoritesPage = lazy(() => import('./pages/FavoritesPage').then(m => ({ default: m.FavoritesPage })));
-const ProfilePage = lazy(() => import('./pages/ProfilePage').then(m => ({ default: m.ProfilePage })));
-const SettingsPage = lazy(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
-const AdminPage = lazy(() => import('./pages/AdminPage').then(m => ({ default: m.AdminPage })));
-const AuthPage = lazy(() => import('./pages/AuthPage').then(m => ({ default: m.AuthPage })));
-const NotFoundPage = lazy(() => import('./pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })));
-
-// Lazy-loaded modal dialogues
+// Lazy-loaded modal dialogues for pristine memory and zero idle CPU usage
 const AddClothingModal = lazy(() => import('./components/wardrobe/AddClothingModal').then(m => ({ default: m.AddClothingModal })));
 const ClothingDetailModal = lazy(() => import('./components/wardrobe/ClothingDetailModal').then(m => ({ default: m.ClothingDetailModal })));
 const CreateLookModal = lazy(() => import('./components/outfits/CreateLookModal').then(m => ({ default: m.CreateLookModal })));

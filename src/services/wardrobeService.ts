@@ -20,9 +20,9 @@ class WardrobeService {
     try {
       const data = localStorage.getItem(STORAGE_KEY);
       if (data === null) {
-        // First time initialization: populate with curated luxury capsule
-        this.setLocal(INITIAL_WARDROBE_ITEMS);
-        return [...INITIAL_WARDROBE_ITEMS];
+        // New user starts with an empty wardrobe - no forced starter items
+        this.setLocal([]);
+        return [];
       }
       const parsed = JSON.parse(data);
       return Array.isArray(parsed) ? parsed : [];

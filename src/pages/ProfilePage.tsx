@@ -31,6 +31,7 @@ import {
   Sliders,
   Info,
 } from 'lucide-react';
+import { PersonalStyleProfileCard } from '../components/profile/PersonalStyleProfileCard';
 
 export function ProfilePage() {
   const { user, updateUser, showToast } = useApp();
@@ -546,6 +547,9 @@ export function ProfilePage() {
             </div>
           )}
         </div>
+
+        {/* 3. Sartorial Personal Style & Color Theory Calibration */}
+        <PersonalStyleProfileCard />
 
         {/* 4. Footer Submit Action */}
         <div className="flex justify-end gap-3 pt-2">
