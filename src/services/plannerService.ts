@@ -1,4 +1,5 @@
 import { PlannedOutfit } from '../types';
+import { INITIAL_PLANNED_OUTFITS } from '../data/seedData';
 
 const STORAGE_KEY = 'pn_local_planner_dev';
 
@@ -6,7 +7,11 @@ class PlannerService {
   private getLocal(): PlannedOutfit[] {
     try {
       const data = localStorage.getItem(STORAGE_KEY);
-      const parsed = data ? JSON.parse(data) : [];
+      if (data === null) {
+        this.setLocal(INITIAL_PLANNED_OUTFITS);
+        return [...INITIAL_PLANNED_OUTFITS];
+      }
+      const parsed = JSON.parse(data);
       return Array.isArray(parsed) ? parsed : [];
     } catch { return []; }
   }
@@ -16,6 +21,11 @@ class PlannerService {
 
   async getAll(): Promise<PlannedOutfit[]> {
     return this.getLocal();
+  }
+
+  async resetToSample(): Promise<PlannedOutfit[]> {
+    this.setLocal(INITIAL_PLANNED_OUTFITS);
+    return [...INITIAL_PLANNED_OUTFITS];
   }
 
   async create(data: Omit<PlannedOutfit, 'id' | 'createdAt' | 'isCompleted'>): Promise<PlannedOutfit> {

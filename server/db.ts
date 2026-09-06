@@ -411,6 +411,17 @@ class PaurviDatabase {
     return user;
   }
 
+  getUserById(userId: string): StoredUser | null {
+    if (!userId) return null;
+    return this.data.users.find(u => u.id === userId && u.status !== 'Suspended') || null;
+  }
+
+  getOrCreateClientUser(): StoredUser {
+    const existing = this.data.users.find(u => u.id === 'usr_client_paurvi' || u.role === 'user');
+    if (existing) return existing;
+    return this.data.users[0];
+  }
+
   invalidateSession(token: string): boolean {
     const initialLen = this.data.sessions.length;
     this.data.sessions = this.data.sessions.filter(s => s.token !== token);

@@ -1,4 +1,5 @@
 import { WardrobeItem } from '../types';
+import { INITIAL_WARDROBE_ITEMS } from '../data/seedData';
 
 export interface WardrobeFilterOptions {
   category?: string;
@@ -18,7 +19,12 @@ class WardrobeService {
   private getLocal(): WardrobeItem[] {
     try {
       const data = localStorage.getItem(STORAGE_KEY);
-      const parsed = data ? JSON.parse(data) : [];
+      if (data === null) {
+        // First time initialization: populate with curated luxury capsule
+        this.setLocal(INITIAL_WARDROBE_ITEMS);
+        return [...INITIAL_WARDROBE_ITEMS];
+      }
+      const parsed = JSON.parse(data);
       return Array.isArray(parsed) ? parsed : [];
     } catch { return []; }
   }
@@ -44,6 +50,11 @@ class WardrobeService {
 
   async getAll(): Promise<WardrobeItem[]> {
     return this.getLocal();
+  }
+
+  async resetToSample(): Promise<WardrobeItem[]> {
+    this.setLocal(INITIAL_WARDROBE_ITEMS);
+    return [...INITIAL_WARDROBE_ITEMS];
   }
 
   async getById(id: string): Promise<WardrobeItem | null> {

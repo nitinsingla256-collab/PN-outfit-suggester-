@@ -13,7 +13,9 @@ export type NavigationRoute =
   | '/favorites' 
   | '/profile' 
   | '/settings' 
-  | '/admin';
+  | '/admin'
+  | '/auth'
+  | '/login';
 
 export type ClothingCategory = 
   | 'Tops' 

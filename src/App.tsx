@@ -20,6 +20,7 @@ const FavoritesPage = lazy(() => import('./pages/FavoritesPage').then(m => ({ de
 const ProfilePage = lazy(() => import('./pages/ProfilePage').then(m => ({ default: m.ProfilePage })));
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
 const AdminPage = lazy(() => import('./pages/AdminPage').then(m => ({ default: m.AdminPage })));
+const AuthPage = lazy(() => import('./pages/AuthPage').then(m => ({ default: m.AuthPage })));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })));
 
 // Lazy-loaded modal dialogues
@@ -63,13 +64,21 @@ function RouterView() {
         <p className="text-sm text-gray-500 max-w-md mt-2 mb-6">
           The Administrator & Supervisor portal requires elevated cryptographic credentials. Your account is logged in as a Standard Atelier Client.
         </p>
-        <button
-          onClick={() => navigateTo('/')}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-900 text-xs font-medium uppercase tracking-wider transition"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Return to Private Wardrobe</span>
-        </button>
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <button
+            onClick={() => navigateTo('/auth')}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium uppercase tracking-wider transition shadow-sm"
+          >
+            <span>Sign In with Admin Account</span>
+          </button>
+          <button
+            onClick={() => navigateTo('/')}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-900 text-xs font-medium uppercase tracking-wider transition"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Return to Private Wardrobe</span>
+          </button>
+        </div>
       </div>
     );
   }
@@ -86,6 +95,8 @@ function RouterView() {
       case '/profile': return <ProfilePage key="profile" />;
       case '/settings': return <SettingsPage key="settings" />;
       case '/admin': return <AdminPage key="admin" />;
+      case '/auth': return <AuthPage key="auth" />;
+      case '/login': return <AuthPage key="login" />;
       default: return <NotFoundPage key="notfound" />;
     }
   };

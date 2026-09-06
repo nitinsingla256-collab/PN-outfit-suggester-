@@ -1,4 +1,5 @@
 import { Outfit } from '../types';
+import { INITIAL_OUTFITS } from '../data/seedData';
 
 const STORAGE_KEY = 'pn_local_outfits_dev';
 
@@ -6,7 +7,11 @@ class OutfitService {
   private getLocal(): Outfit[] {
     try {
       const data = localStorage.getItem(STORAGE_KEY);
-      const parsed = data ? JSON.parse(data) : [];
+      if (data === null) {
+        this.setLocal(INITIAL_OUTFITS);
+        return [...INITIAL_OUTFITS];
+      }
+      const parsed = JSON.parse(data);
       return Array.isArray(parsed) ? parsed : [];
     } catch { return []; }
   }
@@ -16,6 +21,11 @@ class OutfitService {
 
   async getAll(): Promise<Outfit[]> {
     return this.getLocal();
+  }
+
+  async resetToSample(): Promise<Outfit[]> {
+    this.setLocal(INITIAL_OUTFITS);
+    return [...INITIAL_OUTFITS];
   }
 
   async getById(id: string): Promise<Outfit | null> {

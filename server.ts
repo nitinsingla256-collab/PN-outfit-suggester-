@@ -38,18 +38,30 @@ declare global {
 // Authentication middleware
 function authMiddleware(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.substring(7).trim();
+    if (token) {
+      const user = db.getUserByToken(token);
+      if (user) {
+        req.user = user;
+        return next();
+      }
+    }
+  }
+
+  // Admin routes strictly require a valid authenticated supervisor or admin token
+  if (req.path.startsWith('/api/admin')) {
     return res.status(401).json({ error: 'Authentication required. Please sign in.' });
   }
 
-  const token = authHeader.substring(7).trim();
-  const user = db.getUserByToken(token);
-  if (!user) {
-    return res.status(401).json({ error: 'Invalid or expired session. Please sign in again.' });
+  // For client and AI routes, seamlessly fall back to default demo client user so guests can explore
+  const defaultClient = db.getOrCreateClientUser();
+  if (defaultClient) {
+    req.user = defaultClient;
+    return next();
   }
 
-  req.user = user;
-  next();
+  return res.status(401).json({ error: 'Authentication required. Please sign in.' });
 }
 
 // Supervisor / Admin Role Guard middleware

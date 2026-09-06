@@ -121,6 +121,8 @@ const VALID_NAVIGATION_ROUTES: NavigationRoute[] = [
   '/profile',
   '/settings',
   '/admin',
+  '/auth',
+  '/login',
 ];
 
 function resolveCurrentRoute(): NavigationRoute {
@@ -472,15 +474,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const updateUser = updateProfile;
 
   const resetToDemoData = useCallback(async () => {
-    const demoItems: any[] = [];
-    setWardrobe(demoItems);
-    await loadUserData();
-    showToast({
-      title: 'Sample Capsule Loaded',
-      description: 'Your wardrobe data has been re-populated with the curated capsule.',
-      type: 'success',
-    });
-  }, [loadUserData, showToast]);
+    try {
+      const [sampleWardrobe, sampleOutfits, samplePlans] = await Promise.all([
+        wardrobeService.resetToSample(),
+        outfitService.resetToSample(),
+        plannerService.resetToSample(),
+      ]);
+      setWardrobe(sampleWardrobe);
+      setOutfits(sampleOutfits);
+      setPlans(samplePlans);
+      showToast({
+        title: 'Sample Capsule Loaded',
+        description: 'Your wardrobe data has been restored with the curated capsule.',
+        type: 'success',
+      });
+    } catch {
+      showToast({
+        title: 'Reset Error',
+        description: 'Could not restore sample capsule data.',
+        type: 'error',
+      });
+    }
+  }, [showToast]);
 
   const clearAllData = useCallback(async () => {
     await Promise.all([
@@ -555,12 +570,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [showToast]);
 
   const resetToSampleWardrobe = useCallback(async () => {
-    setWardrobe([]);
-    showToast({
-      title: 'Sample Wardrobe Loaded',
-      description: 'Editorial sample items have been restored.',
-      type: 'success',
-    });
+    try {
+      const sampleItems = await wardrobeService.resetToSample();
+      setWardrobe(sampleItems);
+      showToast({
+        title: 'Sample Wardrobe Loaded',
+        description: 'Editorial sample items have been restored.',
+        type: 'success',
+      });
+    } catch {
+      showToast({
+        title: 'Reset Error',
+        description: 'Could not restore sample wardrobe items.',
+        type: 'error',
+      });
+    }
   }, [showToast]);
 
   const toggleWardrobeFavorite = useCallback(async (id: string) => {
