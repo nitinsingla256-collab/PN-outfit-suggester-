@@ -68,7 +68,7 @@ export function Sidebar() {
       <div className="flex-1 overflow-y-auto px-3 py-2 space-y-5">
         <div>
           <div className="px-3 mb-2 text-[9.5px] uppercase tracking-[0.2em] font-semibold text-slate-400 dark:text-slate-500">
-            Core Atelier
+            Main Menu
           </div>
           <nav className="space-y-1">
             {primaryNavItems.map(item => {

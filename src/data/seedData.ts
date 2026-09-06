@@ -44,6 +44,23 @@ export const INITIAL_USER: User = {
       autoTagNewItems: true,
     },
   },
+  measurements: {
+    heightCm: 178,
+    heightUnit: 'cm',
+    weightKg: 70,
+    weightUnit: 'kg',
+    hasCompletedFirstLoginMeasurements: true,
+  },
+  profile: {
+    hasPhotoAnalyzed: false,
+    preferredFit: 'Tailored',
+    preferredColors: ['Navy', 'Charcoal', 'Camel', 'Ivory'],
+    dislikedColors: [],
+    preferredStyles: ['Smart Casual', 'Minimal'],
+    defaultFormality: 'Smart Casual',
+    lifestyleOccasions: ['Work', 'Dinner', 'Casual'],
+    isCompleted: true,
+  },
 };
 
 export const INITIAL_WARDROBE_ITEMS: WardrobeItem[] = [

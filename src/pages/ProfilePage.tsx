@@ -190,7 +190,7 @@ export function ProfilePage() {
         <div className="relative z-10">
           <div className="flex items-center gap-2 mb-2">
             <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-widest bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-              Sartorial Identity
+              Style Profile
             </span>
             <span className="text-slate-500">·</span>
             <span className="text-xs text-slate-300 font-mono">
@@ -198,10 +198,10 @@ export function ProfilePage() {
             </span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-white font-editorial">
-            Client Profile & Body Proportions
+            Client Profile & Measurements
           </h1>
           <p className="text-xs sm:text-sm text-slate-300 mt-2 max-w-xl leading-relaxed">
-            Manage your personal profile, body measurements (height & weight in your preferred unit), and bespoke styling guidelines.
+            Manage your personal profile, body measurements, and style preferences.
           </p>
         </div>
       </div>
@@ -237,7 +237,7 @@ export function ProfilePage() {
                   {user.name}
                 </h3>
                 <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-200">
-                  VIP Atelier Member
+                  Member
                 </span>
               </div>
               <p className="text-xs text-slate-500 font-mono">{user.email}</p>
@@ -527,7 +527,7 @@ export function ProfilePage() {
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-emerald-600" />
                   <h3 className="text-sm font-bold text-slate-900 font-editorial">
-                    Atelier Silhouette Calibration
+                    Fit & Silhouette Recommendations
                   </h3>
                 </div>
 

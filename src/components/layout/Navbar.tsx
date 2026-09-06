@@ -30,23 +30,23 @@ export function Navbar() {
   const getRouteTitle = () => {
     switch (currentRoute) {
       case '/':
-        return { title: 'Dashboard', subtitle: 'Atelier Overview & Styling Intelligence' };
+        return { title: 'Dashboard', subtitle: 'Overview & Daily Styling' };
       case '/wardrobe':
-        return { title: 'Digital Wardrobe', subtitle: 'Catalogued Pieces & Capsule Essentials' };
+        return { title: 'Digital Wardrobe', subtitle: 'Manage & Organize Your Clothes' };
       case '/stylist':
-        return { title: 'AI Stylist', subtitle: 'Occasion-Driven Luxury Outfit Generator' };
+        return { title: 'AI Stylist', subtitle: 'Weather & Occasion Outfit Suggestions' };
       case '/outfits':
-        return { title: 'Lookbook', subtitle: 'Curated Outfits & Style Compositions' };
+        return { title: 'Lookbook', subtitle: 'Saved & Curated Outfits' };
       case '/planner':
-        return { title: 'Style Planner', subtitle: 'Wardrobe Calendar & Scheduled Looks' };
+        return { title: 'Style Planner', subtitle: 'Outfit Calendar & Event Scheduling' };
       case '/favorites':
-        return { title: 'Favorites', subtitle: 'Saved Garments & Signature Ensembles' };
+        return { title: 'Favorites', subtitle: 'Saved Clothes & Signature Looks' };
       case '/profile':
-        return { title: 'Style Profile', subtitle: 'Aesthetic DNA & Personal Fit Preferences' };
+        return { title: 'Personal Style Profile', subtitle: 'Measurements & Style Preferences' };
       case '/settings':
-        return { title: 'Settings', subtitle: 'App Preferences & System Integration' };
+        return { title: 'Settings', subtitle: 'Preferences & Data Management' };
       case '/admin':
-        return { title: 'Supervisor Console', subtitle: 'Platform Telemetry & Audit Logs' };
+        return { title: 'System Console', subtitle: 'Platform Telemetry & System Status' };
       default:
         return { title: 'PN', subtitle: 'AI Wardrobe & Stylist' };
     }

@@ -106,11 +106,9 @@ function RouterView() {
       fallbackTitle={`Issue rendering ${currentRoute.replace('/', '') || 'Home'} page`}
       fallbackMessage="We encountered an issue displaying this page. Your wardrobe and data remain completely safe."
     >
-      <Suspense fallback={<PageLoadingSkeleton />}>
-        <div className="w-full h-full">
-          {renderPage()}
-        </div>
-      </Suspense>
+      <div className="w-full h-full">
+        {renderPage()}
+      </div>
     </ErrorBoundary>
   );
 }

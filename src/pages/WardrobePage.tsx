@@ -276,7 +276,7 @@ export function WardrobePage() {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-widest bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                Atelier Capsule
+                Wardrobe
               </span>
               <span className="text-slate-500">·</span>
               <span className="text-xs text-slate-300 font-mono">
@@ -287,12 +287,12 @@ export function WardrobePage() {
               Wardrobe Inventory
             </h1>
             <p className="text-xs sm:text-sm text-slate-300 mt-2 max-w-xl leading-relaxed">
-              Curate, organize, and manage your digitized garments. Remove unwanted pieces, batch upload newly acquired items, and inspect capsule metrics.
+              Organize and manage your clothes. Filter by category, color, or style, and keep track of your wear history.
             </p>
 
             {/* Micro Breakdown Stats */}
             <div className="flex flex-wrap items-center gap-2 mt-4 pt-3 border-t border-slate-700/60">
-              <span className="text-[11px] text-slate-400 font-medium">Capsule Breakdown:</span>
+              <span className="text-[11px] text-slate-400 font-medium">By Category:</span>
               <span className="px-2 py-0.5 rounded-md bg-slate-800/80 text-[11px] text-slate-300 border border-slate-700">
                 {categoryCounts['Tops'] || 0} Tops
               </span>

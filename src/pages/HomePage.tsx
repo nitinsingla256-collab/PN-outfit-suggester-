@@ -208,7 +208,7 @@ export function HomePage() {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-widest bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                Atelier Intelligence
+                Overview
               </span>
               <span className="text-slate-500">·</span>
               <span className="text-xs text-slate-300 font-mono">
@@ -220,8 +220,8 @@ export function HomePage() {
             </h1>
             <p className="text-xs sm:text-sm text-slate-300 mt-2 max-w-xl leading-relaxed">
               {wardrobe.length === 0
-                ? "Your digital atelier is ready. Upload and catalogue your garments to unlock tailored AI outfit formulas and intelligent styling."
-                : `Your wardrobe capsule has ${wardrobe.length} digitized pieces. Review today's daily recommendation, scheduled engagements, and styling metrics.`}
+                ? "Your digital wardrobe is ready. Upload and organize your clothes to get personalized AI outfit suggestions based on your personal style and local weather."
+                : `Your wardrobe has ${wardrobe.length} catalogued items. Check today's outfit suggestion, upcoming scheduled looks, and wear statistics below.`}
             </p>
           </div>
 
@@ -234,7 +234,7 @@ export function HomePage() {
               onClick={() => setIsAddClothingModalOpen(true)}
               leftIcon={<Plus className="w-3.5 h-3.5" />}
             >
-              Add Piece
+              Add Clothes
             </Button>
             <Button
               variant="primary"
@@ -369,13 +369,13 @@ export function HomePage() {
               <div className="space-y-2 text-center sm:text-left">
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 font-semibold">
                   <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Atelier Initialized</span>
+                  <span>Get Started</span>
                 </span>
                 <h3 className="text-xl font-bold text-slate-900 font-editorial">
-                  Start Your Digital Wardrobe
+                  Build Your Digital Wardrobe
                 </h3>
                 <p className="text-xs sm:text-sm text-slate-600 max-w-md leading-relaxed">
-                  Add coats, tops, bottoms, and accessories. PN&apos;s AI recognizes cuts, materials, and color harmonies to build tailored outfit formulas.
+                  Add your tops, bottoms, shoes, and outerwear. PN&apos;s AI matches colors, weather, and occasions using only clothes you actually own.
                 </p>
               </div>
 
@@ -400,27 +400,27 @@ export function HomePage() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-2xs">
           <div className="flex items-center justify-between text-slate-500 text-xs font-semibold uppercase tracking-wider">
-            <span>Garments</span>
+            <span>Clothes</span>
             <Shirt className="w-4 h-4 text-emerald-600" />
           </div>
           <div className="text-2xl sm:text-3xl font-bold text-slate-900 mt-2 font-editorial">
             {wardrobe.length}
           </div>
           <p className="text-[11px] text-slate-500 mt-1">
-            Active in capsule
+            Total items
           </p>
         </div>
 
         <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-2xs">
           <div className="flex items-center justify-between text-slate-500 text-xs font-semibold uppercase tracking-wider">
-            <span>Lookbook</span>
+            <span>Outfits</span>
             <Layers className="w-4 h-4 text-emerald-600" />
           </div>
           <div className="text-2xl sm:text-3xl font-bold text-slate-900 mt-2 font-editorial">
             {outfits.length}
           </div>
           <p className="text-[11px] text-slate-500 mt-1">
-            Composed styles
+            Saved looks
           </p>
         </div>
 
@@ -433,13 +433,13 @@ export function HomePage() {
             {favoritePieces.length}
           </div>
           <p className="text-[11px] text-slate-500 mt-1">
-            Signature pieces
+            Favorited pieces
           </p>
         </div>
 
         <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-2xs">
           <div className="flex items-center justify-between text-slate-500 text-xs font-semibold uppercase tracking-wider">
-            <span>Wear Cycles</span>
+            <span>Wear History</span>
             <TrendingUp className="w-4 h-4 text-emerald-600" />
           </div>
           <div className="text-2xl sm:text-3xl font-bold text-slate-900 mt-2 font-editorial">

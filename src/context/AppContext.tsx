@@ -131,7 +131,7 @@ function resolveCurrentRoute(): NavigationRoute {
 
     // 1. Prioritize hash-based route if present (e.g. "#/wardrobe", "#wardrobe")
     const hash = window.location.hash || '';
-    if (hash) {
+    if (hash && hash !== '#' && hash !== '#/') {
       const cleanHash = hash.replace(/^#\/?/, '').split('?')[0].split('/')[0];
       if (cleanHash === 'home' || cleanHash === '') return '/';
       const candidate = `/${cleanHash}` as NavigationRoute;
@@ -250,16 +250,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const targetRoute = route === '/home' ? '/' : route;
       const hashTarget = targetRoute === '/' ? '' : `#${targetRoute.replace(/^\//, '')}`;
       
+      // 1. Instantly update React state so the UI transitions with 0ms delay
+      setCurrentRoute(targetRoute);
+
       if (typeof window !== 'undefined') {
-        if (window.location.hash !== hashTarget) {
-           window.location.hash = hashTarget;
+        const currentPath = window.location.pathname;
+        const currentHash = window.location.hash;
+
+        if (targetRoute === '/') {
+          if (currentHash || (currentPath !== '/' && currentPath !== '')) {
+            try {
+              window.history.pushState({ route: '/' }, '', '/');
+            } catch {
+              window.location.hash = '';
+            }
+          }
         } else {
-           // If we are already on the hash, just force state update to ensure UI is in sync
-           setCurrentRoute(targetRoute);
+          try {
+            if (currentPath !== targetRoute || currentHash !== hashTarget) {
+              window.history.pushState({ route: targetRoute }, '', targetRoute);
+            }
+          } catch {
+            window.location.hash = hashTarget;
+          }
         }
         window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-      } else {
-        setCurrentRoute(targetRoute);
       }
     } catch (e) {
       console.warn('[PN Router] Navigation warning:', e);
@@ -267,7 +282,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, []);
 
-  // Initialize history state and handle back/forward / hashchange navigation
+  // Initialize history state and handle back/forward / popstate / hashchange navigation
   useEffect(() => {
     const handleSync = () => {
       try {
@@ -279,8 +294,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     };
 
+    window.addEventListener('popstate', handleSync);
     window.addEventListener('hashchange', handleSync);
     return () => {
+      window.removeEventListener('popstate', handleSync);
       window.removeEventListener('hashchange', handleSync);
     };
   }, []);

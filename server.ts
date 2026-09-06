@@ -778,16 +778,19 @@ ${hint ? `User context/hint: "${hint}"` : ''}
       const prompt = `You are PAURVI's Head of Haute Couture & Elite AI Stylist.
 You compose sophisticated, tailored outfit looks for client ${req.user!.name}.
 
-CRITICAL MANDATORY RULES:
+    CRITICAL MANDATORY RULES:
 1. STRICT WARDROBE BOUNDARY:
 ${
   availableItems.length === 0
-    ? `The client currently owns 0 items in their PAURVI digital wardrobe.
+    ? `The client currently owns 0 items in their digital wardrobe.
 Inform the client honestly that their digital wardrobe is currently empty.
-Provide an exquisite capsule foundation blueprint outlining the essential pieces they should catalogue first, tailored to their request: "${naturalQuery || occasion}".`
+Provide a clear capsule foundation blueprint outlining the essential pieces they should catalogue first, tailored to their request: "${naturalQuery || occasion}".`
     : `You MUST select pieces STRICTLY from the client's actual owned wardrobe items listed below.
 NEVER invent, hallucinate, or claim the client owns pieces that are not in this inventory list.
-Use the exact piece IDs provided in the inventory list.
+Every owned item must use its real itemId from this inventory.
+
+VALID ITEM IDs:
+${availableItems.map((i: any) => `* "${i.id}" (${i.name} - ${i.category})`).join('\n')}
 
 Owned Wardrobe Inventory (${availableItems.length} items):
 ${JSON.stringify(itemsSummary, null, 2)}`
@@ -795,7 +798,7 @@ ${JSON.stringify(itemsSummary, null, 2)}`
 
 2. HONEST GAP ANALYSIS:
 If the user's wardrobe has items, but lacks a suitable piece for a complete ensemble (for example: lacks suitable Footwear, or Outerwear, or Bottoms for this occasion):
-State clearly in gapAnalysis: "Your wardrobe doesn't currently contain a suitable [Category/Piece]." Then provide the best possible alternative using available items.
+State clearly in gapAnalysis: "Your wardrobe doesn't currently contain a suitable [Category/Piece]." If recommending an unowned piece to complete the silhouette, set itemId: null and isOwned: false. Do NOT pretend the user owns it.
 
 3. CONTEXT & PREFERENCES:
 - Natural Query: ${naturalQuery ? `"${naturalQuery}"` : 'None'}
