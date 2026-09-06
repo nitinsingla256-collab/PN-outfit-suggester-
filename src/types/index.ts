@@ -254,6 +254,8 @@ export interface PersonalStyleProfile {
   visualAnalysis?: VisualStyleAnalysis;
   hasPhotoAnalyzed: boolean;
   
+  gender?: 'Men' | 'Women' | 'Non-binary' | 'Prefer not to say';
+
   // B. Body & Fit Dimensions
   heightCm?: number;
   heightUnit?: HeightUnit;

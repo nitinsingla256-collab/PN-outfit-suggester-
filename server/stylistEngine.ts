@@ -559,7 +559,7 @@ CONTEXT:
 - Dress Code: ${dressCode}
 - Location: ${location || 'Venue'}
 - Weather: ${weatherDescription || 'Not specified'} (${temperatureCelsius !== undefined ? `${temperatureCelsius}°C` : 'temperature not provided'})
-${userProfile?.visualAnalysis ? `- USER PROFILE: Face Shape: ${userProfile.visualAnalysis.faceShape}, Undertone: ${userProfile.visualAnalysis.skinTone}, Contrast Level: ${userProfile.visualAnalysis.contrastLevel}, Preferred Fit: ${userProfile.preferredFit}` : ''}
+- USER PROFILE: ${userProfile?.gender ? `Gender: ${userProfile.gender}, ` : ''}${userProfile?.visualAnalysis ? `Face Shape: ${userProfile.visualAnalysis.faceShape}, Undertone: ${userProfile.visualAnalysis.skinTone}, Contrast Level: ${userProfile.visualAnalysis.contrastLevel}, Preferred Fit: ${userProfile.preferredFit}` : 'Not provided'}
 ${candidate.missingLayerWarning ? `- WARDROBE LIMITATION: ${candidate.missingLayerWarning}` : ''}
 
 DIRECTIVES:
@@ -585,7 +585,7 @@ Return JSON matching this schema:
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
+      model: 'gemini-1.5-flash',
       contents: [prompt],
       config: {
         responseMimeType: 'application/json',

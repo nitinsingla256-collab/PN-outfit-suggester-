@@ -117,9 +117,9 @@ function StylistPageContent() {
   const [naturalQuery, setNaturalQuery] = useState("");
   const [occasion, setOccasion] = useState<string>("Dinner");
   const [dressCode, setDressCode] = useState("Smart Casual");
-  const [location, setLocation] = useState(user.location || "Live Location");
-  const [weatherDescription, setWeatherDescription] = useState("18°C, Clear");
-  const [temperatureCelsius, setTemperatureCelsius] = useState<number>(18);
+  const [location, setLocation] = useState(user.location || "Location not set");
+  const [weatherDescription, setWeatherDescription] = useState("Weather unavailable");
+  const [temperatureCelsius, setTemperatureCelsius] = useState<number>(0);
   const [isWeatherLoading, setIsWeatherLoading] = useState(false);
   const [lastWeatherUpdate, setLastWeatherUpdate] = useState("");
   const [time, setTime] = useState("7:00 PM");
@@ -225,7 +225,7 @@ function StylistPageContent() {
       );
 
       let data;
-      const targetLoc = location.trim() && location !== "City Central" && location !== "Current Location" && location !== "Live Location"
+      const targetLoc = location.trim() && location !== "City Central" && location !== "Current Location" && location !== "Location not set"
         ? location.trim()
         : (user.location || undefined);
 

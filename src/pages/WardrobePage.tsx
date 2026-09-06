@@ -49,6 +49,9 @@ const CATEGORY_TABS = [
   { id: 'Footwear', label: 'Footwear' },
   { id: 'Bags', label: 'Bags' },
   { id: 'Accessories', label: 'Accessories' },
+  { id: 'Jewelry', label: 'Jewelry' },
+  { id: 'Activewear', label: 'Activewear' },
+  { id: 'Formalwear', label: 'Formalwear' },
 ];
 
 const STYLES = ['All', 'Casual', 'Smart Casual', 'Formal', 'Minimal', 'Classic', 'Streetwear', 'Old money'];

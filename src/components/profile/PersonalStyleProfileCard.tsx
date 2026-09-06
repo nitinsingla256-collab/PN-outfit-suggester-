@@ -13,6 +13,7 @@ import {
   SkinToneUndertone,
 } from '../../types';
 import { Button } from '../ui/Button';
+import { StyleEducationGrid } from '../ui/StyleEducationGrid';
 import {
   Sparkles,
   Camera,
@@ -228,6 +229,35 @@ export function PersonalStyleProfileCard() {
 
       {/* Main Body */}
       <div className="p-6 md:p-8 space-y-8">
+        {/* Gender Selection */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-slate-900"></span>
+              Styling Basis
+            </h3>
+          </div>
+          <p className="text-xs text-slate-500 max-w-xl">
+            How should PN tailor your terminology, fit, and clothing suggestions?
+          </p>
+          <div className="flex flex-wrap gap-2.5">
+            {['Men', 'Women', 'Non-binary', 'Prefer not to say'].map((g) => (
+              <button
+                key={g}
+                type="button"
+                onClick={() => setProfile({ ...profile, gender: g as any })}
+                className={`px-4 py-2 rounded-xl text-sm font-medium border transition-colors ${
+                  profile.gender === g
+                    ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
+                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                }`}
+              >
+                {g}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Visual Analysis Results Badge/Banner */}
         {profile.visualAnalysis ? (
           <div className="p-5 md:p-6 rounded-2xl bg-linear-to-br from-slate-50 to-slate-100/70 border border-slate-200/90 space-y-4">
@@ -406,6 +436,38 @@ export function PersonalStyleProfileCard() {
                 </div>
               </div>
 
+              {/* Body Proportions */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1.5 font-mono">
+                    Height (cm)
+                  </label>
+                  <input
+                    type="number"
+                    min="100"
+                    max="250"
+                    placeholder="e.g. 175"
+                    value={profile.heightCm || ''}
+                    onChange={(e) => setProfile(p => ({ ...p, heightCm: parseInt(e.target.value) || undefined }))}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1.5 font-mono">
+                    Weight (kg)
+                  </label>
+                  <input
+                    type="number"
+                    min="30"
+                    max="200"
+                    placeholder="e.g. 70"
+                    value={profile.weightKg || ''}
+                    onChange={(e) => setProfile(p => ({ ...p, weightKg: parseInt(e.target.value) || undefined }))}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+              </div>
+
               {/* Fit & Sizing */}
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                 <div>
@@ -530,26 +592,10 @@ export function PersonalStyleProfileCard() {
                 <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-2 font-mono">
                   Preferred Aesthetics
                 </label>
-                <div className="flex flex-wrap gap-1.5">
-                  {POPULAR_STYLES.map(st => {
-                    const isSelected = profile.preferredStyles.includes(st);
-                    return (
-                      <button
-                        key={st}
-                        type="button"
-                        onClick={() => toggleStyle(st)}
-                        className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
-                          isSelected
-                            ? 'bg-emerald-700 text-white shadow-xs'
-                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                        }`}
-                      >
-                        {isSelected && <Check className="w-3 h-3 inline mr-1" />}
-                        {st}
-                      </button>
-                    );
-                  })}
-                </div>
+                <StyleEducationGrid
+                  selectedStyles={profile.preferredStyles}
+                  onToggleStyle={toggleStyle}
+                />
               </div>
 
               {/* Save Button */}

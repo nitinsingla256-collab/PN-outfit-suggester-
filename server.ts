@@ -1,3 +1,4 @@
+import { validateAndFixCategory } from "./server/wardrobeTaxonomy";
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -549,7 +550,7 @@ Extract the following JSON attributes:
 `;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
+        model: 'gemini-1.5-flash',
         contents: [
           {
             inlineData: {
@@ -611,28 +612,31 @@ Extract the following JSON attributes:
 
       const ai = getAIClient();
 
-      const prompt = `You are the lead fashion archivist and luxury garment cataloguer at PAURVI Atelier.
-Analyze this garment image or description carefully and extract accurate, luxury-grade fashion attributes.
-Do NOT invent unrealistic details. If a detail is uncertain, provide the most refined realistic assessment.
+      const prompt = `You are a strict fashion archivist.
+Analyze this image carefully.
+First, detect if there is exactly one primary garment or accessory. If there are multiple distinct items, identify the most prominent one.
+Do NOT invent unrealistic details. If a detail is uncertain, provide the most honest realistic assessment.
 
 Extract the following JSON attributes:
-- name: Refined editorial garment title (e.g. "Classic Denim Shirt", "Double-Breasted Wool Trench", "Silk Georgette Button-Down", "Pleated High-Rise Chinos", "Leather Chelsea Boots")
+- hasMultipleItems: boolean (true if multiple distinct clothing items are visible, like shirt + trousers + shoes in one photo)
+- isClothingItem: boolean (true if the image contains clothing/accessories)
+- name: Refined garment title (e.g. "Classic Denim Shirt", "Leather Chelsea Boots", "Silver Watch")
 - category: One of ['Tops', 'Bottoms', 'Outerwear', 'Dresses', 'Footwear', 'Bags', 'Accessories', 'Jewelry', 'Activewear', 'Formalwear']
-- type: Specific clothing subcategory/type (e.g. 'Shirt', 'T-shirt', 'Polo', 'Sweater', 'Hoodie', 'Jacket', 'Blazer', 'Coat', 'Trousers', 'Jeans', 'Chinos', 'Shorts', 'Shoes', 'Boots', 'Sneakers', 'Loafers', 'Watch', 'Belt', 'Scarf', 'Bag')
+- type: Specific clothing type (e.g. 'Shirt', 'T-shirt', 'Polo', 'Sweater', 'Hoodie', 'Jacket', 'Blazer', 'Coat', 'Trousers', 'Jeans', 'Chinos', 'Shorts', 'Shoes', 'Boots', 'Sneakers', 'Loafers', 'Watch', 'Belt', 'Scarf', 'Bag', 'Sunglasses')
 - subcategory: Detailed subcategory descriptor (e.g. 'Button-Down Shirt', 'Tailored Blazer', 'Penny Loafers')
-- color: Best matching primary color (e.g. 'Blue', 'Black', 'White', 'Charcoal', 'Navy', 'Beige', 'Camel', 'Brown', 'Grey', 'Olive', 'Burgundy', 'Emerald', 'Sage', 'Terracotta')
+- color: Best matching primary color 
 - secondaryColor: Optional secondary color if present, or null
 - pattern: One of ['Solid', 'Striped', 'Plaid', 'Floral', 'Houndstooth', 'Textured', 'Graphic', 'Checked', 'Polka Dot']
-- material: Probable textile composition with honest certainty qualifier (e.g. 'Denim (Likely)', '100% Cotton', 'Wool Blend', 'Silk Crepe', 'Calfskin Leather', 'Cashmere Knit', 'Linen')
-- style: One of ['Casual', 'Smart Casual', 'Formal', 'Minimal', 'Classic', 'Streetwear', 'Old money', 'Edgy', 'Romantic']
-- formality: One of ['Casual', 'Smart Casual', 'Business Casual', 'Formal', 'Black Tie']
+- material: Material only if visually inferable (e.g., 'Unknown', 'Denim', 'Leather'). Do NOT invent 'Premium Fabric' or '100% Cotton' unless clearly visible on a tag.
+- style: One of ['Casual', 'Smart Casual', 'Formal', 'Minimal', 'Classic', 'Streetwear', 'Old Money', 'Edgy', 'Sporty']
+- formality: One of ['Casual', 'Smart Casual', 'Formal', 'Black Tie']
 - season: Array of applicable seasons from ['Spring', 'Summer', 'Autumn', 'Winter', 'All-Season']
 - occasion: Array of applicable occasions from ['Work', 'Casual', 'Dinner', 'Date', 'Party', 'Formal', 'Wedding', 'Travel']
-- fit: One of ['Tailored', 'Slim', 'Regular', 'Relaxed', 'Oversized']
-- tags: Array of 3-5 luxury editorial tags (e.g. ['Denim Essentials', 'Capsule Core', 'Smart Casual', 'Layering Piece'])
-- careInstructions: Professional garment care guideline (e.g. 'Machine wash cold, gentle cycle. Hang dry or steam.')
+- fit: Fit only if visually inferable from the item shape, else 'Regular'
+- tags: Array of 3-5 tags
+- careInstructions: Professional garment care guideline
 - stylingNote: Brief one-sentence note on how to pair this piece.
-- confidence: Confidence score between 80 and 99.
+- confidenceScore: Actual certainty of identification (0-100). If unsure, use a low number like 40 or 50. Do not use 90+ unless absolutely certain.
 
 ${hint ? `User context/hint: "${hint}"` : ''}
 `;
@@ -652,13 +656,15 @@ ${hint ? `User context/hint: "${hint}"` : ''}
       contents.push(prompt);
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
+        model: 'gemini-1.5-flash',
         contents,
         config: {
           responseMimeType: 'application/json',
           responseSchema: {
             type: Type.OBJECT,
             properties: {
+              hasMultipleItems: { type: Type.BOOLEAN },
+              isClothingItem: { type: Type.BOOLEAN },
               name: { type: Type.STRING },
               category: { type: Type.STRING },
               type: { type: Type.STRING },
@@ -684,45 +690,25 @@ ${hint ? `User context/hint: "${hint}"` : ''}
               },
               careInstructions: { type: Type.STRING },
               stylingNote: { type: Type.STRING },
-              confidence: { type: Type.NUMBER },
+              confidenceScore: { type: Type.NUMBER },
             },
-            required: ['name', 'category', 'type', 'color', 'pattern', 'material', 'style', 'formality', 'season', 'tags'],
+            required: ['hasMultipleItems', 'isClothingItem', 'name', 'category', 'type', 'color', 'pattern', 'material', 'style', 'formality', 'season', 'tags', 'confidenceScore'],
           },
         },
       });
 
       const parsed = JSON.parse(response.text || '{}');
+      
+      parsed.category = validateAndFixCategory(parsed.type, parsed.category);
+      parsed.confidence = parsed.confidenceScore; // map for backward compatibility with frontend
+
       return res.json({ success: true, analysis: parsed });
     } catch (_error: any) {
-      // Graceful fallback for garment analysis when offline or rate-limited
-      const hint = req.body?.hint || '';
-      const fallbackAnalysis = {
-        name: hint ? hint.replace(/[_-]/g, ' ') : 'Tailored Capsule Garment',
-        category: /shirt|top|sweater|t-shirt|polo|blouse|hoodie|turtleneck/i.test(hint) ? 'Tops' :
-                  /trouser|jean|pant|chino|short|skirt/i.test(hint) ? 'Bottoms' :
-                  /coat|jacket|blazer|trench|parka|outerwear/i.test(hint) ? 'Outerwear' :
-                  /shoe|boot|sneaker|loafer|sandal|footwear/i.test(hint) ? 'Footwear' :
-                  /bag|tote|backpack|clutch/i.test(hint) ? 'Bags' :
-                  /watch|belt|scarf|hat|sunglass/i.test(hint) ? 'Accessories' : 'Tops',
-        type: 'Piece',
-        subcategory: 'Classic',
-        color: /blue|navy/i.test(hint) ? 'Navy' : /black/i.test(hint) ? 'Black' : /white/i.test(hint) ? 'White' : /beige|camel|tan/i.test(hint) ? 'Beige' : /grey|gray/i.test(hint) ? 'Charcoal' : 'Black',
-        pattern: /stripe/i.test(hint) ? 'Striped' : /plaid|check/i.test(hint) ? 'Plaid' : 'Solid',
-        material: 'Premium Fabric',
-        style: 'Smart Casual',
-        formality: 'Smart Casual',
-        fit: 'Regular',
-        season: ['All-Season'],
-        occasion: ['Casual', 'Work'],
-        tags: ['Wardrobe Core', 'Smart Casual'],
-        careInstructions: 'Machine wash cold on gentle cycle or professional dry clean.',
-        stylingNote: 'Versatile foundation piece that coordinates effortlessly across your capsule.',
-        confidence: 88,
-      };
-      return res.json({
-        success: true,
-        isQuotaFallback: true,
-        analysis: fallbackAnalysis,
+      // Return honest failure
+      return res.status(422).json({
+        success: false,
+        error: "AI identification couldn't be completed.",
+        needsConfirmation: true
       });
     }
   });
@@ -834,7 +820,7 @@ TASK REQUIREMENTS:
 `;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
+        model: 'gemini-1.5-flash',
         contents: prompt,
         config: {
           responseMimeType: 'application/json',
@@ -1110,7 +1096,7 @@ GENERAL RULES:
       });
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
+        model: 'gemini-1.5-flash',
         contents,
       });
 
@@ -1672,7 +1658,7 @@ Provide an authoritative, editorial analysis of the top seasonal fashion movemen
 Generate 6 high-fashion trends covering diverse categories (Key Silhouettes, Color Palettes, Fabrics & Textures, Accessories & Footwear, Occasion & Vibe). Ensure hex colors match high-fashion palettes.`;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
+        model: 'gemini-1.5-flash',
         contents: prompt,
         config: {
           tools: [{ googleSearch: {} }],

@@ -214,7 +214,7 @@ export const weatherService = {
    * 4. Safe fallback to default coordinates
    */
   async getAutoLocationWeather(preferredLocation?: string): Promise<WeatherData> {
-    if (preferredLocation && preferredLocation.trim() && preferredLocation !== 'Current Location' && preferredLocation !== 'Live Location' && preferredLocation !== 'City Central') {
+    if (preferredLocation && preferredLocation.trim() && preferredLocation !== 'Current Location' && preferredLocation !== 'Location not set' && preferredLocation !== 'City Central') {
       try {
         return await this.geocodeAndGetWeather(preferredLocation.trim());
       } catch (e) {

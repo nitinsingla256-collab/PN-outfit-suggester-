@@ -380,21 +380,39 @@ export function AddClothingModal() {
         if (res.tags && res.tags.length > 0) setTagInput(res.tags.join(', '));
         if (res.careInstructions) setCareInstructions(res.careInstructions);
         if (res.stylingNote) setAiStylingNote(res.stylingNote);
-        if (res.confidence) setAiConfidence(res.confidence);
+        
+        let confidenceScore = res.confidence;
+        if (confidenceScore) setAiConfidence(confidenceScore);
 
-        showToast({
-          title: 'AI Analysis Complete',
-          description: `Identified as ${res.category} · ${res.type || 'Piece'} with ${res.confidence}% match.`,
-          type: 'success',
-        });
+        if (res.isClothingItem === false) {
+           showToast({
+             title: 'Not recognized as clothing',
+             description: 'We could not confidently identify a clothing item. Please edit details manually.',
+             type: 'info',
+           });
+           setAiConfidence(0);
+        } else if (res.hasMultipleItems) {
+           showToast({
+             title: 'Multiple items detected',
+             description: 'We identified the primary item. Please edit if you wanted to catalogue a different one.',
+             type: 'info',
+           });
+        } else {
+           showToast({
+             title: 'AI Analysis Complete',
+             description: `Identified as ${res.category} · ${res.type || 'Piece'}.`,
+             type: 'success',
+           });
+        }
       }
     } catch (err: any) {
       console.error(err);
       showToast({
-        title: 'Auto-detection Alert',
-        description: 'Auto-detection applied default attributes. You can edit any detail.',
-        type: 'info',
+        title: 'AI Identification Failed',
+        description: err.message || "Couldn't identify the garment. Please fill details manually.",
+        type: 'error',
       });
+      setAiConfidence(0);
     } finally {
       setIsAnalyzing(false);
     }

@@ -212,8 +212,8 @@ export class AIStylistService {
     imageBase64?: string;
     mimeType?: string;
     hint?: string;
-  }): Promise<GarmentAnalysisResult> {
-    const res = await this.safePost<{ success: boolean; analysis?: GarmentAnalysisResult }>(
+  }): Promise<GarmentAnalysisResult & { hasMultipleItems?: boolean; isClothingItem?: boolean }> {
+    const res = await this.safePost<any>(
       '/api/gemini/analyze-garment',
       params
     );
@@ -222,19 +222,7 @@ export class AIStylistService {
       return res.data.analysis;
     }
 
-    return {
-      name: params.hint ? `${params.hint}` : 'Tailored Capsule Garment',
-      category: 'Tops',
-      subcategory: 'Classic',
-      color: 'Black',
-      fit: 'Tailored',
-      material: '100% Fine Fabric',
-      season: ['All-Season'],
-      tags: ['Capsule Core', 'Minimalist', 'Tailoring'],
-      careInstructions: 'Dry clean only with specialist care.',
-      stylingNote: 'Versatile foundation piece for elevated capsule rotation.',
-      confidence: 90,
-    };
+    throw new Error(res.data?.error || "AI identification couldn't be completed.");
   }
 
   async chatConcierge(params: {
