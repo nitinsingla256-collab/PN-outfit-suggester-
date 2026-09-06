@@ -167,7 +167,7 @@ export function AdminPage() {
             favoritesCount: 5,
             wearCyclesCount: 122,
             aiRequestsCount: 14,
-            location: user?.location || 'Paris, France',
+            location: user?.location || 'Location not set',
           }
         ]);
       }

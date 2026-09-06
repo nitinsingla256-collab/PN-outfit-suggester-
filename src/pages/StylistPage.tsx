@@ -6,6 +6,7 @@ import { Input } from "../components/ui/Input";
 import { Select } from "../components/ui/Select";
 import { Badge } from "../components/ui/Badge";
 import { ErrorBoundary } from "../components/ui/ErrorBoundary";
+import { PersonalStyleProfileCard } from "../components/profile/PersonalStyleProfileCard";
 import {
   OccasionType,
   StyleVibe,
@@ -46,6 +47,9 @@ import {
   Thermometer,
   Eye,
   Info,
+  Lock,
+  RefreshCw,
+  ArrowRightLeft,
 } from "lucide-react";
 const QUICK_PROMPTS = [
   "What should I wear for dinner tonight?",
@@ -113,7 +117,7 @@ function StylistPageContent() {
   const [naturalQuery, setNaturalQuery] = useState("");
   const [occasion, setOccasion] = useState<string>("Dinner");
   const [dressCode, setDressCode] = useState("Smart Casual");
-  const [location, setLocation] = useState("City Central");
+  const [location, setLocation] = useState(user.location || "Live Location");
   const [weatherDescription, setWeatherDescription] = useState("18°C, Clear");
   const [temperatureCelsius, setTemperatureCelsius] = useState<number>(18);
   const [isWeatherLoading, setIsWeatherLoading] = useState(false);
@@ -138,6 +142,18 @@ function StylistPageContent() {
   const [selectedLookIndex, setSelectedLookIndex] = useState<number>(0);
   const [savedLookIds, setSavedLookIds] = useState<Record<string, string>>({});
   const [wornLookIds, setWornLookIds] = useState<Record<string, boolean>>({});
+  const [showOnboardingModal, setShowOnboardingModal] = useState(false);
+  const [swappingPieceCategory, setSwappingPieceCategory] = useState<string | null>(null);
+
+  useEffect(() => {
+    handleAutoWeather();
+  }, [user.location]);
+
+  useEffect(() => {
+    if (user.profile?.isCompleted && showOnboardingModal) {
+      setShowOnboardingModal(false);
+    }
+  }, [user.profile?.isCompleted]);
 
   useEffect(() => {
     if (!isGenerating && !isGeneratingMore) {
@@ -209,14 +225,14 @@ function StylistPageContent() {
       );
 
       let data;
-      if (!location.trim() || location === "Current Location") {
-        data = await weatherService.getAutoLocationWeather(
-          user.location || "Chandigarh",
-        );
+      const targetLoc = location.trim() && location !== "City Central" && location !== "Current Location" && location !== "Live Location"
+        ? location.trim()
+        : (user.location || undefined);
+
+      if (!targetLoc) {
+        data = await weatherService.getAutoLocationWeather();
       } else {
-        /* Use manually entered location */
-        const searchLoc = location.trim() || user.location || "Chandigarh";
-        data = await weatherService.geocodeAndGetWeather(searchLoc);
+        data = await weatherService.geocodeAndGetWeather(targetLoc);
       }
 
       setWeatherDescription(data.condition);
@@ -229,12 +245,99 @@ function StylistPageContent() {
       setIsWeatherLoading(false);
     }
   };
+
+  const handleSwapPiece = async (piece: OutfitPiece) => {
+    if (!piece.item) return;
+    setSwappingPieceCategory(piece.category);
+    try {
+      const currentPieceIds = currentLook.pieces
+        .map((p) => p.item?.id)
+        .filter(Boolean) as string[];
+
+      const res = await aiStylistService.swapOutfitPiece({
+        currentOutfitItems: currentPieceIds,
+        slotCategory: piece.category,
+        pieceItemId: piece.item.id,
+        occasion,
+        temperatureCelsius,
+        userProfile: user.profile,
+      });
+
+      if (res.success && res.replacementPiece) {
+        const fullItem = wardrobe.find((w) => w.id === res.replacementPiece.itemId) || piece.item;
+        const newPiece: OutfitPiece = {
+          category: piece.category,
+          item: fullItem,
+          role: res.replacementPiece.role || piece.role,
+          suggestedDescription: fullItem.name,
+          isOwned: true,
+        };
+
+        const updatedPieces = currentLook.pieces.map((p) =>
+          p.category === piece.category ? newPiece : p
+        );
+
+        const updatedLook: GeneratedLookOption = {
+          ...currentLook,
+          pieces: updatedPieces,
+          score: res.newConfidenceScore || currentLook.score,
+          scoreBreakdown: res.scoreBreakdown || currentLook.scoreBreakdown,
+          styleNotes: res.reason
+            ? [res.reason, ...(currentLook.styleNotes || [])]
+            : currentLook.styleNotes,
+        };
+
+        if (generationResult?.looks && generationResult.looks.length > 0) {
+          const updatedLooks = [...generationResult.looks];
+          updatedLooks[selectedLookIndex] = updatedLook;
+          setGenerationResult({ ...generationResult, looks: updatedLooks });
+        } else if (generationResult) {
+          setGenerationResult({
+            ...generationResult,
+            pieces: updatedPieces,
+            confidenceScore: res.newConfidenceScore || generationResult.confidenceScore,
+            scoreBreakdown: res.scoreBreakdown || generationResult.scoreBreakdown,
+          });
+        }
+
+        showToast({
+          title: "Piece Swapped",
+          description: `Swapped with ${fullItem.name}. ${res.reason || ""}`,
+          type: "success",
+        });
+      } else {
+        showToast({
+          title: "Alternative Unavailable",
+          description: res.error || res.reason || "No other matching item in this slot found in your wardrobe.",
+          type: "info",
+        });
+      }
+    } catch (err: any) {
+      showToast({
+        title: "Swap Error",
+        description: err.message || "Could not swap piece.",
+        type: "error",
+      });
+    } finally {
+      setSwappingPieceCategory(null);
+    }
+  };
+
   const handleGenerate = async (
     e?: React.FormEvent,
     overridePrompt?: string,
     generateMore = false,
   ) => {
     if (e) e.preventDefault();
+    if (!user.profile?.isCompleted) {
+      showToast({
+        title: "Style Profile Required",
+        description: "Please complete your Personal Style Profile first to ensure recommendations match your undertone, face shape, and silhouette preferences.",
+        type: "info",
+      });
+      setShowOnboardingModal(true);
+      return;
+    }
     const promptToUse = overridePrompt !== undefined ? overridePrompt : naturalQuery;
     setLastUsedPrompt(promptToUse);
     setGenerationError(null);
@@ -629,7 +732,7 @@ function StylistPageContent() {
                 </span>{" "}
               </div>{" "}
               {/* Profile Calibration Status Indicator */}
-              {user.profile?.isCompleted && (
+              {user.profile?.isCompleted ? (
                 <div className="p-3 bg-emerald-50/80 border border-emerald-200/90 rounded-2xl flex items-start gap-2.5">
                   <Sparkles className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                   <div className="text-xs text-emerald-950 leading-tight">
@@ -638,6 +741,24 @@ function StylistPageContent() {
                       {user.profile.visualAnalysis?.skinTone ? `${user.profile.visualAnalysis.skinTone} undertone` : 'Custom palette'} · {user.profile.visualAnalysis?.faceShape ? `${user.profile.visualAnalysis.faceShape} face` : 'Tailored collars'} · {user.profile.preferredFit} fit
                     </span>
                   </div>
+                </div>
+              ) : (
+                <div className="p-3.5 bg-amber-50/90 border border-amber-200 rounded-2xl space-y-2">
+                  <div className="flex items-center gap-2 text-amber-900 font-semibold text-xs">
+                    <Lock className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>Personal Style Profile Required</span>
+                  </div>
+                  <p className="text-[11px] text-amber-800 leading-snug">
+                    Personalized styling requires your Style Profile (face geometry, skin undertone, and fit preferences) to tailor recommendations.
+                  </p>
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="w-full bg-amber-600 hover:bg-amber-700 text-white text-xs rounded-xl shadow-xs py-2"
+                    onClick={() => setShowOnboardingModal(true)}
+                  >
+                    Set Up Style Profile Now
+                  </Button>
                 </div>
               )}
               {/* Natural Query / Occasion Input */}{" "}
@@ -851,15 +972,27 @@ function StylistPageContent() {
               </div>{" "}
               {/* Submit Button */}
               <div className="pt-2">
-                <Button
-                  type="submit"
-                  variant="primary"
-                  isLoading={isGenerating}
-                  className="w-full rounded-2xl py-3 justify-center shadow-sm"
-                  leftIcon={<Sparkles className="w-4 h-4" />}
-                >
-                  Generate Curated Look
-                </Button>
+                {!user.profile?.isCompleted ? (
+                  <Button
+                    type="button"
+                    variant="primary"
+                    onClick={() => setShowOnboardingModal(true)}
+                    className="w-full rounded-2xl py-3 justify-center shadow-sm bg-amber-600 hover:bg-amber-700 text-white"
+                    leftIcon={<Lock className="w-4 h-4" />}
+                  >
+                    Complete Style Profile to Generate
+                  </Button>
+                ) : (
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    isLoading={isGenerating}
+                    className="w-full rounded-2xl py-3 justify-center shadow-sm"
+                    leftIcon={<Sparkles className="w-4 h-4" />}
+                  >
+                    Generate Curated Look
+                  </Button>
+                )}
               </div>
             </form>
             {/* Right Column: 3 Looks Display & Details (8 cols) */}
@@ -1293,19 +1426,37 @@ function StylistPageContent() {
                                 </p>{" "}
                               </div>{" "}
                               <div className="mt-2 pt-1.5 border-t border-gray-200/60 flex items-center justify-between text-[10px]">
-                                {" "}
                                 <span className="text-gray-400">
-                                  {" "}
                                   {piece.item
                                     ? `${piece.item.color}`
-                                    : "Not in closet"}{" "}
-                                </span>{" "}
-                                {piece.item && (
-                                  <span className="text-emerald-600 font-semibold">
-                                    {" "}
-                                    Owned{" "}
-                                  </span>
-                                )}{" "}
+                                    : "Not in closet"}
+                                </span>
+                                <div className="flex items-center gap-1.5">
+                                  {piece.item && (
+                                    <>
+                                      <span className="text-emerald-600 font-semibold">
+                                        Owned
+                                      </span>
+                                      <button
+                                        type="button"
+                                        title="Swap with an alternative piece from your wardrobe"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleSwapPiece(piece);
+                                        }}
+                                        disabled={swappingPieceCategory === piece.category}
+                                        className="px-1.5 py-0.5 rounded bg-white hover:bg-gray-100 border border-gray-200 text-[9px] font-medium text-gray-700 flex items-center gap-1 transition-colors shadow-2xs"
+                                      >
+                                        {swappingPieceCategory === piece.category ? (
+                                          <RefreshCw className="w-2.5 h-2.5 animate-spin text-emerald-600" />
+                                        ) : (
+                                          <ArrowRightLeft className="w-2.5 h-2.5 text-gray-500" />
+                                        )}
+                                        <span>Swap</span>
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
                               </div>{" "}
                             </div>
                           ))}{" "}
@@ -1726,6 +1877,39 @@ function StylistPageContent() {
               Send
             </Button>
           </form>
+        </div>
+      )}
+
+      {/* Mandatory Onboarding Style Profile Modal */}
+      {showOnboardingModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
+          <div className="relative w-full max-w-3xl my-6 bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
+            <div className="flex items-center justify-between p-4 px-6 border-b border-slate-100 bg-slate-50">
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 rounded-lg bg-emerald-100 text-emerald-700">
+                  <Sparkles className="w-4 h-4" />
+                </span>
+                <div>
+                  <h3 className="font-bold text-sm text-slate-900 font-editorial">
+                    Personal Style Profile Setup
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    Mandatory calibration for authentic, tailored recommendations
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowOnboardingModal(false)}
+                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-xl hover:bg-slate-200/50 transition text-sm font-semibold"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="max-h-[80vh] overflow-y-auto p-4 sm:p-6">
+              <PersonalStyleProfileCard />
+            </div>
+          </div>
         </div>
       )}
     </div>

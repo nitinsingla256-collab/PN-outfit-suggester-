@@ -113,6 +113,7 @@ export interface WardrobeItem {
 
 export interface OutfitPiece {
   category: string;
+  itemId?: string;
   item?: WardrobeItem;
   role: string;
   suggestedDescription: string;

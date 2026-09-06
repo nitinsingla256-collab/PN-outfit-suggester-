@@ -143,7 +143,7 @@ export function HomePage() {
         let temp = 20;
         try {
           const weatherData = await weatherService.getAutoLocationWeather(
-            user.location || "London",
+            user.location || undefined,
           );
           weatherDesc = `${weatherData.temperatureCelsius}°C, ${weatherData.condition}`;
           temp = weatherData.temperatureCelsius;

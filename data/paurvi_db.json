@@ -9,10 +9,10 @@
       "role": "supervisor",
       "status": "Active",
       "joinedDate": "2026-08-29",
-      "lastActive": "2026-09-06T11:19:28.535Z",
+      "lastActive": "2026-09-06T12:20:33.181Z",
       "pronouns": "she/they",
       "bio": "Lead Atelier Supervisor & Haute Horlogerie Archivist.",
-      "location": "Paris, France",
+      "location": "",
       "preferences": {
         "styleVibes": [
           "Minimal",
@@ -67,12 +67,12 @@
       "passwordHash": "8ce0841c3ad409ded77124bdc46a8745778ad41f353b55621950e97478a9f47b7814af9a6404a9c471d828d964841fbd55b71b15bf3052bfd13f620d991a0ddf",
       "salt": "7fe587fb6b1187e0f379562d677db0a5",
       "role": "user",
-      "status": "Suspended",
+      "status": "Active",
       "joinedDate": "2026-08-29",
       "lastActive": "2026-08-29T12:53:42.031Z",
       "pronouns": "they/them",
       "bio": "Personal digital wardrobe and luxury styling studio.",
-      "location": "Paris, France",
+      "location": "",
       "preferences": {
         "styleVibes": [
           "Minimal",
@@ -111,6 +111,35 @@
           "explainSuggestions": true,
           "autoTagNewItems": true
         }
+      },
+      "measurements": {
+        "heightCm": 175,
+        "heightUnit": "cm",
+        "weightKg": 68,
+        "weightUnit": "kg",
+        "hasCompletedFirstLoginMeasurements": false
+      },
+      "profile": {
+        "preferredFit": "Tailored",
+        "preferredColors": [
+          "Navy",
+          "Charcoal",
+          "Camel",
+          "Ivory"
+        ],
+        "dislikedColors": [],
+        "preferredStyles": [
+          "Smart Casual",
+          "Minimal"
+        ],
+        "defaultFormality": "Smart Casual",
+        "lifestyleOccasions": [
+          "Work",
+          "Dinner",
+          "Casual"
+        ],
+        "isCompleted": false,
+        "hasPhotoAnalyzed": false
       }
     },
     {
@@ -125,7 +154,7 @@
       "lastActive": "2026-08-31T15:22:54.479Z",
       "pronouns": "they/them",
       "bio": "Member of the PAURVI Atelier private wardrobe capsule.",
-      "location": "Delhi, India",
+      "location": "",
       "preferences": {
         "styleVibes": [
           "Minimal",
@@ -178,7 +207,7 @@
       "lastActive": "2026-09-02T11:14:16.407Z",
       "pronouns": "they/them",
       "bio": "Member of the PAURVI Atelier private wardrobe capsule.",
-      "location": "Delhi, India",
+      "location": "",
       "preferences": {
         "styleVibes": [
           "Minimal",
@@ -401,6 +430,51 @@
     "usr_1788434136737_ffcac08e": []
   },
   "activityLogs": [
+    {
+      "id": "log_1788697234544_112652",
+      "userId": "usr_supervisor_paurvi",
+      "userName": "Nitin Singla (Admin)",
+      "userEmail": "nitinsingla256@gmail.com",
+      "action": "AI Stylist request: Outfit Synthesis (\"Curated Minimal Look for Daily Wear\")",
+      "category": "AI_STYLIST",
+      "timestamp": "2026-09-06T12:20:34.544Z"
+    },
+    {
+      "id": "log_1788696362907_827365",
+      "userId": "usr_supervisor_paurvi",
+      "userName": "Nitin Singla (Admin)",
+      "userEmail": "nitinsingla256@gmail.com",
+      "action": "AI Stylist request: Outfit Synthesis (\"Midnight Casual Luxe Tailored Ensemble\")",
+      "category": "AI_STYLIST",
+      "timestamp": "2026-09-06T12:06:02.907Z"
+    },
+    {
+      "id": "log_1788696334843_597ac6",
+      "userId": "usr_supervisor_paurvi",
+      "userName": "Nitin Singla (Admin)",
+      "userEmail": "nitinsingla256@gmail.com",
+      "action": "AI Stylist request: Outfit Synthesis (\"Curated Minimal Look for Daily Wear\")",
+      "category": "AI_STYLIST",
+      "timestamp": "2026-09-06T12:05:34.844Z"
+    },
+    {
+      "id": "log_1788695025853_107d17",
+      "userId": "usr_supervisor_paurvi",
+      "userName": "Nitin Singla (Admin)",
+      "userEmail": "nitinsingla256@gmail.com",
+      "action": "AI Stylist request: Outfit Synthesis (\"Curated Minimal Look for Daily Wear\")",
+      "category": "AI_STYLIST",
+      "timestamp": "2026-09-06T11:43:45.854Z"
+    },
+    {
+      "id": "log_1788694402966_0458bf",
+      "userId": "usr_supervisor_paurvi",
+      "userName": "Nitin Singla (Admin)",
+      "userEmail": "nitinsingla256@gmail.com",
+      "action": "AI Stylist request: Outfit Synthesis (\"Curated Minimal Look for Daily Wear\")",
+      "category": "AI_STYLIST",
+      "timestamp": "2026-09-06T11:33:22.967Z"
+    },
     {
       "id": "log_1788693794926_0fbbf0",
       "userId": "usr_client_paurvi",
@@ -808,7 +882,7 @@
     }
   ],
   "aiRequestsCount": {
-    "usr_supervisor_paurvi": 9,
+    "usr_supervisor_paurvi": 14,
     "usr_client_paurvi": 4,
     "usr_1788189774471_4d3bcaba": 0,
     "usr_1788347656399_e86996db": 0,

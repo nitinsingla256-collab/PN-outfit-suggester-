@@ -580,6 +580,32 @@ export class AIStylistService {
       analysisNotes: 'A balanced neutral undertone offers great sartorial versatility, pairing seamlessly with deep monochromatic blues, warm earth tones, and clean tailored collars.',
     };
   }
+
+  async swapOutfitPiece(params: {
+    currentOutfitItems: string[];
+    slotCategory: string;
+    pieceItemId: string;
+    occasion?: string;
+    temperatureCelsius?: number;
+    userProfile?: any;
+  }): Promise<{
+    success: boolean;
+    replacementPiece?: any;
+    alternativePieces?: any[];
+    reason?: string;
+    newConfidenceScore?: number;
+    scoreBreakdown?: any;
+    error?: string;
+  }> {
+    const res = await this.safePost<any>('/api/gemini/swap-piece', params);
+    if (res.ok && res.data && res.data.success) {
+      return res.data;
+    }
+    return {
+      success: false,
+      error: res.data?.error || 'No suitable swap found in your wardrobe for this slot.',
+    };
+  }
 }
 
 export const aiStylistService = new AIStylistService();

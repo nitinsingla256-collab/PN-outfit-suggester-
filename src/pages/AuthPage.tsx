@@ -199,6 +199,13 @@ export const AuthPage: React.FC = () => {
     setSuccessMessage("Admin credentials loaded. You may now click Sign In.");
   };
 
+  const fillDemoClient = () => {
+    setMode("signin");
+    setEmail("client@paurvi.atelier");
+    setPassword("client123");
+    setSuccessMessage("Client credentials loaded. You may now click Sign In.");
+  };
+
   return (
     <div className="min-h-screen w-full flex bg-gray-50 text-gray-900 overflow-hidden">
       {/* Left Column - Marketing/Branding (Hidden on mobile) */}
@@ -664,13 +671,23 @@ export const AuthPage: React.FC = () => {
                 <Sparkles className="w-3.5 h-3.5 text-emerald-500" /> AI Personalization
               </span>
             </div>
-            <button
-              type="button"
-              onClick={fillDemoSupervisor}
-              className="hover:text-emerald-500 transition-colors underline decoration-dotted"
-            >
-              Demo Supervisor
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={fillDemoClient}
+                className="hover:text-emerald-500 transition-colors underline decoration-dotted"
+              >
+                Demo Client
+              </button>
+              <span>•</span>
+              <button
+                type="button"
+                onClick={fillDemoSupervisor}
+                className="hover:text-emerald-500 transition-colors underline decoration-dotted"
+              >
+                Demo Admin
+              </button>
+            </div>
           </div>
         </div>
       </div>

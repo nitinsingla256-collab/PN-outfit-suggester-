@@ -10,6 +10,7 @@ import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI, Type } from '@google/genai';
 import dotenv from 'dotenv';
 import { db, StoredUser } from './server/db';
+import { generateStylistRecommendations, swapOutfitPiece } from './server/stylistEngine';
 
 dotenv.config();
 
@@ -35,7 +36,7 @@ declare global {
   }
 }
 
-// Authentication middleware
+// Authentication middleware - strictly requires valid token
 function authMiddleware(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
@@ -47,18 +48,6 @@ function authMiddleware(req: Request, res: Response, next: NextFunction) {
         return next();
       }
     }
-  }
-
-  // Admin routes strictly require a valid authenticated supervisor or admin token
-  if (req.path.startsWith('/api/admin')) {
-    return res.status(401).json({ error: 'Authentication required. Please sign in.' });
-  }
-
-  // For client and AI routes, seamlessly fall back to default demo client user so guests can explore
-  const defaultClient = db.getOrCreateClientUser();
-  if (defaultClient) {
-    req.user = defaultClient;
-    return next();
   }
 
   return res.status(401).json({ error: 'Authentication required. Please sign in.' });
@@ -512,33 +501,55 @@ async function startServer() {
     try {
       const { imageBase64, mimeType = 'image/jpeg' } = req.body;
 
-      if (!imageBase64) {
+      if (!imageBase64 || typeof imageBase64 !== 'string') {
         return res.status(400).json({ error: 'Please provide a face or outfit photo to analyze.' });
       }
 
-      const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, '');
+      // Check allowed mimeTypes
+      const allowedMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+      if (!allowedMimes.includes(mimeType.toLowerCase())) {
+        return res.status(400).json({ error: 'Supported image formats are JPEG, PNG, and WebP.' });
+      }
+
+      const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, '').trim();
+      if (!cleanBase64 || cleanBase64.length < 50) {
+        return res.status(400).json({ error: 'Image data is invalid or corrupt.' });
+      }
+
+      // Size check (max ~15MB base64)
+      if (cleanBase64.length > 20 * 1024 * 1024) {
+        return res.status(400).json({ error: 'Image is too large. Please upload an image under 10MB.' });
+      }
+
       const ai = getAIClient();
 
-      const prompt = `You are PN Atelier's Principal Personal Stylist and Facial Proportions & Color Contrast Expert.
+      const prompt = `You are an expert personal stylist and facial proportions & color harmony specialist.
 Analyze this user's photo carefully to understand their natural features for personalized wardrobe styling, flattering color palettes, and collar/neckline recommendations.
 
-CRITICAL ETHICAL & SENSITIVITY DIRECTIVES:
+CRITICAL DIRECTIVES:
+- If no clear human face is detected in the photo, throw an error or respond that no face could be identified.
 - NEVER judge, rate, or critique the person's beauty, weight, skin texture, or age.
-- Provide 100% positive, constructive, sartorially empowering fashion and color harmony guidance.
-- Focus purely on: face geometry (for flattering collars/necklines), complexion undertone (for complementary garment colors), and visual contrast level.
+- Focus purely on:
+  1. Face geometry (for flattering collars/necklines): exactly one of ['Oval', 'Square', 'Round', 'Heart', 'Oblong', 'Diamond']
+  2. Complexion undertone: exactly one of ['Warm', 'Cool', 'Neutral', 'Olive', 'Deep Warm', 'Fair Cool']
+  3. Visual contrast level: exactly one of ['High', 'Medium', 'Low', 'Soft']
+  4. Hair characteristics: 2-5 words
+  5. Recommended color palettes: 4 to 6 specific garment color names that flatter their complexion
+  6. Recommended necklines: 2 to 3 tailored collar/neckline cuts
+  7. Analysis notes: 2-3 objective, constructive sentences on color harmony.
 
 Extract the following JSON attributes:
 - faceShape: Exactly one of ['Oval', 'Square', 'Round', 'Heart', 'Oblong', 'Diamond']
 - skinTone: Exactly one of ['Warm', 'Cool', 'Neutral', 'Olive', 'Deep Warm', 'Fair Cool']
 - contrastLevel: Exactly one of ['High', 'Medium', 'Low', 'Soft']
-- hairCharacteristics: Brief 2-5 word descriptor (e.g. 'Dark textured curls', 'Warm honey brunette', 'Sleek dark espresso', 'Silver ash')
-- recommendedPalettes: Array of 4 to 6 specific garment color names that will naturally elevate their complexion (e.g. ['Midnight Navy', 'Rich Camel', 'Forest Green', 'Ivory', 'Deep Burgundy', 'Warm Slate'])
-- recommendedNecklines: Array of 2 to 3 tailored collars, necklines, or lapel cuts that create proportional harmony with their face shape (e.g. ['Open spread collars', 'Structured notched lapels', 'V-neck fine gauge knits'])
-- analysisNotes: 2-3 articulate, constructive sentences explaining how these colors and silhouette choices visually balance and elevate the user's natural features.
+- hairCharacteristics: Brief 2-5 word descriptor
+- recommendedPalettes: Array of 4 to 6 specific garment color names
+- recommendedNecklines: Array of 2 to 3 tailored collars, necklines, or lapel cuts
+- analysisNotes: 2-3 articulate sentences
 `;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-flash-latest',
+        model: 'gemini-3.8-flash',
         contents: [
           {
             inlineData: {
@@ -573,23 +584,20 @@ Extract the following JSON attributes:
       });
 
       const parsed = JSON.parse(response.text || '{}');
-      db.incrementAIRequestCount(req.user!.id, 'Personal Style Visual Analysis', `${parsed.faceShape || 'Analysis'} · ${parsed.skinTone || 'Profile'}`);
+      if (!parsed.faceShape || !parsed.skinTone) {
+        throw new Error("Could not detect facial features");
+      }
+
+      db.incrementAIRequestCount(req.user!.id, 'Personal Style Visual Analysis', `${parsed.faceShape} · ${parsed.skinTone}`);
 
       return res.json({ success: true, analysis: parsed });
-    } catch (_error: any) {
-      // Graceful constructive fallback for personal style analysis
-      const fallbackAnalysis = {
-        faceShape: 'Oval',
-        skinTone: 'Neutral',
-        contrastLevel: 'Medium',
-        hairCharacteristics: 'Natural tones',
-        recommendedPalettes: ['Midnight Navy', 'Rich Camel', 'Forest Green', 'Crisp Ivory', 'Charcoal Slate'],
-        recommendedNecklines: ['Classic spread collar shirts', 'Structured notched lapels', 'Fine-gauge crewneck knits'],
-        analysisNotes: 'A balanced neutral undertone offers great sartorial versatility, pairing seamlessly with deep monochromatic blues, warm earth tones, and clean tailored collars.',
-      };
-
-      db.incrementAIRequestCount(req.user!.id, 'Personal Style Visual Analysis', 'Fallback Neutral Palette');
-      return res.json({ success: true, isFallback: true, analysis: fallbackAnalysis });
+    } catch (error: any) {
+      console.warn('Style photo visual analysis notice:', error?.message || error);
+      // Return clear, honest message without silently faking attributes
+      return res.status(422).json({
+        success: false,
+        error: "We couldn't analyze that photo. Try a clearer front-facing photo with good lighting.",
+      });
     }
   });
 
@@ -644,7 +652,7 @@ ${hint ? `User context/hint: "${hint}"` : ''}
       contents.push(prompt);
 
       const response = await ai.models.generateContent({
-        model: 'gemini-flash-latest',
+        model: 'gemini-3.8-flash',
         contents,
         config: {
           responseMimeType: 'application/json',
@@ -720,440 +728,57 @@ ${hint ? `User context/hint: "${hint}"` : ''}
   });
 
   // ==========================================
-  // 8. REAL AI STYLIST ENGINE (SCOPED TO CURRENT USER & ADVANCED OUTFIT STUDIO)
+  // 8. 5-STAGE AI STYLIST ENGINE & SWAP PIECE ENDPOINTS
   // ==========================================
   app.post('/api/gemini/stylist', authMiddleware, async (req, res) => {
-    const {
-      naturalQuery,
-      occasion = 'Dinner',
-      location = 'City Central',
-      date = 'Today',
-      time = '7:00 PM',
-      dressCode = 'Smart Casual',
-      stylePreference = 'Smart Casual',
-      colorPreference,
-      weatherDescription = '18°C, Clear',
-      temperatureCelsius = 18,
-      additionalNotes,
-      mustIncludeItemIds = [],
-      excludeItemIds = [],
-      generateMultipleLooks = false,
-    } = req.body || {};
-
-    const userId = req.user!.id;
-    const userProfile = req.body.userProfile || req.user?.profile || (db as any).data.users.find((u: any) => u.id === userId)?.profile;
-    const clientWardrobePool = Array.isArray(req.body.wardrobePool) && req.body.wardrobePool.length > 0
-      ? req.body.wardrobePool
-      : null;
-    const userWardrobe = clientWardrobePool || db.getWardrobe(userId);
-    const userOutfits = db.getOutfits(userId);
-    const userWearHistory = (db as any).data.wearHistory[userId] || [];
-
-    const availableItems = userWardrobe.filter(
-      (item: any) => !excludeItemIds.includes(item.id)
-    );
-
     try {
+      const userId = req.user!.id;
+      const userProfile = req.body.userProfile || req.user?.profile || (db as any).data.users.find((u: any) => u.id === userId)?.profile;
+      const clientWardrobePool = Array.isArray(req.body.wardrobePool) && req.body.wardrobePool.length > 0
+        ? req.body.wardrobePool
+        : null;
+      const userWardrobe = clientWardrobePool || db.getWardrobe(userId);
+      const userWearHistory = (db as any).data.wearHistory[userId] || [];
 
-      // Compact representation: omit imageUrl and unnecessary fields to make prompt lightweight and fast
-      const itemsSummary = availableItems.map((item: any) => ({
-        id: item.id,
-        name: item.name,
-        category: item.category,
-        type: item.type || item.subcategory,
-        color: item.color,
-        pattern: item.pattern || 'Solid',
-        material: item.material || 'Standard Fabric',
-        style: item.style || 'Casual',
-        formality: item.formality || 'Smart Casual',
-        fit: item.fit || 'Regular',
-        season: item.season || ['All-Season'],
-        timesWorn: item.timesWorn || 0,
-        isFavorite: !!item.isFavorite,
-        isMustInclude: mustIncludeItemIds.includes(item.id),
-      }));
-
-      const ai = getAIClient();
-
-      const prompt = `You are PAURVI's Head of Haute Couture & Elite AI Stylist.
-You compose sophisticated, tailored outfit looks for client ${req.user!.name}.
-
-    CRITICAL MANDATORY RULES:
-1. STRICT WARDROBE BOUNDARY:
-${
-  availableItems.length === 0
-    ? `The client currently owns 0 items in their digital wardrobe.
-Inform the client honestly that their digital wardrobe is currently empty.
-Provide a clear capsule foundation blueprint outlining the essential pieces they should catalogue first, tailored to their request: "${naturalQuery || occasion}".`
-    : `You MUST select pieces STRICTLY from the client's actual owned wardrobe items listed below.
-NEVER invent, hallucinate, or claim the client owns pieces that are not in this inventory list.
-Every owned item must use its real itemId from this inventory.
-
-VALID ITEM IDs:
-${availableItems.map((i: any) => `* "${i.id}" (${i.name} - ${i.category})`).join('\n')}
-
-Owned Wardrobe Inventory (${availableItems.length} items):
-${JSON.stringify(itemsSummary, null, 2)}`
-}
-
-2. HONEST GAP ANALYSIS:
-If the user's wardrobe has items, but lacks a suitable piece for a complete ensemble (for example: lacks suitable Footwear, or Outerwear, or Bottoms for this occasion):
-State clearly in gapAnalysis: "Your wardrobe doesn't currently contain a suitable [Category/Piece]." If recommending an unowned piece to complete the silhouette, set itemId: null and isOwned: false. Do NOT pretend the user owns it.
-
-3. CONTEXT & PREFERENCES:
-- Natural Query: ${naturalQuery ? `"${naturalQuery}"` : 'None'}
-- Occasion: ${occasion}
-- Style Aesthetic: ${stylePreference}
-- Color Preference: ${colorPreference || 'Complementary natural harmony'}
-- Location / Venue: ${location}
-- Date & Time: ${date} at ${time}
-- Dress Code: ${dressCode}
-- Weather & Climate: ${weatherDescription} (${temperatureCelsius}°C)
-- Client Body Proportions: ${
-  req.user?.measurements?.heightCm
-    ? `Height: ${req.user.measurements.heightCm} cm, Weight: ${req.user.measurements.weightKg || 'Not specified'} kg. Harmonize garment drape, hemlines, and vertical silhouette balance for this stature.`
-    : 'Standard proportions'
-}
-${
-  userProfile
-    ? `- PERSONAL STYLE PROFILE (Strict grounding in client features):
-  * Face Shape: ${userProfile.visualAnalysis?.faceShape || 'Balanced'}
-  * Complexion Undertone: ${userProfile.visualAnalysis?.skinTone || 'Neutral'}
-  * Color Contrast Level: ${userProfile.visualAnalysis?.contrastLevel || 'Medium'}
-  * Recommended Palettes for Complexion: ${(userProfile.visualAnalysis?.recommendedPalettes || []).join(', ') || 'Sophisticated neutrals'}
-  * Recommended Necklines/Collars: ${(userProfile.visualAnalysis?.recommendedNecklines || []).join(', ') || 'Classic spread and notched lapels'}
-  * Client Preferred Fit & Silhouette: ${userProfile.preferredFit || 'Tailored'}
-  * Preferred Colors (PRIORITIZE): ${(userProfile.preferredColors || []).join(', ') || 'Client neutrals'}
-  * Disliked Colors (STRICTLY AVOID): ${(userProfile.dislikedColors || []).join(', ') || 'None'}
-  * Sizes: Top: ${userProfile.topSize || 'M'}, Bottom: ${userProfile.bottomSize || '32'}, Footwear: ${userProfile.shoeSize || '42'}
-  * Preferred Aesthetics: ${(userProfile.preferredStyles || []).join(', ') || 'Smart Casual, Minimalist'}
-  NOTE: In 'whyItWorks', explicitly articulate how the chosen colors and neckline/collar flatter the client's ${userProfile.visualAnalysis?.skinTone || 'neutral'} complexion undertone and ${userProfile.visualAnalysis?.faceShape || 'facial'} proportions!`
-    : ''
-}
-- Must-Include Items: ${mustIncludeItemIds.join(', ') || 'None'}
-- Special Notes: ${additionalNotes || 'None'}
-
-4. OUTPUT REQUIREMENTS:
-Provide:
-- Primary Look:
-  - outfitName: Refined name (e.g. "Smart Casual Dinner Look", "Midnight Evening", "Refined Cashmere & Chinos Ensemble")
-  - summary: High-level overview of the look.
-  - pieces: Array of slots (Top, Bottom, Outerwear, Footwear, Accessories). Each item MUST reference an owned item by itemId if available.
-  - whyItWorks: Detailed, thoughtful explanation of color coordination, silhouette balance, and occasion suitability.
-  - bestFor: Object with occasion (e.g. "Dinner"), time (e.g. "7:00 PM"), weather (e.g. "18°C, Clear").
-  - styleNotes: Array of 2-3 practical styling suggestions (e.g. "Roll the sleeves slightly for a relaxed vibe", "Add a leather belt to match the loafers").
-  - alternativeLookSuggestion: Detailed alternative combination using different items from user's wardrobe.
-  - gapAnalysis: Any missing category disclosure or empty string.
-  - score: Overall styling score (integer between 88 and 99).
-  - scoreBreakdown: Object with { colorHarmony: number, occasionFit: number, weatherMatch: number, coherence: number }.
-${
-  generateMultipleLooks
-    ? `
-- Multiple Looks (generate 3 options when possible using user's wardrobe pieces):
-  - LOOK 01: "SAFE & REFINED" (Timeless, foolproof harmony)
-  - LOOK 02: "MODERN" (Contemporary proportions, trending textures)
-  - LOOK 03: "STATEMENT" (High-impact focal point, bold pairing)
-`
-    : ''
-}
-`;
-
-      const schemaProperties: any = {
-        outfitName: { type: Type.STRING },
-        summary: { type: Type.STRING },
-        pieces: {
-          type: Type.ARRAY,
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              category: { type: Type.STRING },
-              itemId: { type: Type.STRING, nullable: true },
-              role: { type: Type.STRING },
-              suggestedDescription: { type: Type.STRING },
-              isOwned: { type: Type.BOOLEAN },
-            },
-            required: ['category', 'role', 'suggestedDescription', 'isOwned'],
-          },
-        },
-        whyItWorks: { type: Type.STRING },
-        bestFor: {
-          type: Type.OBJECT,
-          properties: {
-            occasion: { type: Type.STRING },
-            time: { type: Type.STRING },
-            weather: { type: Type.STRING },
-          },
-          required: ['occasion', 'time', 'weather'],
-        },
-        styleNotes: {
-          type: Type.ARRAY,
-          items: { type: Type.STRING },
-        },
-        alternativeLookSuggestion: { type: Type.STRING },
-        gapAnalysis: { type: Type.STRING },
-        score: { type: Type.INTEGER },
-        scoreBreakdown: {
-          type: Type.OBJECT,
-          properties: {
-            colorHarmony: { type: Type.INTEGER },
-            occasionFit: { type: Type.INTEGER },
-            weatherMatch: { type: Type.INTEGER },
-            coherence: { type: Type.INTEGER },
-          },
-          required: ['colorHarmony', 'occasionFit', 'weatherMatch', 'coherence'],
-        },
-      };
-
-      if (generateMultipleLooks) {
-        schemaProperties.looks = {
-          type: Type.ARRAY,
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              id: { type: Type.STRING },
-              lookType: { type: Type.STRING },
-              title: { type: Type.STRING },
-              subtitle: { type: Type.STRING },
-              pieces: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    category: { type: Type.STRING },
-                    itemId: { type: Type.STRING, nullable: true },
-                    role: { type: Type.STRING },
-                    suggestedDescription: { type: Type.STRING },
-                    isOwned: { type: Type.BOOLEAN },
-                  },
-                  required: ['category', 'role', 'suggestedDescription', 'isOwned'],
-                },
-              },
-              whyItWorks: { type: Type.STRING },
-              bestFor: {
-                type: Type.OBJECT,
-                properties: {
-                  occasion: { type: Type.STRING },
-                  time: { type: Type.STRING },
-                  weather: { type: Type.STRING },
-                },
-                required: ['occasion', 'time', 'weather'],
-              },
-              styleNotes: {
-                type: Type.ARRAY,
-                items: { type: Type.STRING },
-              },
-              score: { type: Type.INTEGER },
-              scoreBreakdown: {
-                type: Type.OBJECT,
-                properties: {
-                  colorHarmony: { type: Type.INTEGER },
-                  occasionFit: { type: Type.INTEGER },
-                  weatherMatch: { type: Type.INTEGER },
-                  coherence: { type: Type.INTEGER },
-                },
-                required: ['colorHarmony', 'occasionFit', 'weatherMatch', 'coherence'],
-              },
-            },
-            required: ['id', 'lookType', 'title', 'subtitle', 'pieces', 'whyItWorks', 'bestFor', 'styleNotes', 'score', 'scoreBreakdown'],
-          },
-        };
-      }
-
-      const response = await ai.models.generateContent({
-        model: 'gemini-flash-latest',
-        contents: prompt,
-        config: {
-          responseMimeType: 'application/json',
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: schemaProperties,
-            required: [
-              'outfitName',
-              'summary',
-              'pieces',
-              'whyItWorks',
-              'bestFor',
-              'styleNotes',
-              'score',
-              'scoreBreakdown',
-            ],
-          },
-        },
-      });
-
-      const parsed = JSON.parse(response.text || '{}');
-
-      // Hydrate primary pieces with full item objects from user's wardrobe
-      const hydratePieces = (pieceList: any[]) => {
-        return (pieceList || []).map((p: any) => {
-          const matchedItem = availableItems.find((w: any) => w.id === p.itemId);
-          return {
-            category: p.category,
-            item: matchedItem || undefined,
-            suggestedDescription: p.suggestedDescription || (matchedItem ? matchedItem.name : ''),
-            role: p.role,
-            isOwned: !!matchedItem,
-          };
-        });
-      };
-
-      const primaryPieces = hydratePieces(parsed.pieces);
-
-      // Hydrate multiple looks or synthesize primary look option
-      let hydratedLooks: any[] = [];
-      if (parsed.looks && parsed.looks.length > 0) {
-        hydratedLooks = parsed.looks.map((look: any) => ({
-          ...look,
-          pieces: hydratePieces(look.pieces),
-        }));
-      } else {
-        hydratedLooks = [
-          {
-            id: 'primary-curated',
-            lookType: 'CURATED LOOK',
-            title: parsed.outfitName || 'Signature Curated Ensemble',
-            subtitle: 'Balanced silhouette, quiet luxury harmony',
-            pieces: primaryPieces,
-            whyItWorks: parsed.whyItWorks || 'Harmonious silhouette and textile pairings.',
-            bestFor: parsed.bestFor || {
-              occasion: occasion,
-              time: time,
-              weather: `${temperatureCelsius}°C, Clear`,
-            },
-            styleNotes: parsed.styleNotes || [],
-            score: parsed.score || 96,
-            scoreBreakdown: parsed.scoreBreakdown || {
-              colorHarmony: 98,
-              occasionFit: 96,
-              weatherMatch: 95,
-              coherence: 97,
-            },
-          }
-        ];
-      }
-
-      const result = {
-        id: `ai_rec_${Date.now()}`,
-        requestId: `req_${Math.random().toString(36).substring(2, 9)}`,
-        outfitName: parsed.outfitName || 'Smart Casual Dinner Look',
-        summary: parsed.summary || 'A bespoke styling composition calibrated for your engagement.',
-        pieces: primaryPieces,
-        whyItWorks: parsed.whyItWorks || 'Harmonious color palette and balanced silhouette proportions.',
-        weatherReasoning: `${temperatureCelsius}°C climate match: breathable layering calibrated for atmospheric comfort.`,
-        occasionReasoning: `Tailored specifically for ${occasion} with ${dressCode} dress code.`,
-        bestFor: parsed.bestFor || {
-          occasion: occasion,
-          time: time,
-          weather: `${temperatureCelsius}°C, Clear`,
-        },
-        stylingTips: parsed.styleNotes || [
-          'Roll the sleeves slightly for a relaxed vibe.',
-          'Add a leather belt to match footwear tones.',
-          'This look transitions seamlessly from daylight to evening.',
-        ],
-        suggestedAccessories: [
-          'Minimalist dress watch',
-          'Supple leather belt',
-          'Matte silver cufflinks or sunglasses',
-        ],
-        alternativeLookSuggestion: parsed.alternativeLookSuggestion || 'Pair with neutral trousers and clean white sneakers for an understated alternative.',
-        gapAnalysis: parsed.gapAnalysis || undefined,
-        confidenceScore: parsed.score || 96,
-        scoreBreakdown: parsed.scoreBreakdown || {
-          colorHarmony: 98,
-          occasionFit: 96,
-          weatherMatch: 95,
-          coherence: 97,
-        },
-        looks: hydratedLooks.length > 0 ? hydratedLooks : undefined,
-        generatedAt: new Date().toISOString(),
-      };
+      const result = await generateStylistRecommendations(
+        userId,
+        req.body || {},
+        userWardrobe,
+        userProfile,
+        userWearHistory,
+        req.user?.name || 'Client'
+      );
 
       // Record AI request telemetry for the user in database
-      db.incrementAIRequestCount(userId, 'Outfit Synthesis', parsed.outfitName || 'Outfit Studio Generation');
+      db.incrementAIRequestCount(userId, 'Outfit Synthesis', result.outfitName || 'Outfit Studio Generation');
 
       return res.json({ success: true, recommendation: result });
-    } catch (_error: any) {
-      markQuotaCooldown();
-      
-      const topItem = availableItems.find((i: any) => i.category === 'Tops') || availableItems[0];
-      const bottomItem = availableItems.find((i: any) => i.category === 'Bottoms') || availableItems[1];
-      const outerwearItem = availableItems.find((i: any) => i.category === 'Outerwear') || availableItems[2];
-      const footwearItem = availableItems.find((i: any) => i.category === 'Footwear') || availableItems[3];
-
-      const fallbackPieces = [
-        {
-          category: 'Tops',
-          item: topItem,
-          suggestedDescription: topItem ? topItem.name : 'Fine-gauge knit or crisp tailored button-down',
-          role: 'Foundational silhouette piece establishing neckline and tonal palette.',
-          isOwned: !!topItem,
-        },
-        {
-          category: 'Bottoms',
-          item: bottomItem,
-          suggestedDescription: bottomItem ? bottomItem.name : 'Pleated straight-leg tailored trousers',
-          role: 'Elongating base providing proportional balance and comfort.',
-          isOwned: !!bottomItem,
-        },
-        {
-          category: 'Outerwear',
-          item: outerwearItem,
-          suggestedDescription: outerwearItem ? outerwearItem.name : 'Structured tailored blazer or minimalist coat',
-          role: 'Architectural framing layer tailored for atmospheric temperature.',
-          isOwned: !!outerwearItem,
-        },
-        {
-          category: 'Footwear',
-          item: footwearItem,
-          suggestedDescription: footwearItem ? footwearItem.name : 'Polished leather loafers or clean Chelsea boots',
-          role: 'Grounding footwear completing the ensemble silhouette.',
-          isOwned: !!footwearItem,
-        },
-      ];
-
-      const fallbackRec = {
-        id: `ai_rec_${Date.now()}`,
-        requestId: `req_${Math.random().toString(36).substring(2, 9)}`,
-        outfitName: `Curated ${stylePreference || 'Smart Casual'} Look for ${occasion || 'Your Engagement'}`,
-        summary: `A composed styling ensemble built around tonal harmony, tactile depth, and quiet luxury proportions.`,
-        pieces: fallbackPieces,
-        whyItWorks: `Harmonious color contrast between the upper silhouette and grounding trousers creates clean visual lines suitable for ${occasion}.`,
-        weatherReasoning: `Calibrated for ${weatherDescription || 'mild conditions'}: comfortable modular layering.`,
-        occasionReasoning: `Tailored specifically for ${occasion} with ${dressCode} dress code standard.`,
-        bestFor: {
-          occasion: occasion,
-          time: time,
-          weather: weatherDescription || `${temperatureCelsius}°C, Clear`,
-        },
-        stylingTips: [
-          'Half-tuck the top slightly at the front to emphasize the waistline.',
-          'Coordinate leather tones between footwear and accessories.',
-          'Keep accents minimal and refined.'
-        ],
-        suggestedAccessories: [
-          'Brushed metal dress watch',
-          'Supple leather belt',
-          'Classic sunglasses'
-        ],
-        alternativeLookSuggestion: 'Swap in dark trousers or a fine-knit sweater for an effortless tonal alternative.',
-        confidenceScore: 95,
-        scoreBreakdown: {
-          colorHarmony: 97,
-          occasionFit: 95,
-          weatherMatch: 94,
-          coherence: 96,
-        },
-        generatedAt: new Date().toISOString(),
-      };
-
-      db.incrementAIRequestCount(userId, 'Outfit Synthesis', fallbackRec.outfitName);
-
-      return res.json({
-        success: true,
-        isQuotaFallback: true,
-        recommendation: fallbackRec,
+    } catch (error: any) {
+      console.error('Stylist recommendation error:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message || 'Stylist engine failed to generate recommendation.',
       });
+    }
+  });
+
+  app.post('/api/gemini/swap-piece', authMiddleware, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const userProfile = req.body.userProfile || req.user?.profile || (db as any).data.users.find((u: any) => u.id === userId)?.profile;
+      const userWardrobe = db.getWardrobe(userId);
+
+      const result = await swapOutfitPiece(
+        userId,
+        req.body,
+        userWardrobe,
+        userProfile
+      );
+
+      return res.json(result);
+    } catch (err: any) {
+      console.error('Swap piece error:', err);
+      return res.status(500).json({ success: false, error: err.message || 'Failed to swap piece.' });
     }
   });
 
@@ -1209,7 +834,7 @@ TASK REQUIREMENTS:
 `;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-flash-latest',
+        model: 'gemini-3.8-flash',
         contents: prompt,
         config: {
           responseMimeType: 'application/json',
@@ -1485,7 +1110,7 @@ GENERAL RULES:
       });
 
       const response = await ai.models.generateContent({
-        model: 'gemini-flash-latest',
+        model: 'gemini-3.8-flash',
         contents,
       });
 
@@ -2047,7 +1672,7 @@ Provide an authoritative, editorial analysis of the top seasonal fashion movemen
 Generate 6 high-fashion trends covering diverse categories (Key Silhouettes, Color Palettes, Fabrics & Textures, Accessories & Footwear, Occasion & Vibe). Ensure hex colors match high-fashion palettes.`;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-flash-latest',
+        model: 'gemini-3.8-flash',
         contents: prompt,
         config: {
           tools: [{ googleSearch: {} }],

@@ -1,21 +1,7 @@
-
-
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
-
-const safeLocalStorage = {
-  getItem(key: string): string | null {
-    try { return localStorage.getItem(key); } catch (e) { return null; }
-  },
-  setItem(key: string, value: string): void {
-    try { localStorage.setItem(key, value); } catch (e) {}
-  },
-  removeItem(key: string): void {
-    try { localStorage.removeItem(key); } catch (e) {}
-  }
-};
 
 export interface WeatherData {
   temperatureCelsius: number;
@@ -30,7 +16,7 @@ export interface WeatherData {
 
 // In-memory weather cache
 const weatherMemoryCache: Record<string, { data: WeatherData; timestamp: number }> = {};
-const CACHE_TTL_MS = 25 * 60 * 1000; // 25 minutes
+const CACHE_TTL_MS = 20 * 60 * 1000; // 20 minutes
 
 function getCachedWeather(key: string): WeatherData | null {
   try {
@@ -64,185 +50,207 @@ function setCachedWeather(key: string, data: WeatherData) {
   } catch {}
 }
 
-const DEFAULT_WEATHER_FALLBACK: WeatherData = {
-  temperatureCelsius: 21,
-  feelsLikeCelsius: 21,
-  condition: 'Clear',
-  isRaining: false,
-  windSpeed: 8,
-  lastUpdated: new Date().toISOString(),
-  locationName: 'Paris Atelier',
-};
-
 export const weatherService = {
+  /**
+   * Fetch weather forecast for exact coordinates
+   */
   async getWeatherForCoords(
     lat: number,
     lon: number,
-    locationName: string,
+    locationName: string
   ): Promise<WeatherData> {
     const cacheKey = `coords_${lat.toFixed(2)}_${lon.toFixed(2)}`;
     const cached = getCachedWeather(cacheKey);
     if (cached) return cached;
 
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3500);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4500);
 
+    try {
       const res = await fetch(
         `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,is_day,precipitation,rain,showers,snowfall,weather_code,cloud_cover,wind_speed_10m&timezone=auto`,
         { signal: controller.signal }
       );
       clearTimeout(timeoutId);
 
-      if (!res.ok) throw new Error("Failed to fetch weather");
+      if (!res.ok) throw new Error('Weather service unavailable');
 
-      const text = await res.text();
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch (e) {
-        throw new Error("Invalid weather response format");
-      }
-      
+      const data = await res.json();
       const current = data?.current;
       if (!current || typeof current.temperature_2m !== 'number') {
-        throw new Error("Missing current weather data");
+        throw new Error('Incomplete weather telemetry');
       }
 
       const isRaining =
         (current.precipitation || 0) > 0 || (current.rain || 0) > 0 || (current.showers || 0) > 0;
-      let condition = "Clear";
-      if ((current.cloud_cover || 0) > 80) condition = "Overcast";
-      else if ((current.cloud_cover || 0) > 50) condition = "Cloudy";
-      else if ((current.cloud_cover || 0) > 20) condition = "Partly Cloudy";
+      let condition = 'Clear';
+      if ((current.cloud_cover || 0) > 80) condition = 'Overcast';
+      else if ((current.cloud_cover || 0) > 50) condition = 'Cloudy';
+      else if ((current.cloud_cover || 0) > 20) condition = 'Partly Cloudy';
 
-      if (isRaining) condition = "Rain";
-      if ((current.snowfall || 0) > 0) condition = "Snow";
+      if (isRaining) condition = 'Rain';
+      if ((current.snowfall || 0) > 0) condition = 'Snow';
 
       const weatherResult: WeatherData = {
         temperatureCelsius: Math.round(current.temperature_2m),
-        feelsLikeCelsius: Math.round(current.apparent_temperature || current.temperature_2m),
+        feelsLikeCelsius: Math.round(current.apparent_temperature ?? current.temperature_2m),
         condition,
         isRaining,
         windSpeed: current.wind_speed_10m || 0,
         lastUpdated: new Date().toISOString(),
-        locationName,
+        locationName: locationName || 'Current Location',
       };
 
       setCachedWeather(cacheKey, weatherResult);
       return weatherResult;
-    } catch (err) {
-      console.warn("Weather API notice:", err);
-      // Return sensible fallback rather than crashing or freezing
-      return {
-        ...DEFAULT_WEATHER_FALLBACK,
-        locationName: locationName || 'Current Location',
-      };
+    } catch (err: any) {
+      clearTimeout(timeoutId);
+      throw err;
     }
   },
 
-  async getAutoLocationWeather(fallbackLocation: string): Promise<WeatherData> {
-    const normKey = (fallbackLocation || 'auto_default').toLowerCase().trim();
-    const cached = getCachedWeather(normKey);
-    if (cached) return cached;
-
-    return new Promise((resolve) => {
-      let resolved = false;
-
-      const finish = (result: WeatherData) => {
-        if (!resolved) {
-          resolved = true;
-          setCachedWeather(normKey, result);
-          resolve(result);
-        }
-      };
-
-      // Safety timeout: Never hold up UI for more than 1500ms
-      const safetyTimer = setTimeout(() => {
-        finish({
-          ...DEFAULT_WEATHER_FALLBACK,
-          locationName: fallbackLocation || 'London',
-        });
-      }, 1500);
-
-      const runFallback = async () => {
-        try {
-          const data = await this.geocodeAndGetWeather(fallbackLocation || "London");
-          clearTimeout(safetyTimer);
-          finish(data);
-        } catch {
-          clearTimeout(safetyTimer);
-          finish({
-            ...DEFAULT_WEATHER_FALLBACK,
-            locationName: fallbackLocation || 'London',
-          });
-        }
-      };
-
-      if (typeof navigator !== "undefined" && navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          async (pos) => {
-            try {
-              const { latitude, longitude } = pos.coords;
-              const data = await this.getWeatherForCoords(
-                latitude,
-                longitude,
-                "Current Location",
-              );
-              clearTimeout(safetyTimer);
-              finish(data);
-            } catch {
-              runFallback();
-            }
-          },
-          () => {
-            runFallback();
-          },
-          { timeout: 1200, maximumAge: 600000 },
-        );
-      } else {
-        runFallback();
+  /**
+   * Reverse-geocode coordinates to get human city name
+   */
+  async reverseGeocode(lat: number, lon: number): Promise<string> {
+    try {
+      const res = await fetch(
+        `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`
+      );
+      if (res.ok) {
+        const data = await res.json();
+        const city = data.city || data.locality || data.principalSubdivision;
+        const country = data.countryName;
+        if (city && country) return `${city}, ${country}`;
+        if (city) return city;
       }
+    } catch {}
+    return 'Current Location';
+  },
+
+  /**
+   * Get device location via browser Geolocation API
+   */
+  async getDeviceLocationAndWeather(): Promise<WeatherData> {
+    return new Promise((resolve, reject) => {
+      if (typeof navigator === 'undefined' || !navigator.geolocation) {
+        return reject(new Error('Geolocation is not supported by your browser'));
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          try {
+            const { latitude, longitude } = position.coords;
+            const locationName = await this.reverseGeocode(latitude, longitude);
+            const weather = await this.getWeatherForCoords(latitude, longitude, locationName);
+            resolve(weather);
+          } catch (err) {
+            reject(err);
+          }
+        },
+        (error) => {
+          let message = 'Location permission unavailable';
+          if (error.code === error.PERMISSION_DENIED) {
+            message = 'Location permission denied';
+          } else if (error.code === error.POSITION_UNAVAILABLE) {
+            message = 'Location information unavailable';
+          } else if (error.code === error.TIMEOUT) {
+            message = 'Location request timed out';
+          }
+          reject(new Error(message));
+        },
+        { timeout: 8000, maximumAge: 300000, enableHighAccuracy: false }
+      );
     });
   },
 
+  /**
+   * Geocode a user-provided city name and fetch its live weather
+   */
   async geocodeAndGetWeather(cityName: string): Promise<WeatherData> {
-    const normName = cityName.trim().toLowerCase();
-    const cached = getCachedWeather(`city_${normName}`);
+    const cleanName = cityName.trim();
+    if (!cleanName) {
+      throw new Error('Please provide a city name');
+    }
+
+    const normKey = cleanName.toLowerCase();
+    const cached = getCachedWeather(`city_${normKey}`);
     if (cached) return cached;
 
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4500);
 
+    try {
       const geoRes = await fetch(
-        `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(cityName)}&count=1&language=en&format=json`,
+        `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(cleanName)}&count=1&language=en&format=json`,
         { signal: controller.signal }
       );
       clearTimeout(timeoutId);
 
-      if (!geoRes.ok) throw new Error("Geocoding failed");
+      if (!geoRes.ok) throw new Error('Geocoding service unavailable');
       const geoData = await geoRes.json();
 
       if (!geoData.results || geoData.results.length === 0) {
-        return {
-          ...DEFAULT_WEATHER_FALLBACK,
-          locationName: cityName,
-        };
+        throw new Error(`Could not find location "${cleanName}". Please check the spelling.`);
       }
 
       const { latitude, longitude, name, admin1, country } = geoData.results[0];
-      const fullName = admin1 ? `${name}, ${admin1}` : `${name}, ${country}`;
+      const fullName = admin1 ? `${name}, ${admin1}` : country ? `${name}, ${country}` : name;
 
-      const res = await this.getWeatherForCoords(latitude, longitude, fullName);
-      setCachedWeather(`city_${normName}`, res);
-      return res;
-    } catch (err) {
-      console.warn("Geocoding/Weather fallback notice:", err);
-      return {
-        ...DEFAULT_WEATHER_FALLBACK,
-        locationName: cityName,
-      };
+      const weather = await this.getWeatherForCoords(latitude, longitude, fullName);
+      setCachedWeather(`city_${normKey}`, weather);
+      return weather;
+    } catch (err: any) {
+      clearTimeout(timeoutId);
+      throw err;
     }
+  },
+
+  /**
+   * Automatically resolve location & weather:
+   * 1. If explicit location string provided, geocode that city
+   * 2. Try browser geolocation
+   * 3. Fallback to IP-based approximate location
+   * 4. Safe fallback to default coordinates
+   */
+  async getAutoLocationWeather(preferredLocation?: string): Promise<WeatherData> {
+    if (preferredLocation && preferredLocation.trim() && preferredLocation !== 'Current Location' && preferredLocation !== 'Live Location' && preferredLocation !== 'City Central') {
+      try {
+        return await this.geocodeAndGetWeather(preferredLocation.trim());
+      } catch (e) {
+        console.warn('Geocoding preferred location failed, attempting device location:', e);
+      }
+    }
+
+    try {
+      return await this.getDeviceLocationAndWeather();
+    } catch (e) {
+      console.warn('Device geolocation unavailable, attempting IP location:', e);
+    }
+
+    // Try IP-based location lookup
+    try {
+      const ipRes = await fetch('https://ipapi.co/json/');
+      if (ipRes.ok) {
+        const ipData = await ipRes.json();
+        if (ipData.latitude && ipData.longitude) {
+          const locName = ipData.city ? `${ipData.city}, ${ipData.country_name || ''}` : 'Local Region';
+          return await this.getWeatherForCoords(ipData.latitude, ipData.longitude, locName);
+        }
+      }
+    } catch (e) {
+      console.warn('IP geolocation unavailable:', e);
+    }
+
+    // Default neutral fallback (Mild temperate climate)
+    return {
+      temperatureCelsius: 20,
+      feelsLikeCelsius: 20,
+      condition: 'Clear',
+      isRaining: false,
+      windSpeed: 8,
+      lastUpdated: new Date().toISOString(),
+      locationName: preferredLocation || 'Local Region',
+    };
   },
 };

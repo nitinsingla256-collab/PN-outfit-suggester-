@@ -234,7 +234,7 @@ class PaurviDatabase {
           lastActive: new Date().toISOString(),
           pronouns: 'she/they',
           bio: 'Lead Atelier Supervisor & Haute Horlogerie Archivist.',
-          location: 'Paris, France',
+          location: '',
           preferences: defaultPreferences(),
         };
 
@@ -276,7 +276,7 @@ class PaurviDatabase {
         lastActive: new Date().toISOString(),
         pronouns: 'they/them',
         bio: 'Master Administrator of PAURVI Atelier.',
-        location: 'Global',
+        location: '',
         preferences: defaultPreferences(),
       };
 
@@ -305,7 +305,7 @@ class PaurviDatabase {
         lastActive: new Date().toISOString(),
         pronouns: 'they/them',
         bio: 'Personal digital wardrobe and luxury styling studio.',
-        location: 'Paris, France',
+        location: '',
         preferences: defaultPreferences(),
       };
 
@@ -345,7 +345,7 @@ class PaurviDatabase {
       lastActive: new Date().toISOString(),
       pronouns: 'they/them',
       bio: 'Member of the PAURVI Atelier private wardrobe capsule.',
-      location: 'Delhi, India',
+      location: '',
       preferences: defaultPreferences(),
     };
 
@@ -644,8 +644,27 @@ class PaurviDatabase {
 
   addOutfit(userId: string, outfitData: any): any {
     const list = this.data.outfits[userId] || [];
+    const userWardrobe = this.data.wardrobes[userId] || [];
+    const validItemIds = new Set(userWardrobe.map(w => w.id));
+
+    // Validate and sanitize item references: ensure itemId belongs to user's wardrobe
+    let sanitizedItems = outfitData.items;
+    if (Array.isArray(sanitizedItems)) {
+      sanitizedItems = sanitizedItems.map((ref: any) => {
+        if (ref.itemId && !validItemIds.has(ref.itemId)) {
+          return {
+            ...ref,
+            itemId: null,
+            notes: ref.notes ? `${ref.notes} (Suggested piece - not currently owned)` : 'Suggested piece - not currently owned'
+          };
+        }
+        return ref;
+      });
+    }
+
     const newOutfit = {
       ...outfitData,
+      items: sanitizedItems || [],
       id: `outfit_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`,
       timesWorn: 0,
       createdAt: new Date().toISOString(),

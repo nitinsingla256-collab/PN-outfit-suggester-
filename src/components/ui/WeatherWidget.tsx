@@ -44,7 +44,7 @@ export function WeatherWidget({ className = "" }: { className?: string }) {
     async function fetchWeather() {
       try {
         const data = await weatherService.getAutoLocationWeather(
-          user?.location || "London",
+          user?.location || undefined,
         );
         if (mounted) setWeather(data);
       } catch (err) {

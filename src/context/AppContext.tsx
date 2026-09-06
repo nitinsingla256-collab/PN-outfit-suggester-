@@ -364,40 +364,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const initAuth = async () => {
       try {
         setAuthLoading(true);
-        let cachedUser = null;
+        const sessionValid = await authService.verifySession();
+        if (sessionValid) {
+          const authed = authService.getCurrentUser();
+          if (authed) {
+            setUser(authed);
+            setIsAuthenticated(true);
+            await loadUserData();
+            return;
+          }
+        }
+
+        // If no active session, auto-authenticate as client account to establish valid JWT token
         try {
-          const cachedStr = window.localStorage.getItem('pn_cached_user_v1');
-          if (cachedStr) {
-            const parsed = JSON.parse(cachedStr);
-            if (parsed && typeof parsed === 'object' && typeof parsed.name === 'string') {
-              cachedUser = parsed;
-            }
-          }
-        } catch (e) {}
-        
-        const devUser = cachedUser ? {
-          ...INITIAL_USER,
-          ...cachedUser,
-          measurements: {
-            ...INITIAL_USER.measurements,
-            ...(cachedUser.measurements || {})
-          }
-        } : {
-          ...INITIAL_USER,
-          id: 'dev_local_user',
-          name: 'Atelier Client',
-          email: 'client@local',
-          measurements: {
-            ...INITIAL_USER.measurements,
-            hasCompletedFirstLoginMeasurements: true
-          }
-        };
-        setUser(devUser);
-        setIsAuthenticated(true);
-        await loadUserData();
+          const { user: authedUser } = await authService.signIn('client@paurvi.atelier', 'client123');
+          setUser(authedUser);
+          setIsAuthenticated(true);
+          await loadUserData();
+        } catch (autoErr) {
+          console.warn('Auto client sign-in deferred:', autoErr);
+          setUser(INITIAL_USER);
+          setIsAuthenticated(false);
+        }
       } catch (err) {
         console.error('Auth initialization error:', err);
-        setIsAuthenticated(true);
+        setUser(INITIAL_USER);
+        setIsAuthenticated(false);
       } finally {
         setAuthLoading(false);
       }
@@ -458,7 +450,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const signOut = async () => {
-    window.location.reload();
+    try {
+      await authService.signOut();
+    } catch (e) {}
+    setUser(INITIAL_USER);
+    setIsAuthenticated(false);
+    setWardrobe([]);
+    setOutfits([]);
+    setPlans([]);
+    navigateTo('/auth');
   };
 
   const requestPasswordReset = useCallback(async (email: string) => {
@@ -478,18 +478,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (updates.profile && prev.profile) {
         updated.profile = { ...prev.profile, ...updates.profile };
       }
-      try {
-        window.localStorage.setItem('pn_cached_user_v1', JSON.stringify(updated));
-      } catch (e) {}
       return updated;
     });
 
     try {
       if (authService.isAuthenticated()) {
-        await authService.updateUserProfile(updates);
+        const syncedUser = await authService.updateUserProfile(updates);
+        setUser(syncedUser);
       }
     } catch (err) {
-      console.warn('Backend profile update deferred:', err);
+      console.warn('Backend profile update error:', err);
     }
     
     showToast({
