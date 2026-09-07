@@ -1,4 +1,9 @@
-import { validateAndFixCategory } from "./server/wardrobeTaxonomy";
+import {
+  validateAndFixCategory,
+  normalizeColor,
+  evaluateColorCompatibility,
+  evaluatePatternCompatibility,
+} from "./server/wardrobeTaxonomy";
 import { getGeminiModel } from "./server/geminiConfig";
 /**
  * @license
@@ -613,31 +618,33 @@ Extract the following JSON attributes:
 
       const ai = getAIClient();
 
-      const prompt = `You are a strict fashion archivist.
-Analyze this image carefully.
-First, detect if there is exactly one primary garment or accessory. If there are multiple distinct items, identify the most prominent one.
-Do NOT invent unrealistic details. If a detail is uncertain, provide the most honest realistic assessment.
+      const prompt = `You are an expert high-fashion archivist and textile analyst. Your task is to analyze the uploaded clothing image and extract precise, structured metadata.
 
-Extract the following JSON attributes:
-- hasMultipleItems: boolean (true if multiple distinct clothing items are visible, like shirt + trousers + shoes in one photo)
-- isClothingItem: boolean (true if the image contains clothing/accessories)
-- name: Refined garment title (e.g. "Classic Denim Shirt", "Leather Chelsea Boots", "Silver Watch")
-- category: One of ['Tops', 'Bottoms', 'Outerwear', 'Dresses', 'Footwear', 'Bags', 'Accessories', 'Jewelry', 'Activewear', 'Formalwear']. IMPORTANT: Sunglasses -> Accessories, Watch -> Accessories, Belt -> Accessories, Shoes -> Footwear, Trousers -> Bottoms, Shirt -> Tops, Blazer -> Outerwear, Suit -> Formalwear. NEVER map Sunglasses, Watches, or Belts to Tops!
-- type: Specific clothing type (e.g. 'Shirt', 'T-shirt', 'Polo', 'Sweater', 'Hoodie', 'Jacket', 'Blazer', 'Coat', 'Trousers', 'Jeans', 'Chinos', 'Shorts', 'Shoes', 'Boots', 'Sneakers', 'Loafers', 'Watch', 'Belt', 'Scarf', 'Bag', 'Sunglasses')
-- subcategory: Detailed subcategory descriptor (e.g. 'Button-Down Shirt', 'Tailored Blazer', 'Penny Loafers')
-- color: Best matching primary color 
-- secondaryColor: Optional secondary color if present, or null
-- pattern: One of ['Solid', 'Striped', 'Plaid', 'Floral', 'Houndstooth', 'Textured', 'Graphic', 'Checked', 'Polka Dot']
-- material: Material only if visually inferable (e.g., 'Unknown', 'Denim', 'Leather'). Do NOT invent 'Premium Fabric' or '100% Cotton' unless clearly visible on a tag.
-- style: One of ['Casual', 'Smart Casual', 'Formal', 'Minimal', 'Classic', 'Streetwear', 'Old Money', 'Edgy', 'Sporty']
-- formality: One of ['Casual', 'Smart Casual', 'Formal', 'Black Tie']
-- season: Array of applicable seasons from ['Spring', 'Summer', 'Autumn', 'Winter', 'All-Season']
-- occasion: Array of applicable occasions from ['Work', 'Casual', 'Dinner', 'Date', 'Party', 'Formal', 'Wedding', 'Travel']
-- fit: Fit only if visually inferable from the item shape, else 'Regular'
-- tags: Array of 3-5 tags
+Constraint Rules:
+1. Output MUST be valid JSON matching the schema below.
+2. Be highly specific with materials (e.g., distinguish linen from cotton, heavy wool from cashmere).
+3. Identify subtle undertones and secondary accent colors.
+
+JSON Attributes to extract:
+- isClothingItem: boolean (true if the image contains clothing, footwear, bags, jewelry, or accessories)
+- hasMultipleItems: boolean (true if multiple distinct clothing items are visible in one frame)
+- name: Concise, descriptive title (e.g., 'Charcoal Double-Breasted Wool Blazer')
+- category: One of ['Tops', 'Bottoms', 'Outerwear', 'Dresses', 'Footwear', 'Accessories', 'Bags', 'Jewelry', 'Activewear', 'Formalwear']
+- subcategory: Detailed subcategory descriptor (e.g., 'Chinos', 'Oxford Shirt', 'Chelsea Boots', 'Cardigan', 'Blazer')
+- type: Specific clothing type matching subcategory or standard garment category
+- color: Primary color, one of ['Black', 'Charcoal', 'White', 'Ivory', 'Beige', 'Camel', 'Navy', 'Blue', 'Olive', 'Burgundy', 'Chocolate', 'Brown', 'Grey', 'Silver', 'Gold', 'Emerald', 'Sage', 'Terracotta', 'Pastel Pink', 'Khaki']
+- secondaryColor: Optional secondary accent color or undertone, or null
+- pattern: One of ['Solid', 'Striped', 'Plaid', 'Floral', 'Houndstooth', 'Textured', 'Graphic', 'Checked']
+- material: Specific fabric or material, one of ['Cotton', 'Denim', 'Linen', 'Wool', 'Silk', 'Leather', 'Cashmere', 'Knit']
+- fit: Fit descriptor, one of ['Slim', 'Regular', 'Relaxed', 'Oversized', 'Tailored']
+- formality: Formality tier, one of ['Casual', 'Smart Casual', 'Business Casual', 'Formal', 'Black Tie']
+- style: Aesthetic style descriptor (e.g., 'Tailored Minimal', 'Smart Casual', 'Classic', 'Old Money')
+- season: Array of applicable seasons from ['Spring', 'Summer', 'Autumn', 'Winter']
+- occasion: Array of applicable occasions (e.g., ['Work', 'Dinner', 'Casual'])
+- tags: Array of 3 to 5 style tags like ['minimalist', 'layering-piece', 'tailored']
 - careInstructions: Professional garment care guideline
-- stylingNote: Brief one-sentence note on how to pair this piece.
-- confidenceScore: Actual certainty of identification (0-100). If unsure, use a low number like 40 or 50. Do not use 90+ unless absolutely certain.
+- stylingNote: Brief one-sentence note on how to pair this piece
+- confidenceScore: Actual certainty of identification (0-100)
 
 ${hint ? `User context/hint: "${hint}"` : ''}
 `;
@@ -813,9 +820,9 @@ TASK REQUIREMENTS:
    - itemIds: array of exact garment IDs from the inventory assigned to this cluster
    - aestheticDescription: 1-2 sentence description explaining the visual synergy of this color and style group
    - stylingTip: 1 actionable haute-couture styling guideline for wearing pieces from this group
-4. Provide a color palette breakdown summary with approximate distribution.
+4. Provide a color palette breakdown summary with calculated distribution.
 5. Provide a style distribution breakdown.
-6. Provide an overall capsule harmony score (integer between 88 and 99) and executive aesthetic summary.
+6. Provide an overall capsule harmony score (integer from 0 to 100 calculated from color and style versatility across the wardrobe) and executive aesthetic summary.
 `;
 
       const response = await ai.models.generateContent({
@@ -959,21 +966,80 @@ TASK REQUIREMENTS:
           };
         });
 
+      // Compute actual palette breakdown from user's wardrobe
+      const totalItems = userWardrobe.length || 1;
+      const colorCounts: Record<string, { count: number; hex: string; displayName: string }> = {};
+
+      userWardrobe.forEach((item: any) => {
+        const norm = normalizeColor(item.color);
+        const key = norm.displayName;
+        if (!colorCounts[key]) {
+          let hex = '#64748B';
+          if (norm.family === 'BLACK') hex = '#0F172A';
+          else if (norm.family === 'BLUE') hex = '#1E40AF';
+          else if (norm.family === 'GREY') hex = '#475569';
+          else if (norm.family === 'WHITE') hex = '#F8FAFC';
+          else if (norm.family === 'BROWN') hex = '#92400E';
+          else if (norm.family === 'GREEN') hex = '#166534';
+          else if (norm.family === 'RED') hex = '#991B1B';
+          else if (norm.family === 'YELLOW') hex = '#CA8A04';
+          else if (norm.family === 'ORANGE') hex = '#C2410C';
+          else if (norm.family === 'PURPLE') hex = '#6B21A8';
+          colorCounts[key] = { count: 0, hex, displayName: key };
+        }
+        colorCounts[key].count++;
+      });
+
+      const paletteBreakdown = Object.values(colorCounts)
+        .sort((a, b) => b.count - a.count)
+        .map(entry => ({
+          colorName: entry.displayName,
+          hex: entry.hex,
+          itemCount: entry.count,
+          percentage: Math.round((entry.count / totalItems) * 100),
+        }));
+
+      // Compute actual style distribution from user's wardrobe
+      const styleCounts: Record<string, number> = {};
+      userWardrobe.forEach((item: any) => {
+        const st = item.style || 'Smart Casual';
+        styleCounts[st] = (styleCounts[st] || 0) + 1;
+      });
+
+      const styleDistribution = Object.entries(styleCounts)
+        .sort((a, b) => b[1] - a[1])
+        .map(([styleName, count]) => ({
+          styleName,
+          itemCount: count,
+          percentage: Math.round((count / totalItems) * 100),
+        }));
+
+      // Calculate actual capsule harmony score from pairwise compatibility
+      let pairCompatibilitySum = 0;
+      let pairCount = 0;
+      const tops = userWardrobe.filter((i: any) => i.category === 'Tops');
+      const bottoms = userWardrobe.filter((i: any) => i.category === 'Bottoms');
+
+      for (const t of tops.slice(0, 8)) {
+        for (const b of bottoms.slice(0, 8)) {
+          const colorEval = evaluateColorCompatibility([t.color, b.color]);
+          const patternEval = evaluatePatternCompatibility([t.pattern || 'Solid', b.pattern || 'Solid']);
+          pairCompatibilitySum += Math.round((colorEval.score + patternEval.score) / 2);
+          pairCount++;
+        }
+      }
+
+      const calculatedHarmonyScore = pairCount > 0
+        ? Math.round(pairCompatibilitySum / pairCount)
+        : 75;
+
       const fallbackResult = {
         organizedAt: new Date().toISOString(),
-        executiveAestheticSummary: `Your wardrobe showcases strong capsule synergy with high-density ${clusters.length} tonal categories that streamline daily styling.`,
-        capsuleHarmonyScore: 94,
+        executiveAestheticSummary: `Your wardrobe showcases real capsule synergy with ${clusters.length} distinct tonal categories across ${userWardrobe.length} catalogued pieces.`,
+        capsuleHarmonyScore: calculatedHarmonyScore,
         clusters,
-        paletteBreakdown: [
-          { colorName: 'Neutral & Dark Monochromes', hex: '#0F172A', itemCount: Math.ceil(userWardrobe.length * 0.45), percentage: 45 },
-          { colorName: 'Indigo & Blues', hex: '#1E40AF', itemCount: Math.ceil(userWardrobe.length * 0.3), percentage: 30 },
-          { colorName: 'Warm Earth & Accents', hex: '#B45309', itemCount: Math.max(1, userWardrobe.length - Math.ceil(userWardrobe.length * 0.75)), percentage: 25 },
-        ],
-        styleDistribution: [
-          { styleName: 'Smart Casual', itemCount: Math.ceil(userWardrobe.length * 0.5), percentage: 50 },
-          { styleName: 'Tailored Minimal', itemCount: Math.ceil(userWardrobe.length * 0.3), percentage: 30 },
-          { styleName: 'Relaxed Weekend', itemCount: Math.max(1, userWardrobe.length - Math.ceil(userWardrobe.length * 0.8)), percentage: 20 },
-        ],
+        paletteBreakdown,
+        styleDistribution,
       };
 
       db.incrementAIRequestCount(userId, 'Wardrobe Auto-Organize', `${clusters.length} Aesthetic Clusters (Deterministic)`);

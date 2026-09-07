@@ -9,6 +9,14 @@ import {
   OutfitScoreBreakdown,
   GeneratedLookOption,
 } from '../src/types';
+import {
+  evaluateColorCompatibility,
+  evaluatePatternCompatibility,
+  normalizeFormality,
+  OCCASION_FORMALITY_REQUIREMENTS,
+  evaluateThermalSuitability,
+  normalizeTemperatureCondition,
+} from './wardrobeTaxonomy';
 
 function getAIClient(): GoogleGenAI | null {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -16,88 +24,18 @@ function getAIClient(): GoogleGenAI | null {
   return new GoogleGenAI({ apiKey });
 }
 
-// Formality mapping
-const FORMALITY_SCORES: Record<string, number> = {
-  'Casual': 1,
-  'Smart Casual': 2,
-  'Business Casual': 3,
-  'Formal': 4,
-  'Black Tie': 5,
-};
+export interface CandidatePieces {
+  top?: WardrobeItem;
+  bottom?: WardrobeItem;
+  dress?: WardrobeItem;
+  footwear: WardrobeItem;
+  outerwear?: WardrobeItem;
+  accessory?: WardrobeItem;
+}
 
-// Target formality range for each occasion
-const OCCASION_FORMALITY_MAP: Record<string, { min: number; max: number; target: number }> = {
-  'College': { min: 1, max: 2, target: 1 },
-  'Casual day': { min: 1, max: 2, target: 1 },
-  'Casual': { min: 1, max: 2, target: 1 },
-  'Casual outing': { min: 1, max: 2, target: 1 },
-  'Outdoor': { min: 1, max: 2, target: 1 },
-  'Travel': { min: 1, max: 2, target: 1 },
-  'Festival': { min: 1, max: 2, target: 2 },
-  'Brunch': { min: 1, max: 3, target: 2 },
-  'Date': { min: 2, max: 3, target: 2 },
-  'Dinner': { min: 2, max: 3, target: 2 },
-  'Party': { min: 2, max: 4, target: 3 },
-  'Business Casual': { min: 2, max: 4, target: 3 },
-  'Work': { min: 2, max: 4, target: 3 },
-  'Presentation': { min: 3, max: 5, target: 4 },
-  'Interview': { min: 3, max: 5, target: 4 },
-  'Formal': { min: 4, max: 5, target: 4 },
-  'Wedding': { min: 4, max: 5, target: 5 },
-  'Black Tie': { min: 5, max: 5, target: 5 },
-};
-
-// Classic harmonious color pairings
-const HARMONIOUS_COLOR_PAIRS: [string, string][] = [
-  ['navy', 'white'],
-  ['navy', 'cream'],
-  ['navy', 'beige'],
-  ['navy', 'camel'],
-  ['navy', 'grey'],
-  ['navy', 'charcoal'],
-  ['navy', 'brown'],
-  ['black', 'white'],
-  ['black', 'grey'],
-  ['black', 'charcoal'],
-  ['black', 'camel'],
-  ['black', 'beige'],
-  ['charcoal', 'white'],
-  ['charcoal', 'blue'],
-  ['charcoal', 'pink'],
-  ['charcoal', 'burgundy'],
-  ['olive', 'beige'],
-  ['olive', 'cream'],
-  ['olive', 'white'],
-  ['olive', 'black'],
-  ['olive', 'navy'],
-  ['olive', 'camel'],
-  ['brown', 'cream'],
-  ['brown', 'blue'],
-  ['brown', 'white'],
-  ['brown', 'sage'],
-  ['camel', 'white'],
-  ['camel', 'black'],
-  ['camel', 'navy'],
-  ['burgundy', 'navy'],
-  ['burgundy', 'grey'],
-  ['burgundy', 'charcoal'],
-  ['sage', 'white'],
-  ['sage', 'beige'],
-  ['sage', 'cream'],
-  ['terracotta', 'cream'],
-  ['terracotta', 'navy'],
-  ['terracotta', 'white'],
-];
-
-interface ScoredCandidate {
-  pieces: {
-    top?: WardrobeItem;
-    bottom?: WardrobeItem;
-    dress?: WardrobeItem;
-    footwear: WardrobeItem;
-    outerwear?: WardrobeItem;
-    accessory?: WardrobeItem;
-  };
+export interface ScoredCandidate {
+  candidateId: string;
+  pieces: CandidatePieces;
   totalScore: number;
   breakdown: OutfitScoreBreakdown;
   matchLabel: 'Strong match' | 'Good match' | 'Limited wardrobe match' | 'Profile incomplete';
@@ -106,8 +44,9 @@ interface ScoredCandidate {
 
 /**
  * Stage 1: Hard Filters
+ * Filters out items that are strictly incompatible before candidate combination
  */
-function applyHardFilters(
+export function applyHardFilters(
   items: WardrobeItem[],
   request: AIStylistRequest,
   userProfile?: PersonalStyleProfile
@@ -117,21 +56,25 @@ function applyHardFilters(
     temperatureCelsius,
     weatherDescription = '',
     occasion = 'Dinner',
+    dressCode = 'Smart Casual',
   } = request;
 
   const occasionLower = occasion.toLowerCase();
-  const isFormalEvent = ['formal', 'wedding', 'interview', 'presentation', 'black tie'].some(o => occasionLower.includes(o));
+  const dressCodeLower = dressCode.toLowerCase();
+  const isFormalEvent = ['formal', 'wedding', 'interview', 'presentation', 'black tie'].some(
+    o => occasionLower.includes(o) || dressCodeLower.includes(o)
+  );
   const isRain = /rain|shower|drizzle/i.test(weatherDescription);
 
   return items.filter(item => {
-    // 1. User exclusions
+    // 1. User explicit exclusions
     if (excludeItemIds.includes(item.id)) return false;
 
     // 2. Disliked colors filter
     if (userProfile?.dislikedColors && userProfile.dislikedColors.length > 0) {
-      const itemColor = (item.color || '').toLowerCase();
+      const itemColor = (item.color || '').toLowerCase().trim();
       const isDisliked = userProfile.dislikedColors.some(
-        dc => dc.toLowerCase() === itemColor
+        dc => dc.toLowerCase().trim() === itemColor || itemColor.includes(dc.toLowerCase().trim())
       );
       if (isDisliked) return false;
     }
@@ -150,8 +93,8 @@ function applyHardFilters(
         if (isHeavyOuterwear || isHeavySweater) return false;
       }
 
-      // Very cold (< 12°C): eliminate shorts, tank tops, sandals
-      if (temperatureCelsius < 12) {
+      // Cold (< 13°C): eliminate shorts, tank tops, sandals, slides
+      if (temperatureCelsius < 13) {
         if (/short|tank top|sleeveless|swim/i.test(item.name + ' ' + (item.type || ''))) return false;
         if (item.category === 'Footwear' && /sandal|flip flop|slide/i.test(item.name + ' ' + (item.type || ''))) return false;
       }
@@ -159,11 +102,11 @@ function applyHardFilters(
 
     // 4. Occasion formality hard limits
     if (isFormalEvent) {
-      // Exclude gym clothes, distressed casual shorts, flip-flops
+      // Exclude gym clothes, distressed casual shorts, flip-flops, graphic tees
       if (/sweatpants|jogger|gym|athletic|distressed|graphic tee|tank top/i.test(item.name + ' ' + (item.tags || []).join(' '))) {
         return false;
       }
-      if (item.category === 'Footwear' && /running|sneaker|trainer|slide|sandal/i.test(item.name + ' ' + (item.type || ''))) {
+      if (item.category === 'Footwear' && /running|sneaker|trainer|slide|sandal|flip flop/i.test(item.name + ' ' + (item.type || ''))) {
         return false;
       }
     }
@@ -181,8 +124,9 @@ function applyHardFilters(
 
 /**
  * Stage 2: Combinatorial Candidate Generator & Compatibility Engine
+ * Generates 10-30+ candidate outfits and scores them deterministically
  */
-function generateScoredCandidates(
+export function generateScoredCandidates(
   filteredItems: WardrobeItem[],
   request: AIStylistRequest,
   userProfile?: PersonalStyleProfile,
@@ -204,169 +148,163 @@ function generateScoredCandidates(
     colorPreference,
   } = request;
 
+  const targetOccasion = OCCASION_FORMALITY_REQUIREMENTS[occasion] || { min: 2, max: 3, target: 2 };
   const candidates: ScoredCandidate[] = [];
 
-  // Helper to test color harmony
-  function evaluateColorHarmony(itemColors: string[]): number {
-    const cleanColors = itemColors.map(c => (c || '').toLowerCase().trim()).filter(Boolean);
-    if (cleanColors.length === 0) return 15;
-
-    let harmonyScore = 18;
-
-    // Monochromatic / single tone check
-    const unique = new Set(cleanColors);
-    if (unique.size === 1) {
-      harmonyScore += 4; // Clean tonal look
-    }
-
-    // Pairwise harmony check
-    let knownPairMatches = 0;
-    for (let i = 0; i < cleanColors.length; i++) {
-      for (let j = i + 1; j < cleanColors.length; j++) {
-        const c1 = cleanColors[i];
-        const c2 = cleanColors[j];
-        if (c1 === c2) {
-          knownPairMatches++;
-          continue;
-        }
-        const hasHarmonious = HARMONIOUS_COLOR_PAIRS.some(
-          ([p1, p2]) => (c1.includes(p1) && c2.includes(p2)) || (c1.includes(p2) && c2.includes(p1))
-        );
-        if (hasHarmonious) knownPairMatches++;
-      }
-    }
-
-    if (knownPairMatches > 0) harmonyScore += Math.min(5, knownPairMatches * 2);
-
-    // Profile preferred colors bonus
-    if (userProfile?.preferredColors && userProfile.preferredColors.length > 0) {
-      const prefMatches = cleanColors.filter(c =>
-        userProfile.preferredColors.some(pc => c.includes(pc.toLowerCase()))
-      ).length;
-      if (prefMatches > 0) harmonyScore += 2;
-    }
-
-    // Request color preference match
-    if (colorPreference && cleanColors.some(c => c.includes(colorPreference.toLowerCase()))) {
-      harmonyScore += 2;
-    }
-
-    // Profile contrast calibration
-    if (userProfile?.visualAnalysis?.contrastLevel === 'High' && cleanColors.length >= 2) {
-      const hasDark = cleanColors.some(c => /black|navy|charcoal|dark/i.test(c));
-      const hasLight = cleanColors.some(c => /white|cream|ivory|light|beige/i.test(c));
-      if (hasDark && hasLight) harmonyScore += 2;
-    }
-
-    return Math.min(25, Math.max(5, harmonyScore));
-  }
-
-  // Helper to evaluate formality & silhouette balance
-  function evaluateFormalityAndSilhouette(
-    comboItems: WardrobeItem[]
-  ): number {
-    let score = 20;
-    const targetOccasion = OCCASION_FORMALITY_MAP[occasion] || { min: 2, max: 3, target: 2 };
-    
-    // Check item formality variance
-    const itemFormalities = comboItems.map(i => FORMALITY_SCORES[i.formality || 'Smart Casual'] || 2);
-    const minFormality = Math.min(...itemFormalities);
-    const maxFormality = Math.max(...itemFormalities);
+  // Helper to score a candidate combination deterministically
+  function scoreCombination(comboItems: WardrobeItem[], pieces: CandidatePieces): ScoredCandidate | null {
+    // 1. Hard Filter: Formality coherence check
+    const formalities = comboItems.map(i => normalizeFormality(i));
+    const minFormality = Math.min(...formalities);
+    const maxFormality = Math.max(...formalities);
     const spread = maxFormality - minFormality;
 
-    if (spread <= 1) {
-      score += 3; // Coherent formality across pieces
-    } else if (spread >= 3) {
-      score -= 8; // Clashing formality (e.g. tuxedo piece with gym shorts)
+    // Reject extreme clash (e.g. Black Tie piece with gym casual piece)
+    if (spread >= 3) return null;
+
+    // Reject combination if completely outside occasion formality bounds
+    const avgFormality = formalities.reduce((a, b) => a + b, 0) / formalities.length;
+    if (avgFormality < targetOccasion.min - 0.7 || avgFormality > targetOccasion.max + 0.7) {
+      return null;
     }
 
-    // Check fit preferences
+    // 2. Pattern compatibility check & clash rejection
+    const patterns = comboItems.map(i => i.pattern || 'Solid');
+    const patternEval = evaluatePatternCompatibility(patterns);
+    if (patternEval.isClash) return null; // Reject clashing patterns
+
+    // 3. Color compatibility check & clash rejection
+    const colors = comboItems.map(i => i.color || 'Neutral');
+    const colorEval = evaluateColorCompatibility(colors);
+    if (colorEval.isClash) return null; // Reject clashing color families
+
+    // 4. Thermal compatibility check
+    const thermalEval = evaluateThermalSuitability(comboItems, temperatureCelsius);
+    if (!thermalEval.isCompatible) return null; // Reject thermal mismatch
+
+    // ==========================================
+    // DETERMINISTIC WEIGHTED SCORING ENGINE
+    // Color harmony (20%)
+    // Formality coherence (15%)
+    // Occasion suitability (15%)
+    // Weather suitability (10%)
+    // Pattern compatibility (10%)
+    // Silhouette & fit (10%)
+    // Style preference (10%)
+    // Footwear compatibility (5%)
+    // Novelty / wear balance (5%)
+    // ==========================================
+
+    // Color harmony (0 - 20)
+    let colorPoints = (colorEval.score / 100) * 20;
+    if (userProfile?.preferredColors && userProfile.preferredColors.length > 0) {
+      const matchesPref = colors.some(c =>
+        userProfile.preferredColors.some(pc => c.toLowerCase().includes(pc.toLowerCase()))
+      );
+      if (matchesPref) colorPoints = Math.min(20, colorPoints + 2);
+    }
+    if (colorPreference && colors.some(c => c.toLowerCase().includes(colorPreference.toLowerCase()))) {
+      colorPoints = Math.min(20, colorPoints + 2);
+    }
+
+    // Formality coherence (0 - 15)
+    let formalityPoints = spread <= 1 ? 15 : 10;
+
+    // Occasion suitability (0 - 15)
+    const formalityDist = Math.abs(avgFormality - targetOccasion.target);
+    let occasionPoints = Math.max(5, 15 - formalityDist * 5);
+
+    // Weather suitability (0 - 10)
+    let weatherPoints = (thermalEval.score / 100) * 10;
+
+    // Pattern compatibility (0 - 10)
+    let patternPoints = (patternEval.score / 100) * 10;
+
+    // Silhouette & fit (0 - 10)
+    let fitPoints = 7;
     if (userProfile?.preferredFit) {
-      const matchesPrefFit = comboItems.filter(i => i.fit === userProfile.preferredFit).length;
-      if (matchesPrefFit > 0) score += 2;
+      const fitMatches = comboItems.filter(i => i.fit === userProfile.preferredFit).length;
+      if (fitMatches > 0) fitPoints = 10;
     }
 
-    return Math.min(25, Math.max(5, score));
-  }
-
-  // Helper for occasion suitability
-  function evaluateOccasionSuitability(comboItems: WardrobeItem[]): number {
-    const target = OCCASION_FORMALITY_MAP[occasion] || { min: 2, max: 3, target: 2 };
-    const avgFormality =
-      comboItems.reduce((acc, i) => acc + (FORMALITY_SCORES[i.formality || 'Smart Casual'] || 2), 0) /
-      comboItems.length;
-
-    let score = 22;
-    const dist = Math.abs(avgFormality - target.target);
-    score -= dist * 4;
-
-    // Check style tag matches
-    const hasStyleTag = comboItems.some(i =>
+    // Style preference (0 - 10)
+    let stylePoints = 6;
+    const matchesStyle = comboItems.some(i =>
       (i.style || '').toLowerCase().includes(stylePreference.toLowerCase()) ||
       (i.occasion || []).some(o => o.toLowerCase().includes(occasion.toLowerCase()))
     );
-    if (hasStyleTag) score += 3;
+    if (matchesStyle) stylePoints = 10;
 
-    return Math.min(25, Math.max(5, score));
-  }
-
-  // Helper for weather suitability
-  function evaluateWeather(
-    comboItems: WardrobeItem[],
-    hasOuterwear: boolean
-  ): { score: number; warning?: string } {
-    if (temperatureCelsius === undefined) {
-      return { score: 12 };
+    // Footwear compatibility (0 - 5)
+    let footwearPoints = 4;
+    const footwearFormality = normalizeFormality(pieces.footwear);
+    if (Math.abs(footwearFormality - avgFormality) <= 1) {
+      footwearPoints = 5;
     }
 
-    let score = 12;
-    let warning: string | undefined;
-
-    if (temperatureCelsius < 14) {
-      if (hasOuterwear) {
-        score += 3;
-      } else {
-        score -= 4;
-        warning = 'Weather is cool. A warm jacket or tailored coat is recommended but not available in current selection.';
-      }
-    } else if (temperatureCelsius > 24) {
-      if (hasOuterwear) {
-        score -= 3; // Unnecessary heavy layer
-      } else {
-        score += 3;
-      }
-    } else {
-      score += 3; // Temperate weather
-    }
-
-    return { score: Math.min(15, Math.max(4, score)), warning };
-  }
-
-  // Helper for novelty & wear history
-  function evaluateNovelty(comboItems: WardrobeItem[]): number {
-    let novelty = 8;
+    // Novelty / wear history balance (0 - 5)
+    let noveltyPoints = 5;
     const itemIds = new Set(comboItems.map(i => i.id));
-    
-    // Check times worn
-    const highWearItems = comboItems.filter(i => (i.timesWorn || 0) > 6).length;
-    novelty -= highWearItems * 1.5;
-
-    // Check recent wear history
-    const recentWorn = wearHistory.slice(0, 5).some(entry =>
+    const heavyWearCount = comboItems.filter(i => (i.timesWorn || 0) > 8).length;
+    noveltyPoints -= heavyWearCount * 1;
+    const recentlyWorn = wearHistory.slice(0, 4).some(entry =>
       (entry.itemIds || []).some((id: string) => itemIds.has(id))
     );
-    if (recentWorn) novelty -= 2;
+    if (recentlyWorn) noveltyPoints -= 1.5;
+    noveltyPoints = Math.max(1, noveltyPoints);
 
-    return Math.min(10, Math.max(2, novelty));
+    // TOTAL CALCULATED SCORE (0 - 100)
+    const totalScore = Math.round(
+      colorPoints +
+      formalityPoints +
+      occasionPoints +
+      weatherPoints +
+      patternPoints +
+      fitPoints +
+      stylePoints +
+      footwearPoints +
+      noveltyPoints
+    );
+
+    // Breakdown percentages (0 - 100)
+    const breakdown: OutfitScoreBreakdown = {
+      colorHarmony: Math.round((colorPoints / 20) * 100),
+      occasionFit: Math.round((occasionPoints / 15) * 100),
+      weatherMatch: Math.round((weatherPoints / 10) * 100),
+      coherence: Math.round((formalityPoints / 15) * 100),
+    };
+
+    let matchLabel: ScoredCandidate['matchLabel'] = 'Limited wardrobe match';
+    if (!userProfile || !userProfile.isCompleted) {
+      matchLabel = 'Profile incomplete';
+    } else if (totalScore >= 80) {
+      matchLabel = 'Strong match';
+    } else if (totalScore >= 65) {
+      matchLabel = 'Good match';
+    }
+
+    let missingLayerWarning: string | undefined;
+    if (temperatureCelsius !== undefined && temperatureCelsius < 14 && !pieces.outerwear) {
+      missingLayerWarning = `Ambient temperature is ${temperatureCelsius}°C. Consider layering a tailored coat or jacket.`;
+    }
+
+    return {
+      candidateId: `cand_${candidates.length + 1}`,
+      pieces,
+      totalScore,
+      breakdown,
+      matchLabel,
+      missingLayerWarning,
+    };
   }
 
-  // Generate top+bottom combinations
-  const topPool = tops.slice(0, 10);
-  const bottomPool = bottoms.slice(0, 8);
-  const footPool = footwears.slice(0, 6);
-  const outerPool = outerwears.slice(0, 4);
+  // Top + Bottom combinations
+  const topPool = tops.slice(0, 12);
+  const bottomPool = bottoms.slice(0, 10);
+  const footPool = footwears.slice(0, 8);
+  const outerPool = outerwears.slice(0, 6);
+  const accPool = accessories.slice(0, 4);
 
-  // Outerwear decision based on temperature & occasion
   const needsOuterwear = temperatureCelsius !== undefined ? temperatureCelsius < 18 : outerPool.length > 0;
 
   for (const top of topPool) {
@@ -374,132 +312,77 @@ function generateScoredCandidates(
       for (const footwear of footPool) {
         const baseItems = [top, bottom, footwear];
 
-        // Check must-includes
+        // Must-include check
         if (mustIncludeItemIds.length > 0) {
           const comboIds = baseItems.map(i => i.id);
-          const containsMustInclude = mustIncludeItemIds.every(id =>
+          const hasAllMust = mustIncludeItemIds.every(id =>
             comboIds.includes(id) || outerPool.some(o => o.id === id)
           );
-          if (!containsMustInclude) continue;
+          if (!hasAllMust) continue;
         }
 
-        // Test with and without outerwear
         const outerOptions = needsOuterwear && outerPool.length > 0 ? outerPool : [undefined];
 
         for (const outerwear of outerOptions) {
           const comboItems = outerwear ? [...baseItems, outerwear] : baseItems;
-
-          const colorScore = evaluateColorHarmony(comboItems.map(i => i.color));
-          const formalityScore = evaluateFormalityAndSilhouette(comboItems);
-          const occasionScore = evaluateOccasionSuitability(comboItems);
-          const weatherEval = evaluateWeather(comboItems, !!outerwear);
-          const noveltyScore = evaluateNovelty(comboItems);
-
-          const total = Math.round(
-            colorScore + formalityScore + occasionScore + weatherEval.score + noveltyScore
-          );
-
-          // Real, honest breakdown percentages (0-100)
-          const breakdown: OutfitScoreBreakdown = {
-            colorHarmony: Math.round((colorScore / 25) * 100),
-            occasionFit: Math.round((occasionScore / 25) * 100),
-            weatherMatch: Math.round((weatherEval.score / 15) * 100),
-            coherence: Math.round((formalityScore / 25) * 100),
-          };
-
-          let matchLabel: ScoredCandidate['matchLabel'] = 'Limited wardrobe match';
-          if (!userProfile || !userProfile.isCompleted) {
-            matchLabel = 'Profile incomplete';
-          } else if (total >= 80) {
-            matchLabel = 'Strong match';
-          } else if (total >= 65) {
-            matchLabel = 'Good match';
-          }
-
-          candidates.push({
-            pieces: {
-              top,
-              bottom,
-              footwear,
-              outerwear,
-              accessory: accessories[0],
-            },
-            totalScore: total,
-            breakdown,
-            matchLabel,
-            missingLayerWarning: weatherEval.warning,
+          const candidate = scoreCombination(comboItems, {
+            top,
+            bottom,
+            footwear,
+            outerwear,
+            accessory: accPool[0],
           });
+          if (candidate) {
+            candidates.push(candidate);
+          }
         }
       }
     }
   }
 
-  // Generate dress combinations if available
+  // Dress combinations
   if (dresses.length > 0) {
-    for (const dress of dresses.slice(0, 6)) {
+    for (const dress of dresses.slice(0, 8)) {
       for (const footwear of footPool) {
         const baseItems = [dress, footwear];
         const outerOptions = outerPool.length > 0 ? outerPool : [undefined];
 
         for (const outerwear of outerOptions) {
           const comboItems = outerwear ? [...baseItems, outerwear] : baseItems;
-          const colorScore = evaluateColorHarmony(comboItems.map(i => i.color));
-          const formalityScore = evaluateFormalityAndSilhouette(comboItems);
-          const occasionScore = evaluateOccasionSuitability(comboItems);
-          const weatherEval = evaluateWeather(comboItems, !!outerwear);
-          const noveltyScore = evaluateNovelty(comboItems);
-
-          const total = Math.round(
-            colorScore + formalityScore + occasionScore + weatherEval.score + noveltyScore
-          );
-
-          const breakdown: OutfitScoreBreakdown = {
-            colorHarmony: Math.round((colorScore / 25) * 100),
-            occasionFit: Math.round((occasionScore / 25) * 100),
-            weatherMatch: Math.round((weatherEval.score / 15) * 100),
-            coherence: Math.round((formalityScore / 25) * 100),
-          };
-
-          let matchLabel: ScoredCandidate['matchLabel'] = 'Limited wardrobe match';
-          if (!userProfile || !userProfile.isCompleted) {
-            matchLabel = 'Profile incomplete';
-          } else if (total >= 80) {
-            matchLabel = 'Strong match';
-          } else if (total >= 65) {
-            matchLabel = 'Good match';
-          }
-
-          candidates.push({
-            pieces: {
-              dress,
-              footwear,
-              outerwear,
-              accessory: accessories[0],
-            },
-            totalScore: total,
-            breakdown,
-            matchLabel,
-            missingLayerWarning: weatherEval.warning,
+          const candidate = scoreCombination(comboItems, {
+            dress,
+            footwear,
+            outerwear,
+            accessory: accPool[0],
           });
+          if (candidate) {
+            candidates.push(candidate);
+          }
         }
       }
     }
   }
 
-  // Sort by highest score first
+  // Sort candidates by total calculated score descending
   candidates.sort((a, b) => b.totalScore - a.totalScore);
-  return candidates;
+
+  // Return top 10-30 candidate combinations
+  return candidates.slice(0, 25);
 }
 
 /**
- * Stage 5: AI Reasoning over verified candidate pieces using Gemini 3.8 Flash
+ * Stage 3: Gemini Reasoning & Ranking
+ * Gemini receives top candidates, ranks them, selects the best candidate, and provides styling reasoning
  */
-async function generateAIReasoning(
-  candidate: ScoredCandidate,
+export async function rankAndReasonWithGemini(
+  candidates: ScoredCandidate[],
   request: AIStylistRequest,
+  userWardrobe: WardrobeItem[],
   userProfile?: PersonalStyleProfile,
   userName: string = 'Client'
 ): Promise<{
+  selectedCandidateId: string;
+  rankedCandidateIds: string[];
   outfitName: string;
   whyThisWorks: string;
   colorHarmonyReasoning: string;
@@ -507,81 +390,134 @@ async function generateAIReasoning(
   occasionFitReasoning: string;
   profileMatchReasoning: string;
   stylingTips: string[];
-  suggestedAccessories: string[];
-  missingWardrobeItem?: string;
+  optionalAccessoryItemIds: string[];
+  warnings: string[];
+  gapAnalysis?: string;
+  lookEditorial?: {
+    safeAndRefined?: { title?: string; whyItWorks?: string; gapAnalysis?: string; stylingTips?: string[] };
+    modern?: { title?: string; whyItWorks?: string; gapAnalysis?: string; stylingTips?: string[] };
+    statement?: { title?: string; whyItWorks?: string; gapAnalysis?: string; stylingTips?: string[] };
+  };
 }> {
+  const topCandidates = candidates.slice(0, 5);
+  const primaryFallback = candidates[0];
+
+  // Map accessories that actually exist in user's wardrobe
+  const availableAccessories = userWardrobe.filter(i => i.category === 'Accessories' || i.category === 'Jewelry');
+
+  const defaultDeterministicResult = {
+    selectedCandidateId: primaryFallback.candidateId,
+    rankedCandidateIds: topCandidates.map(c => c.candidateId),
+    outfitName: `${primaryFallback.pieces.top?.color || primaryFallback.pieces.dress?.color || 'Curated'} ${request.occasion || 'Dinner'} Ensemble`,
+    whyThisWorks: `The ${primaryFallback.pieces.top?.name || primaryFallback.pieces.dress?.name} pairs with the ${primaryFallback.pieces.bottom?.name || 'ensemble'}, grounded by ${primaryFallback.pieces.footwear.name} for balanced proportion following the 60-30-10 color rule.`,
+    colorHarmonyReasoning: `Tonal balance between ${primaryFallback.pieces.top?.color || 'top'} (dominant 60%) and ${primaryFallback.pieces.bottom?.color || 'bottom'} (secondary 30%) with footwear accents (10%) provides visual grounding.`,
+    weatherFitReasoning: request.temperatureCelsius !== undefined
+      ? `Calibrated for ${request.temperatureCelsius}°C conditions with comfortable thermal drape.`
+      : 'Breathable fabric drape suitable for all-day comfort.',
+    occasionFitReasoning: `Aligns with the formality of ${request.occasion || 'Dinner'} under a ${request.dressCode || 'Smart Casual'} dress code.`,
+    profileMatchReasoning: userProfile?.visualAnalysis
+      ? `Silhouette and neckline harmonize with ${userProfile.visualAnalysis.faceShape} framing and ${userProfile.visualAnalysis.skinTone} undertone.`
+      : 'Clean lines provide versatile personal framing.',
+    stylingTips: [
+      'Tuck or half-tuck the top cleanly to define waistline proportions.',
+      'Coordinate leather and hardware finishes across your belt and footwear.',
+    ],
+    optionalAccessoryItemIds: availableAccessories.slice(0, 2).map(a => a.id),
+    warnings: primaryFallback.missingLayerWarning ? [primaryFallback.missingLayerWarning] : [],
+    gapAnalysis: primaryFallback.missingLayerWarning || (request.temperatureCelsius !== undefined && request.temperatureCelsius < 15 ? 'Consider layering a fine-knit merino sweater or structured overcoat for thermal comfort.' : undefined),
+  };
+
   const ai = getAIClient();
-  const { occasion = 'Dinner', dressCode = 'Smart Casual', weatherDescription, temperatureCelsius, location } = request;
-
-  const piecesList = Object.entries(candidate.pieces)
-    .filter(([_, item]) => Boolean(item))
-    .map(([slot, item]) => `${slot}: "${item!.name}" (${item!.color} ${item!.material || ''} ${item!.type || item!.category})`)
-    .join('\n');
-
-  if (!ai) {
-    // Deterministic factual fallback if no API key
-    const topOrDress = candidate.pieces.top?.name || candidate.pieces.dress?.name || 'garment';
-    const bottom = candidate.pieces.bottom?.name || 'trousers';
-    const foot = candidate.pieces.footwear.name;
-    const topColor = candidate.pieces.top?.color || candidate.pieces.dress?.color || 'Neutral';
-    const bottomColor = candidate.pieces.bottom?.color || 'Dark';
-
-    return {
-      outfitName: `${topColor} & ${bottomColor} ${occasion} Ensemble`,
-      whyThisWorks: `The ${topOrDress} coordinates cleanly with the ${bottom}, grounded by ${foot} to balance proportion and formality.`,
-      colorHarmonyReasoning: `The ${topColor} upper creates a controlled tonal dialogue with the ${bottomColor} base without competing color elements.`,
-      weatherFitReasoning: weatherDescription
-        ? `Calibrated for ${weatherDescription}: fabric weights and layering accommodate ambient conditions comfortably.`
-        : 'Fabric drape and breathable structure provide adaptable all-day comfort.',
-      occasionFitReasoning: `The balanced silhouette aligns precisely with the expectations of a ${occasion} setting under a ${dressCode} dress code.`,
-      profileMatchReasoning: userProfile?.visualAnalysis
-        ? `Tonal palette and collar lines complement ${userProfile.visualAnalysis.skinTone} undertones and ${userProfile.visualAnalysis.contrastLevel} contrast.`
-        : 'Proportions and neutral tones provide versatile personal framing.',
-      stylingTips: [
-        'Tuck or half-tuck the top cleanly to define the natural waistline.',
-        'Coordinate leather and hardware finishes across your belt and footwear.',
-      ],
-      suggestedAccessories: [
-        candidate.pieces.accessory?.name || 'Minimalist leather belt',
-        'Tailored timepiece',
-      ],
-      missingWardrobeItem: candidate.missingLayerWarning,
-    };
+  if (!ai || topCandidates.length === 0) {
+    return defaultDeterministicResult;
   }
 
-  const prompt = `You are a discerning, highly skilled personal wardrobe stylist for ${userName}.
-You are reasoning about an actual candidate outfit composed strictly from their verified wardrobe items.
+  // Format candidate data for Gemini
+  const candidatesPayload = topCandidates.map(cand => {
+    const piecesDesc: Record<string, string> = {};
+    if (cand.pieces.top) piecesDesc.top = `"${cand.pieces.top.name}" (Color: ${cand.pieces.top.color}, Type: ${cand.pieces.top.type || cand.pieces.top.category}, Material: ${cand.pieces.top.material || 'standard'})`;
+    if (cand.pieces.dress) piecesDesc.dress = `"${cand.pieces.dress.name}" (Color: ${cand.pieces.dress.color}, Type: ${cand.pieces.dress.type || 'Dress'}, Material: ${cand.pieces.dress.material || 'standard'})`;
+    if (cand.pieces.bottom) piecesDesc.bottom = `"${cand.pieces.bottom.name}" (Color: ${cand.pieces.bottom.color}, Type: ${cand.pieces.bottom.type || 'Trousers'}, Material: ${cand.pieces.bottom.material || 'standard'})`;
+    if (cand.pieces.outerwear) piecesDesc.outerwear = `"${cand.pieces.outerwear.name}" (Color: ${cand.pieces.outerwear.color}, Type: ${cand.pieces.outerwear.type || 'Outerwear'})`;
+    piecesDesc.footwear = `"${cand.pieces.footwear.name}" (Color: ${cand.pieces.footwear.color}, Type: ${cand.pieces.footwear.type || 'Footwear'})`;
 
-VERIFIED PIECES:
-${piecesList}
+    return {
+      candidateId: cand.candidateId,
+      calculatedScore: cand.totalScore,
+      pieces: piecesDesc,
+      breakdown: cand.breakdown,
+    };
+  });
 
-CONTEXT:
-- Occasion: ${occasion}
-- Dress Code: ${dressCode}
-- Location: ${location || 'Venue'}
-- Weather: ${weatherDescription || 'Not specified'} (${temperatureCelsius !== undefined ? `${temperatureCelsius}°C` : 'temperature not provided'})
-- USER PROFILE: ${userProfile?.gender ? `Gender: ${userProfile.gender}, ` : ''}${userProfile?.visualAnalysis ? `Face Shape: ${userProfile.visualAnalysis.faceShape}, Undertone: ${userProfile.visualAnalysis.skinTone}, Contrast Level: ${userProfile.visualAnalysis.contrastLevel}, Preferred Fit: ${userProfile.preferredFit}` : 'Not provided'}
-${candidate.missingLayerWarning ? `- WARDROBE LIMITATION: ${candidate.missingLayerWarning}` : ''}
+  const availableAccessoriesPayload = availableAccessories.map(a => ({
+    itemId: a.id,
+    name: a.name,
+    color: a.color,
+    type: a.type || 'Accessory',
+  }));
 
-DIRECTIVES:
-- Provide specific, analytical reasoning referencing the ACTUAL selected items and their colors/materials.
-- Avoid generic filler phrases like "These colors create a sophisticated aesthetic" or "exudes quiet luxury".
-- Explain the visual contrast (e.g. "The navy shirt provides the darker anchor, while the lighter trousers create controlled contrast. The brown footwear stays within the warm accent family without introducing another competing color.").
-- Mention thermal comfort honestly based on the temperature.
-- Highlight how the look flatters their specific undertone or contrast level if profile is present.
-- If a wardrobe gap was detected (e.g. cold weather with no outerwear), state it constructively.
+  const prompt = `You are an elite editorial fashion stylist and personal image consultant for client ${userName}.
+You will evaluate and curate 3 distinct look options pre-assembled from their verified wardrobe inventory:
+- LOOK 1: 'SAFE & REFINED' (Classic, balanced, low risk)
+- LOOK 2: 'MODERN' (Current trends, elevated proportions)
+- LOOK 3: 'STATEMENT' (Bold color pop, high fashion contrast)
 
-Return JSON matching this schema:
+Styling Principles to Enforce:
+1. The 60-30-10 Color Rule: 60% dominant base garment, 30% secondary neutral/tone, 10% accent or pop.
+2. Thermal Comfort: Ground every evaluation in temperature (${request.temperatureCelsius !== undefined ? `${request.temperatureCelsius}°C` : 'mild'}) and weather conditions (${request.weatherDescription || 'fair'}).
+3. Visual Balance & Proportions: Detail fabric drape, contrast levels, and silhouette coordination without generic clichés.
+4. Gap Analysis: Explicitly identify if an essential piece (e.g. trench coat, leather belt, merino layer) would elevate or complete the look.
+
+CANDIDATES TO EVALUATE:
+${JSON.stringify(candidatesPayload, null, 2)}
+
+AVAILABLE ACCESSORIES IN USER WARDROBE:
+${JSON.stringify(availableAccessoriesPayload, null, 2)}
+
+CLIENT CONTEXT & ENVIRONMENT:
+- Occasion: ${request.occasion || 'Dinner'}
+- Dress Code: ${request.dressCode || 'Smart Casual'}
+- Location: ${request.location || 'Venue'}
+- Weather: ${request.weatherDescription || 'Not specified'} (${request.temperatureCelsius !== undefined ? `${request.temperatureCelsius}°C` : 'temperature not provided'})
+- USER PROFILE: ${userProfile?.gender ? `Gender: ${userProfile.gender}, ` : ''}${userProfile?.visualAnalysis ? `Face Shape: ${userProfile.visualAnalysis.faceShape}, Skin Tone: ${userProfile.visualAnalysis.skinTone}, Contrast Level: ${userProfile.visualAnalysis.contrastLevel}, Preferred Fit: ${userProfile.preferredFit}` : 'Not provided'}
+
+TASK:
+1. Select the winning primary recommendation by candidateId.
+2. Provide precise editorial justifications for the winning look and the 3 stylistic directions.
+3. Reference ACTUAL garment titles, specific colors, and materials.
+4. Select optional accessory itemIds ONLY from the provided AVAILABLE ACCESSORIES list. NEVER invent items.
+
+Return valid JSON:
 {
-  "outfitName": "Concise descriptive title (e.g. 'Navy Oxford & Olive Chinos Ensemble')",
-  "whyThisWorks": "Clear 2-sentence explanation of why these specific pieces work together in silhouette, texture, and balance",
-  "colorHarmonyReasoning": "Specific explanation of how the colors interact and balance each other",
-  "weatherFitReasoning": "Specific explanation of thermal comfort and climate suitability",
-  "occasionFitReasoning": "Why the formality matches the requested occasion and dress code",
-  "profileMatchReasoning": "How the look honors their undertone, contrast level, or collar preferences",
-  "stylingTips": ["Practical tip 1 (e.g. cuffing/tucking)", "Practical tip 2 (e.g. hardware/belt coordination)"],
-  "suggestedAccessories": ["Accessory suggestion 1", "Accessory suggestion 2"],
-  "missingWardrobeItem": "${candidate.missingLayerWarning || ''}"
+  "selectedCandidateId": "${topCandidates[0].candidateId}",
+  "rankedCandidateIds": ["${topCandidates.map(c => c.candidateId).join('", "')}"],
+  "outfitName": "Concise editorial title referencing pieces",
+  "whyThisWorks": "2-3 precise sentences detailing visual balance, 60-30-10 color rule distribution, and texture contrast",
+  "colorHarmonyReasoning": "Specific breakdown of how dominant (60%), secondary (30%), and accent (10%) colors interact",
+  "weatherFitReasoning": "Thermal comfort assessment relative to current temperature and weather conditions",
+  "occasionFitReasoning": "Why formality and silhouette suit the requested event and dress code",
+  "profileMatchReasoning": "How the look complements personal undertone, contrast level, and proportions",
+  "stylingTips": ["Practical styling tip 1", "Practical styling tip 2"],
+  "gapAnalysis": "Identifies an essential piece or layer that would complete or elevate this look, or null if fully cohesive",
+  "lookEditorial": {
+    "safeAndRefined": {
+      "title": "Editorial title for classic balanced look",
+      "whyItWorks": "Visual balance and 60-30-10 distribution for Safe & Refined",
+      "gapAnalysis": "Missing foundational or layering staple, if any"
+    },
+    "modern": {
+      "title": "Editorial title for modern trend look",
+      "whyItWorks": "Elevated proportions, texture mix, and 60-30-10 distribution for Modern",
+      "gapAnalysis": "Missing contemporary accent piece, if any"
+    },
+    "statement": {
+      "title": "Editorial title for bold statement look",
+      "whyItWorks": "High fashion color contrast and 60-30-10 distribution for Statement",
+      "gapAnalysis": "Missing directional accessory or piece, if any"
+    }
+  },
+  "optionalAccessoryItemIds": ["valid_accessory_item_id_if_applicable"],
+  "warnings": []
 }`;
 
   try {
@@ -594,31 +530,118 @@ Return JSON matching this schema:
     });
 
     const parsed = JSON.parse(response.text || '{}');
+    const validCandidateIds = new Set(topCandidates.map(c => c.candidateId));
+
+    // Validate that selectedCandidateId is one of our verified candidates
+    const selectedId = validCandidateIds.has(parsed.selectedCandidateId)
+      ? parsed.selectedCandidateId
+      : topCandidates[0].candidateId;
+
+    // Validate optional accessory IDs against actual available accessories
+    const validAccessoryIds = new Set(availableAccessories.map(a => a.id));
+    const validatedAccessories = (Array.isArray(parsed.optionalAccessoryItemIds) ? parsed.optionalAccessoryItemIds : [])
+      .filter((id: string) => validAccessoryIds.has(id));
+
     return {
-      outfitName: parsed.outfitName || `${occasion} Ensemble`,
-      whyThisWorks: parsed.whyThisWorks || 'Clean proportional balance across all pieces.',
-      colorHarmonyReasoning: parsed.colorHarmonyReasoning || 'Tonal harmony between top and bottom anchors the look.',
-      weatherFitReasoning: parsed.weatherFitReasoning || (weatherDescription ? `Appropriate for ${weatherDescription}.` : 'Comfortable year-round layering.'),
-      occasionFitReasoning: parsed.occasionFitReasoning || `Tailored specifically for ${occasion}.`,
-      profileMatchReasoning: parsed.profileMatchReasoning || 'Colors and cuts align with personal features.',
-      stylingTips: Array.isArray(parsed.stylingTips) ? parsed.stylingTips : ['Ensure clean hems and balanced proportions.'],
-      suggestedAccessories: Array.isArray(parsed.suggestedAccessories) ? parsed.suggestedAccessories : ['Classic leather belt', 'Minimal timepiece'],
-      missingWardrobeItem: candidate.missingLayerWarning || parsed.missingWardrobeItem || undefined,
+      selectedCandidateId: selectedId,
+      rankedCandidateIds: Array.isArray(parsed.rankedCandidateIds) ? parsed.rankedCandidateIds : topCandidates.map(c => c.candidateId),
+      outfitName: parsed.outfitName || defaultDeterministicResult.outfitName,
+      whyThisWorks: parsed.whyThisWorks || defaultDeterministicResult.whyThisWorks,
+      colorHarmonyReasoning: parsed.colorHarmonyReasoning || defaultDeterministicResult.colorHarmonyReasoning,
+      weatherFitReasoning: parsed.weatherFitReasoning || defaultDeterministicResult.weatherFitReasoning,
+      occasionFitReasoning: parsed.occasionFitReasoning || defaultDeterministicResult.occasionFitReasoning,
+      profileMatchReasoning: parsed.profileMatchReasoning || defaultDeterministicResult.profileMatchReasoning,
+      stylingTips: Array.isArray(parsed.stylingTips) && parsed.stylingTips.length > 0 ? parsed.stylingTips : defaultDeterministicResult.stylingTips,
+      optionalAccessoryItemIds: validatedAccessories,
+      warnings: Array.isArray(parsed.warnings) ? parsed.warnings : [],
+      gapAnalysis: typeof parsed.gapAnalysis === 'string' && parsed.gapAnalysis.trim().length > 0 ? parsed.gapAnalysis : defaultDeterministicResult.gapAnalysis,
+      lookEditorial: parsed.lookEditorial && typeof parsed.lookEditorial === 'object' ? parsed.lookEditorial : undefined,
     };
   } catch (err) {
-    console.warn('AI reasoning error, using deterministic styling rationale:', err);
-    return {
-      outfitName: `${occasion} Ensemble`,
-      whyThisWorks: 'Pieces coordinate with balanced visual weight and clean separation between top and bottom.',
-      colorHarmonyReasoning: 'Controlled color contrast anchors the outfit without conflicting saturation.',
-      weatherFitReasoning: weatherDescription ? `Matches ${weatherDescription} conditions.` : 'Adaptive layering.',
-      occasionFitReasoning: `Formality matches the expectations of a ${occasion} setting.`,
-      profileMatchReasoning: 'Neutral tones provide versatile personal framing.',
-      stylingTips: ['Tuck the top cleanly to accentuate waistline proportions.', 'Coordinate leather tones across belt and shoes.'],
-      suggestedAccessories: ['Minimalist dress watch', 'Complementary leather belt'],
-      missingWardrobeItem: candidate.missingLayerWarning,
-    };
+    console.warn('Gemini reasoning fallback to deterministic stylist logic:', err);
+    return defaultDeterministicResult;
   }
+}
+
+/**
+ * Stage 4: Strict Outfit Validator
+ * Verifies every item exists, belongs to the user, matches category, no duplicate, and fulfills requirements
+ */
+export function validateGeneratedOutfit(
+  candidate: ScoredCandidate,
+  userWardrobe: WardrobeItem[],
+  userId: string,
+  request: AIStylistRequest
+): {
+  isValid: boolean;
+  pieces: OutfitPiece[];
+  errors: string[];
+} {
+  const errors: string[] = [];
+  const validUserItemsMap = new Map(userWardrobe.map(i => [i.id, i]));
+  const seenItemIds = new Set<string>();
+  const verifiedPieces: OutfitPiece[] = [];
+
+  const checkPiece = (item: WardrobeItem | undefined, expectedCategory: string, role: string) => {
+    if (!item) return;
+    if (!validUserItemsMap.has(item.id)) {
+      errors.push(`Item ${item.id} does not exist in user wardrobe.`);
+      return;
+    }
+    if (seenItemIds.has(item.id)) {
+      errors.push(`Duplicate item ${item.id} found in outfit.`);
+      return;
+    }
+    seenItemIds.add(item.id);
+
+    const actualItem = validUserItemsMap.get(item.id)!;
+    verifiedPieces.push({
+      category: expectedCategory as any,
+      itemId: actualItem.id,
+      item: actualItem,
+      role,
+      suggestedDescription: actualItem.name,
+      isOwned: true,
+    });
+  };
+
+  // Top or Dress
+  if (candidate.pieces.dress) {
+    checkPiece(candidate.pieces.dress, 'Dresses', 'Single-piece foundational silhouette.');
+  } else {
+    checkPiece(candidate.pieces.top, 'Tops', 'Upper foundational piece establishing neckline and color.');
+    checkPiece(candidate.pieces.bottom, 'Bottoms', 'Grounding bottom silhouette establishing proportion.');
+  }
+
+  // Outerwear
+  if (candidate.pieces.outerwear) {
+    checkPiece(candidate.pieces.outerwear, 'Outerwear', 'Framing architectural layer for weather and formality.');
+  }
+
+  // Footwear
+  checkPiece(candidate.pieces.footwear, 'Footwear', 'Grounding footwear setting the final formality tone.');
+
+  // Accessory
+  if (candidate.pieces.accessory) {
+    checkPiece(candidate.pieces.accessory, 'Accessories', 'Complementary accent.');
+  }
+
+  // Verification checks
+  const hasFoundational = verifiedPieces.some(p => p.category === 'Tops' || p.category === 'Dresses');
+  const hasBottomIfTop = !verifiedPieces.some(p => p.category === 'Dresses')
+    ? verifiedPieces.some(p => p.category === 'Bottoms')
+    : true;
+  const hasFootwear = verifiedPieces.some(p => p.category === 'Footwear');
+
+  if (!hasFoundational) errors.push('Missing foundational top or dress.');
+  if (!hasBottomIfTop) errors.push('Top present without matching bottom.');
+  if (!hasFootwear) errors.push('Missing footwear.');
+
+  return {
+    isValid: errors.length === 0,
+    pieces: verifiedPieces,
+    errors,
+  };
 }
 
 /**
@@ -632,13 +655,13 @@ export async function generateStylistRecommendations(
   userWearHistory: any[] = [],
   userName: string = 'Client'
 ): Promise<AIStylistResponse & { canGenerate: boolean; missingCategories?: string[]; advice?: string }> {
-  // Check empty wardrobe
+  // Empty wardrobe check
   if (!userWardrobe || userWardrobe.length === 0) {
     return {
       id: `rec_${Date.now()}`,
       requestId: `req_${Math.random().toString(36).substring(2, 9)}`,
       outfitName: 'Empty Wardrobe',
-      summary: "Your digital wardrobe currently contains 0 catalogued pieces.",
+      summary: 'Your digital wardrobe currently contains 0 catalogued pieces.',
       pieces: [],
       whyItWorks: '',
       weatherReasoning: '',
@@ -687,7 +710,7 @@ export async function generateStylistRecommendations(
     };
   }
 
-  // Stage 2 & 3: Compatibility Engine & Personalization
+  // Stage 2: Combinatorial Candidate Generator & Deterministic Scoring
   const candidates = generateScoredCandidates(filtered, request, userProfile, userWearHistory);
 
   if (candidates.length === 0) {
@@ -710,118 +733,113 @@ export async function generateStylistRecommendations(
     };
   }
 
-  // Pick primary candidate look
-  const primaryCandidate = candidates[0];
+  // Stage 3: Gemini Reasoning & Ranking
+  const reasoning = await rankAndReasonWithGemini(candidates, request, userWardrobe, userProfile, userName);
 
-  // Stage 5: AI Reasoning
-  const reasoning = await generateAIReasoning(primaryCandidate, request, userProfile, userName);
+  // Pick winning candidate
+  const winningCandidate = candidates.find(c => c.candidateId === reasoning.selectedCandidateId) || candidates[0];
 
-  // Server Validation: construct verified pieces strictly from user's inventory
-  const verifiedPieces: OutfitPiece[] = [];
-  const validUserItemIds = new Set(userWardrobe.map(i => i.id));
+  // Stage 4: Strict Validation
+  const validation = validateGeneratedOutfit(winningCandidate, userWardrobe, userId, request);
+  const finalPieces = validation.isValid ? validation.pieces : [];
 
-  if (primaryCandidate.pieces.top && validUserItemIds.has(primaryCandidate.pieces.top.id)) {
-    verifiedPieces.push({
-      category: 'Tops',
-      itemId: primaryCandidate.pieces.top.id,
-      item: primaryCandidate.pieces.top,
-      role: 'Upper foundational piece establishing color and neckline.',
-      suggestedDescription: primaryCandidate.pieces.top.name,
-      isOwned: true,
-    });
-  } else if (primaryCandidate.pieces.dress && validUserItemIds.has(primaryCandidate.pieces.dress.id)) {
-    verifiedPieces.push({
-      category: 'Dresses',
-      itemId: primaryCandidate.pieces.dress.id,
-      item: primaryCandidate.pieces.dress,
-      role: 'Single-piece foundational silhouette.',
-      suggestedDescription: primaryCandidate.pieces.dress.name,
-      isOwned: true,
-    });
-  }
+  // If validation failed, fallback to candidate[0] validated
+  const effectivePieces = finalPieces.length > 0 ? finalPieces : validateGeneratedOutfit(candidates[0], userWardrobe, userId, request).pieces;
 
-  if (primaryCandidate.pieces.bottom && validUserItemIds.has(primaryCandidate.pieces.bottom.id)) {
-    verifiedPieces.push({
-      category: 'Bottoms',
-      itemId: primaryCandidate.pieces.bottom.id,
-      item: primaryCandidate.pieces.bottom,
-      role: 'Grounding bottom silhouette establishing proportion.',
-      suggestedDescription: primaryCandidate.pieces.bottom.name,
-      isOwned: true,
-    });
-  }
-
-  if (primaryCandidate.pieces.outerwear && validUserItemIds.has(primaryCandidate.pieces.outerwear.id)) {
-    verifiedPieces.push({
-      category: 'Outerwear',
-      itemId: primaryCandidate.pieces.outerwear.id,
-      item: primaryCandidate.pieces.outerwear,
-      role: 'Framing architectural layer for weather and formality.',
-      suggestedDescription: primaryCandidate.pieces.outerwear.name,
-      isOwned: true,
-    });
-  }
-
-  if (primaryCandidate.pieces.footwear && validUserItemIds.has(primaryCandidate.pieces.footwear.id)) {
-    verifiedPieces.push({
-      category: 'Footwear',
-      itemId: primaryCandidate.pieces.footwear.id,
-      item: primaryCandidate.pieces.footwear,
-      role: 'Grounding footwear setting the final formality tone.',
-      suggestedDescription: primaryCandidate.pieces.footwear.name,
-      isOwned: true,
-    });
-  }
-
-  if (primaryCandidate.pieces.accessory && validUserItemIds.has(primaryCandidate.pieces.accessory.id)) {
-    verifiedPieces.push({
-      category: 'Accessories',
-      itemId: primaryCandidate.pieces.accessory.id,
-      item: primaryCandidate.pieces.accessory,
-      role: 'Complementary accent.',
-      suggestedDescription: primaryCandidate.pieces.accessory.name,
-      isOwned: true,
-    });
-  }
-
-  // Format alternative looks (if available)
+  // Build 3 distinct stylistic looks:
+  // 1. SAFE & REFINED: Classic, balanced, low risk
+  // 2. MODERN: Current trends, elevated proportions
+  // 3. STATEMENT: Bold color pop, high fashion contrast
   const looks: GeneratedLookOption[] = [];
-  const lookTypes: Array<'SAFE & REFINED' | 'MODERN' | 'STATEMENT'> = ['SAFE & REFINED', 'MODERN', 'STATEMENT'];
 
-  for (let i = 0; i < Math.min(3, candidates.length); i++) {
-    const cand = candidates[i];
-    const candPieces: OutfitPiece[] = [];
+  // Pick candidates for each distinct style
+  const candSafe = candidates.find(c => c.breakdown.coherence >= 80 && c.breakdown.colorHarmony >= 75) || candidates[0];
+  const candModern = candidates.find(c =>
+    c.candidateId !== candSafe.candidateId &&
+    (c.pieces.top?.fit === 'Relaxed' || c.pieces.bottom?.fit === 'Relaxed' || c.pieces.top?.pattern === 'Textured' || Boolean(c.pieces.outerwear))
+  ) || candidates.find(c => c.candidateId !== candSafe.candidateId) || candidates[1] || candidates[0];
+  const candStatement = candidates.find(c =>
+    c.candidateId !== candSafe.candidateId &&
+    c.candidateId !== candModern.candidateId &&
+    (c.pieces.top?.pattern !== 'Solid' || c.pieces.outerwear?.pattern !== 'Solid' || c.pieces.footwear.color !== c.pieces.bottom?.color)
+  ) || candidates.find(c => c.candidateId !== candSafe.candidateId && c.candidateId !== candModern.candidateId) || candidates[2] || candidates[0];
 
-    if (cand.pieces.top) candPieces.push({ category: 'Tops', itemId: cand.pieces.top.id, item: cand.pieces.top, role: 'Top', suggestedDescription: cand.pieces.top.name, isOwned: true });
-    if (cand.pieces.dress) candPieces.push({ category: 'Dresses', itemId: cand.pieces.dress.id, item: cand.pieces.dress, role: 'Dress', suggestedDescription: cand.pieces.dress.name, isOwned: true });
-    if (cand.pieces.bottom) candPieces.push({ category: 'Bottoms', itemId: cand.pieces.bottom.id, item: cand.pieces.bottom, role: 'Bottom', suggestedDescription: cand.pieces.bottom.name, isOwned: true });
-    if (cand.pieces.outerwear) candPieces.push({ category: 'Outerwear', itemId: cand.pieces.outerwear.id, item: cand.pieces.outerwear, role: 'Outerwear', suggestedDescription: cand.pieces.outerwear.name, isOwned: true });
-    if (cand.pieces.footwear) candPieces.push({ category: 'Footwear', itemId: cand.pieces.footwear.id, item: cand.pieces.footwear, role: 'Footwear', suggestedDescription: cand.pieces.footwear.name, isOwned: true });
+  const lookConfigs: Array<{
+    cand: ScoredCandidate;
+    type: 'SAFE & REFINED' | 'MODERN' | 'STATEMENT';
+    subtitle: string;
+    editorialKey: 'safeAndRefined' | 'modern' | 'statement';
+    defaultTitle: string;
+    defaultWhyItWorks: string;
+  }> = [
+    {
+      cand: candSafe,
+      type: 'SAFE & REFINED',
+      subtitle: 'Classic, balanced, low risk',
+      editorialKey: 'safeAndRefined',
+      defaultTitle: `${candSafe.pieces.top?.name || candSafe.pieces.dress?.name || 'Classic'} & ${candSafe.pieces.bottom?.name || 'Tailored Trousers'}`,
+      defaultWhyItWorks: `Applies the 60-30-10 color rule with ${candSafe.pieces.bottom?.color || 'neutral'} as the 60% grounding base, ${candSafe.pieces.top?.color || 'tonal'} as the 30% secondary, and ${candSafe.pieces.footwear.color} (10%) as a restrained accent. Clean proportions ensure timeless balance.`,
+    },
+    {
+      cand: candModern,
+      type: 'MODERN',
+      subtitle: 'Current trends, elevated proportions',
+      editorialKey: 'modern',
+      defaultTitle: `Contemporary ${candModern.pieces.outerwear?.name || candModern.pieces.top?.name || 'Layered'} Ensemble`,
+      defaultWhyItWorks: `Balances contemporary relaxed and structured silhouettes with a modern 60-30-10 palette. Textural contrast between fabrics elevates the look while maintaining thermal ease.`,
+    },
+    {
+      cand: candStatement,
+      type: 'STATEMENT',
+      subtitle: 'Bold color pop, high fashion contrast',
+      editorialKey: 'statement',
+      defaultTitle: `Directional ${candStatement.pieces.top?.color || candStatement.pieces.footwear.color} Contrast Look`,
+      defaultWhyItWorks: `Features a high-fashion focal point utilizing an intentional 10% color pop against a 60-30 neutral foundation, creating sharp visual engagement without overwhelming harmony.`,
+    },
+  ];
+
+  for (let i = 0; i < lookConfigs.length; i++) {
+    const config = lookConfigs[i];
+    const cand = config.cand;
+    const candValidation = validateGeneratedOutfit(cand, userWardrobe, userId, request);
+    if (!candValidation.isValid) continue;
+
+    const editorial = reasoning.lookEditorial?.[config.editorialKey];
+    const isWinner = cand.candidateId === winningCandidate.candidateId;
 
     looks.push({
       id: `look_${i + 1}`,
-      lookType: lookTypes[i] || 'SAFE & REFINED',
-      title: i === 0 ? reasoning.outfitName : `${request.occasion || 'Curated'} Option ${i + 1}`,
-      subtitle: cand.matchLabel,
-      pieces: candPieces,
-      whyItWorks: i === 0 ? reasoning.whyThisWorks : 'Alternative color and silhouette combination from your wardrobe.',
+      lookType: config.type,
+      title: isWinner ? reasoning.outfitName : (editorial?.title || config.defaultTitle),
+      subtitle: config.subtitle,
+      pieces: candValidation.pieces,
+      whyItWorks: isWinner ? reasoning.whyThisWorks : (editorial?.whyItWorks || config.defaultWhyItWorks),
       bestFor: {
         occasion: request.occasion || 'Dinner',
         time: request.time || 'Evening',
-        weather: request.weatherDescription || 'Mild',
+        weather: request.weatherDescription || (request.temperatureCelsius !== undefined ? `${request.temperatureCelsius}°C` : 'Mild'),
       },
-      styleNotes: i === 0 ? reasoning.stylingTips : ['Clean proportions and balanced color harmony.'],
+      styleNotes: isWinner ? reasoning.stylingTips : (editorial?.stylingTips || [
+        'Ensure clean breaks on trouser cuffs for optimal shoe framing.',
+        'Maintain balanced proportions across the upper and lower torso.',
+      ]),
+      gapAnalysis: editorial?.gapAnalysis || cand.missingLayerWarning || (request.temperatureCelsius !== undefined && request.temperatureCelsius < 15 && !cand.pieces.outerwear ? `Ambient temperature is ${request.temperatureCelsius}°C. A structured wool overcoat or tailored blazer would complete this look.` : undefined),
       score: cand.totalScore,
       scoreBreakdown: cand.breakdown,
     });
   }
 
+  // Map suggested accessories strictly from user's verified items
+  const validatedSuggestedAccessories = reasoning.optionalAccessoryItemIds
+    .map(id => userWardrobe.find(w => w.id === id)?.name)
+    .filter((name): name is string => Boolean(name));
+
   return {
     id: `rec_${Date.now()}`,
     requestId: `req_${Math.random().toString(36).substring(2, 9)}`,
     outfitName: reasoning.outfitName,
-    summary: `${primaryCandidate.matchLabel} (${primaryCandidate.totalScore}/100) — Composed strictly from your verified wardrobe pieces.`,
-    pieces: verifiedPieces,
+    summary: `${winningCandidate.matchLabel} (${winningCandidate.totalScore}/100) — Composed strictly from your verified wardrobe pieces.`,
+    pieces: effectivePieces,
     whyItWorks: reasoning.whyThisWorks,
     weatherReasoning: reasoning.weatherFitReasoning,
     occasionReasoning: reasoning.occasionFitReasoning,
@@ -831,11 +849,11 @@ export async function generateStylistRecommendations(
       weather: request.weatherDescription || (request.temperatureCelsius !== undefined ? `${request.temperatureCelsius}°C` : 'Mild'),
     },
     stylingTips: reasoning.stylingTips,
-    suggestedAccessories: reasoning.suggestedAccessories,
+    suggestedAccessories: validatedSuggestedAccessories,
     alternativeLookSuggestion: candidates.length > 1 ? `Alternative option available with ${candidates[1].pieces.top?.name || candidates[1].pieces.bottom?.name || 'alternative piece'}.` : undefined,
-    gapAnalysis: reasoning.missingWardrobeItem,
-    confidenceScore: primaryCandidate.totalScore, // Honest derived score, never hardcoded 96
-    scoreBreakdown: primaryCandidate.breakdown,
+    gapAnalysis: reasoning.gapAnalysis || winningCandidate.missingLayerWarning,
+    confidenceScore: winningCandidate.totalScore, // Calculated deterministic score
+    scoreBreakdown: winningCandidate.breakdown,
     looks,
     generatedAt: new Date().toISOString(),
     canGenerate: true,
@@ -872,7 +890,6 @@ export async function swapOutfitPiece(
     swapCategory,
     currentPieceIdToReplace,
     occasion = 'Dinner',
-    weatherDescription,
     temperatureCelsius,
   } = payload;
 
@@ -881,7 +898,7 @@ export async function swapOutfitPiece(
     i => currentPieceIds.includes(i.id) && i.id !== currentPieceIdToReplace
   );
 
-  // Available alternatives in user wardrobe for swapCategory
+  // Available alternatives in user wardrobe for swapCategory strictly
   const alternatives = userWardrobe.filter(
     i => i.category === swapCategory && i.id !== currentPieceIdToReplace
   );
@@ -895,47 +912,47 @@ export async function swapOutfitPiece(
   }
 
   // Score each alternative with fixed pieces
-  const scored = alternatives.map(alt => {
+  const scored: Array<{ item: WardrobeItem; score: number; reason: string }> = [];
+
+  for (const alt of alternatives) {
     const fullLook = [...fixedItems, alt];
-    const colors = fullLook.map(i => i.color);
 
-    // Simple compatibility calculation
-    let score = 75;
-    const cleanColors = colors.map(c => (c || '').toLowerCase().trim());
-    for (const fixed of fixedItems) {
-      const fixedColor = (fixed.color || '').toLowerCase();
-      const altColor = (alt.color || '').toLowerCase();
-      const isHarmonious = HARMONIOUS_COLOR_PAIRS.some(
-        ([p1, p2]) => (fixedColor.includes(p1) && altColor.includes(p2)) || (fixedColor.includes(p2) && altColor.includes(p1))
-      );
-      if (isHarmonious) score += 8;
-    }
+    // Check pattern clash
+    const patternEval = evaluatePatternCompatibility(fullLook.map(i => i.pattern || 'Solid'));
+    if (patternEval.isClash) continue;
 
-    // Occasion match
-    const target = OCCASION_FORMALITY_MAP[occasion] || { min: 2, max: 3, target: 2 };
-    const altFormality = FORMALITY_SCORES[alt.formality || 'Smart Casual'] || 2;
-    if (altFormality >= target.min && altFormality <= target.max) {
-      score += 6;
-    }
+    // Check color clash
+    const colorEval = evaluateColorCompatibility(fullLook.map(i => i.color || 'Neutral'));
+    if (colorEval.isClash) continue;
 
-    // Profile match
+    // Check thermal suitability
+    const thermalEval = evaluateThermalSuitability(fullLook, temperatureCelsius);
+    if (!thermalEval.isCompatible) continue;
+
+    // Formality spread check
+    const formalities = fullLook.map(i => normalizeFormality(i));
+    const spread = Math.max(...formalities) - Math.min(...formalities);
+    if (spread >= 3) continue;
+
+    let score = Math.round((colorEval.score * 0.4) + (thermalEval.score * 0.3) + (patternEval.score * 0.3));
+
+    // Profile color preferences
     if (userProfile?.preferredColors?.some(pc => (alt.color || '').toLowerCase().includes(pc.toLowerCase()))) {
-      score += 5;
+      score += 4;
     }
-
-    // Disliked color penalty
+    // Disliked colors penalty
     if (userProfile?.dislikedColors?.some(dc => (alt.color || '').toLowerCase().includes(dc.toLowerCase()))) {
-      score -= 30;
+      score -= 25;
     }
 
-    score = Math.min(98, Math.max(40, score));
+    score = Math.min(98, Math.max(35, score));
 
-    return {
+    scored.push({
       item: alt,
       score,
-      reason: `The ${alt.color} ${alt.name} pairs with the ${fixedItems.map(f => f.name).join(' and ')} while preserving the ${occasion} formality.`,
-    };
-  });
+      reason: `The ${alt.color} ${alt.name} complements the ${fixedItems.map(f => f.name).join(' and ')} with ${colorEval.reason.toLowerCase()}.`,
+    });
+  }
 
   scored.sort((a, b) => b.score - a.score);
 

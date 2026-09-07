@@ -307,26 +307,64 @@ export class AIStylistService {
         };
       });
 
+      // Real calculated breakdown
+      const totalItems = items.length || 1;
+      const colorCounts: Record<string, { count: number; hex: string }> = {};
+      items.forEach((item: any) => {
+        const c = item.color || 'Neutral';
+        if (!colorCounts[c]) {
+          let hex = '#64748B';
+          const lower = c.toLowerCase();
+          if (lower.includes('black') || lower.includes('charcoal')) hex = '#0F172A';
+          else if (lower.includes('blue') || lower.includes('navy')) hex = '#1E40AF';
+          else if (lower.includes('grey') || lower.includes('gray')) hex = '#475569';
+          else if (lower.includes('white') || lower.includes('cream')) hex = '#F8FAFC';
+          else if (lower.includes('brown') || lower.includes('camel')) hex = '#92400E';
+          else if (lower.includes('green') || lower.includes('olive')) hex = '#166534';
+          else if (lower.includes('red') || lower.includes('burgundy')) hex = '#991B1B';
+          colorCounts[c] = { count: 0, hex };
+        }
+        colorCounts[c].count++;
+      });
+
+      const paletteBreakdown = Object.entries(colorCounts)
+        .sort((a, b) => b[1].count - a[1].count)
+        .map(([colorName, info]) => ({
+          colorName,
+          hex: info.hex,
+          itemCount: info.count,
+          percentage: Math.round((info.count / totalItems) * 100),
+        }));
+
+      const styleCounts: Record<string, number> = {};
+      items.forEach((item: any) => {
+        const st = item.style || 'Smart Casual';
+        styleCounts[st] = (styleCounts[st] || 0) + 1;
+      });
+
+      const styleDistribution = Object.entries(styleCounts)
+        .sort((a, b) => b[1] - a[1])
+        .map(([styleName, count]) => ({
+          styleName,
+          itemCount: count,
+          percentage: Math.round((count / totalItems) * 100),
+        }));
+
+      // Honest harmony score based on clustering and versatility
+      const harmonyScore = Math.min(95, Math.max(50, Math.round(70 + clusters.length * 5)));
+
     return {
       organizedAt: new Date().toISOString(),
-      executiveAestheticSummary: `Your wardrobe exhibits exceptional harmony across ${clusters.length} cohesive color and style clusters.`,
-      capsuleHarmonyScore: 95,
+      executiveAestheticSummary: `Your wardrobe exhibits genuine capsule synergy across ${clusters.length} cohesive color and style clusters.`,
+      capsuleHarmonyScore: harmonyScore,
       clusters,
-      paletteBreakdown: [
-        { colorName: 'Neutral & Dark Monochromes', hex: '#0F172A', itemCount: Math.ceil(items.length * 0.45), percentage: 45 },
-        { colorName: 'Indigo & Blues', hex: '#1E40AF', itemCount: Math.ceil(items.length * 0.3), percentage: 30 },
-        { colorName: 'Warm Earth & Accents', hex: '#B45309', itemCount: Math.max(1, items.length - Math.ceil(items.length * 0.75)), percentage: 25 },
-      ],
-      styleDistribution: [
-        { styleName: 'Smart Casual', itemCount: Math.ceil(items.length * 0.5), percentage: 50 },
-        { styleName: 'Tailored Minimal', itemCount: Math.ceil(items.length * 0.3), percentage: 30 },
-        { styleName: 'Relaxed Weekend', itemCount: Math.max(1, items.length - Math.ceil(items.length * 0.8)), percentage: 20 },
-      ],
+      paletteBreakdown,
+      styleDistribution,
     };
   }
 
   async analyzeStylePhoto(imageBase64: string, mimeType: string = 'image/jpeg'): Promise<VisualStyleAnalysis> {
-    const res = await this.safePost<{ success: boolean; analysis?: VisualStyleAnalysis }>(
+    const res = await this.safePost<{ success: boolean; analysis?: VisualStyleAnalysis; error?: string }>(
       '/api/gemini/analyze-style-photo',
       { imageBase64, mimeType }
     );
@@ -335,16 +373,7 @@ export class AIStylistService {
       return res.data.analysis;
     }
 
-    // Default fallback analysis if offline or rate-limited
-    return {
-      faceShape: 'Oval',
-      skinTone: 'Neutral',
-      contrastLevel: 'Medium',
-      hairCharacteristics: 'Natural tones',
-      recommendedPalettes: ['Midnight Navy', 'Rich Camel', 'Forest Green', 'Crisp Ivory', 'Charcoal Slate'],
-      recommendedNecklines: ['Classic spread collar shirts', 'Structured notched lapels', 'Fine-gauge crewneck knits'],
-      analysisNotes: 'A balanced neutral undertone offers great sartorial versatility, pairing seamlessly with deep monochromatic blues, warm earth tones, and clean tailored collars.',
-    };
+    throw new Error(res.data?.error || "We couldn't analyze that photo. Try a clearer front-facing photo with good lighting.");
   }
 
   async swapOutfitPiece(params: {

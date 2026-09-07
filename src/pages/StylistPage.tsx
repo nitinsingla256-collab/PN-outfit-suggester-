@@ -1501,6 +1501,20 @@ function StylistPageContent() {
                             </ul>{" "}
                           </div>
                         )}{" "}
+                      {/* Gap Analysis & Missing Layer Warning */}
+                      {(currentLook.gapAnalysis || generationResult.gapAnalysis) && (
+                        <div className="p-3.5 bg-amber-50/60 rounded-2xl border border-amber-200/80 text-xs text-amber-900 flex items-start gap-2.5">
+                          <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                          <div className="space-y-0.5">
+                            <span className="font-bold text-amber-950">
+                              Wardrobe Gap & Layering Analysis:{" "}
+                            </span>
+                            <p className="text-amber-800 leading-relaxed">
+                              {currentLook.gapAnalysis || generationResult.gapAnalysis}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                       {/* Alternative Look Suggestion */}{" "}
                       {generationResult.alternativeLookSuggestion && (
                         <div className="p-3 bg-emerald-50/50 rounded-xl border border-emerald-200 text-xs text-emerald-900 ">
