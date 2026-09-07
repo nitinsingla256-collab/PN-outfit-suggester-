@@ -169,18 +169,18 @@ export function AddClothingModal() {
 
   // Single Garment Fields
   const [name, setName] = useState('');
-  const [category, setCategory] = useState<ClothingCategory>('Tops');
-  const [type, setType] = useState('Shirt');
-  const [color, setColor] = useState('Blue');
+  const [category, setCategory] = useState<ClothingCategory | ''>('');
+  const [type, setType] = useState('');
+  const [color, setColor] = useState('');
   const [secondaryColor, setSecondaryColor] = useState('');
-  const [pattern, setPattern] = useState('Solid');
-  const [material, setMaterial] = useState('Denim (Likely)');
-  const [style, setStyle] = useState('Casual');
-  const [formality, setFormality] = useState<ClothingFormality>('Casual');
+  const [pattern, setPattern] = useState('');
+  const [material, setMaterial] = useState('Unknown');
+  const [style, setStyle] = useState('');
+  const [formality, setFormality] = useState<ClothingFormality | ''>('');
   const [brand, setBrand] = useState('');
-  const [fit, setFit] = useState<ClothingFit>('Regular');
-  const [selectedSeasons, setSelectedSeasons] = useState<string[]>(['All-Season']);
-  const [selectedOccasions, setSelectedOccasions] = useState<string[]>(['Casual', 'Work']);
+  const [fit, setFit] = useState<ClothingFit | ''>('');
+  const [selectedSeasons, setSelectedSeasons] = useState<string[]>([]);
+  const [selectedOccasions, setSelectedOccasions] = useState<string[]>([]);
   const [careInstructions, setCareInstructions] = useState('');
   const [tagInput, setTagInput] = useState('');
   const [imageUrl, setImageUrl] = useState('');
@@ -190,6 +190,9 @@ export function AddClothingModal() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [aiConfidence, setAiConfidence] = useState<number | null>(null);
   const [aiStylingNote, setAiStylingNote] = useState<string | null>(null);
+  const [analysisStatus, setAnalysisStatus] = useState<'success' | 'needs_confirmation' | null>(null);
+  const [hasMultipleItems, setHasMultipleItems] = useState(false);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -202,9 +205,7 @@ export function AddClothingModal() {
 
   const toggleSeason = (s: Season) => {
     if (selectedSeasons.includes(s)) {
-      if (selectedSeasons.length > 1) {
-        setSelectedSeasons(selectedSeasons.filter(item => item !== s));
-      }
+      setSelectedSeasons(selectedSeasons.filter(item => item !== s));
     } else {
       setSelectedSeasons([...selectedSeasons, s]);
     }
@@ -212,24 +213,26 @@ export function AddClothingModal() {
 
   const resetForm = () => {
     setName('');
-    setCategory('Tops');
-    setType('Shirt');
-    setColor('Blue');
+    setCategory('');
+    setType('');
+    setColor('');
     setSecondaryColor('');
-    setPattern('Solid');
-    setMaterial('Denim (Likely)');
-    setStyle('Casual');
-    setFormality('Casual');
+    setPattern('');
+    setMaterial('Unknown');
+    setStyle('');
+    setFormality('');
     setBrand('');
-    setFit('Regular');
-    setSelectedSeasons(['All-Season']);
-    setSelectedOccasions(['Casual', 'Work']);
+    setFit('');
+    setSelectedSeasons([]);
+    setSelectedOccasions([]);
     setCareInstructions('');
     setTagInput('');
     setImageUrl('');
     setImageBase64(null);
     setAiConfidence(null);
     setAiStylingNote(null);
+    setAnalysisStatus(null);
+    setHasMultipleItems(false);
     setCurrentStep('upload');
     setErrors({});
     setBatchItems([]);
@@ -381,8 +384,7 @@ export function AddClothingModal() {
         if (res.careInstructions) setCareInstructions(res.careInstructions);
         if (res.stylingNote) setAiStylingNote(res.stylingNote);
         
-        let confidenceScore = res.confidence;
-        if (confidenceScore) setAiConfidence(confidenceScore);
+        if (res.confidence !== undefined) setAiConfidence(res.confidence);
 
         if (res.isClothingItem === false) {
            showToast({
@@ -391,13 +393,24 @@ export function AddClothingModal() {
              type: 'info',
            });
            setAiConfidence(0);
+           setAnalysisStatus('needs_confirmation');
         } else if (res.hasMultipleItems) {
+           setHasMultipleItems(true);
+           setAnalysisStatus('needs_confirmation');
            showToast({
              title: 'Multiple items detected',
-             description: 'We identified the primary item. Please edit if you wanted to catalogue a different one.',
+             description: 'Please review and confirm which item you are adding.',
              type: 'info',
            });
+        } else if (res.confidence !== undefined && res.confidence < 60) {
+           setAnalysisStatus('needs_confirmation');
+           showToast({
+             title: 'Low Confidence',
+             description: 'PN couldn\'t confidently identify this item. Please review the details.',
+             type: 'warning',
+           });
         } else {
+           setAnalysisStatus('success');
            showToast({
              title: 'AI Analysis Complete',
              description: `Identified as ${res.category} · ${res.type || 'Piece'}.`,
@@ -413,6 +426,7 @@ export function AddClothingModal() {
         type: 'error',
       });
       setAiConfidence(0);
+      setAnalysisStatus('needs_confirmation');
     } finally {
       setIsAnalyzing(false);
     }
@@ -457,8 +471,8 @@ export function AddClothingModal() {
               tags: analysis.tags || i.tags,
               careInstructions: analysis.careInstructions,
               stylingNote: analysis.stylingNote,
-              confidence: analysis.confidence || 92,
-              status: 'ready' as const,
+              confidence: analysis.confidence,
+              status: analysis.confidence !== undefined && analysis.confidence < 60 ? 'error' : 'ready',
             };
           }
           return i;
@@ -466,7 +480,7 @@ export function AddClothingModal() {
         setBatchItems([...updatedList]);
       } catch (err) {
         console.warn('AI analysis error for item:', item.id, err);
-        updatedList = updatedList.map(i => i.id === item.id ? { ...i, status: 'ready' } : i);
+        updatedList = updatedList.map(i => i.id === item.id ? { ...i, status: 'error' } : i);
         setBatchItems([...updatedList]);
       }
     }
@@ -484,6 +498,22 @@ export function AddClothingModal() {
       showToast({
         title: 'Name Required',
         description: 'Please give your clothing piece a name.',
+        type: 'error',
+      });
+      return;
+    }
+    if (!category) {
+      showToast({
+        title: 'Category Required',
+        description: 'Please select a category.',
+        type: 'error',
+      });
+      return;
+    }
+    if (!type.trim()) {
+      showToast({
+        title: 'Type Required',
+        description: 'Please specify the type of garment (e.g., Shirt, Jeans).',
         type: 'error',
       });
       return;
@@ -517,7 +547,7 @@ export function AddClothingModal() {
 
       await addWardrobeItem({
         name: name.trim(),
-        category,
+        category: category as ClothingCategory,
         type: type.trim(),
         subcategory: type.trim(),
         color: color.trim(),
@@ -525,9 +555,9 @@ export function AddClothingModal() {
         pattern: pattern.trim(),
         material: material.trim() || undefined,
         style: style.trim(),
-        formality,
+        formality: (formality || 'Casual') as ClothingFormality,
         brand: brand.trim() || undefined,
-        fit,
+        fit: (fit || 'Regular') as ClothingFit,
         season: selectedSeasons,
         occasion: selectedOccasions,
         tags: parsedTags.length > 0 ? parsedTags : ['Wardrobe Essential', category],

@@ -550,7 +550,7 @@ Extract the following JSON attributes:
 `;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-1.5-flash',
+        model: process.env.GEMINI_MODEL || 'gemini-1.5-flash',
         contents: [
           {
             inlineData: {
@@ -656,7 +656,7 @@ ${hint ? `User context/hint: "${hint}"` : ''}
       contents.push(prompt);
 
       const response = await ai.models.generateContent({
-        model: 'gemini-1.5-flash',
+        model: process.env.GEMINI_MODEL || 'gemini-1.5-flash',
         contents,
         config: {
           responseMimeType: 'application/json',
@@ -820,7 +820,7 @@ TASK REQUIREMENTS:
 `;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-1.5-flash',
+        model: process.env.GEMINI_MODEL || 'gemini-1.5-flash',
         contents: prompt,
         config: {
           responseMimeType: 'application/json',
@@ -1096,7 +1096,7 @@ GENERAL RULES:
       });
 
       const response = await ai.models.generateContent({
-        model: 'gemini-1.5-flash',
+        model: process.env.GEMINI_MODEL || 'gemini-1.5-flash',
         contents,
       });
 
@@ -1658,7 +1658,7 @@ Provide an authoritative, editorial analysis of the top seasonal fashion movemen
 Generate 6 high-fashion trends covering diverse categories (Key Silhouettes, Color Palettes, Fabrics & Textures, Accessories & Footwear, Occasion & Vibe). Ensure hex colors match high-fashion palettes.`;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-1.5-flash',
+        model: process.env.GEMINI_MODEL || 'gemini-1.5-flash',
         contents: prompt,
         config: {
           tools: [{ googleSearch: {} }],

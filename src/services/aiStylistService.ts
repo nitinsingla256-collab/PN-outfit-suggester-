@@ -145,64 +145,68 @@ export class AIStylistService {
     }
 
     // Client-side intelligent styling fallback calibrated to the user's actual items
-    const topItem = wardrobePool.find(p => p.category === 'Tops') || wardrobePool[0];
-    const bottomItem = wardrobePool.find(p => p.category === 'Bottoms') || wardrobePool[1];
-    const outerwearItem = wardrobePool.find(p => p.category === 'Outerwear') || wardrobePool[2];
-    const footwearItem = wardrobePool.find(p => p.category === 'Footwear') || wardrobePool[3];
+    const topItem = wardrobePool.find(p => p.category === 'Tops');
+    const bottomItem = wardrobePool.find(p => p.category === 'Bottoms');
+    const footwearItem = wardrobePool.find(p => p.category === 'Footwear');
+    const outerwearItem = wardrobePool.find(p => p.category === 'Outerwear');
+
+    if (!topItem || !bottomItem) {
+      throw new Error('Not enough compatible wardrobe pieces to form a complete outfit.');
+    }
+
+    const pieces = [
+      {
+        category: 'Tops',
+        item: topItem,
+        suggestedDescription: topItem.name,
+        role: 'Primary Silhouette',
+        isOwned: true,
+      },
+      {
+        category: 'Bottoms',
+        item: bottomItem,
+        suggestedDescription: bottomItem.name,
+        role: 'Anchor Structure',
+        isOwned: true,
+      }
+    ];
+
+    if (outerwearItem) {
+      pieces.push({
+        category: 'Outerwear',
+        item: outerwearItem,
+        suggestedDescription: outerwearItem.name,
+        role: 'Layering Element',
+        isOwned: true,
+      });
+    }
+
+    if (footwearItem) {
+      pieces.push({
+        category: 'Footwear',
+        item: footwearItem,
+        suggestedDescription: footwearItem.name,
+        role: 'Foundation',
+        isOwned: true,
+      });
+    }
 
     return {
       id: `ai_rec_${Date.now()}`,
       requestId: `req_${Math.random().toString(36).substring(2, 9)}`,
-      outfitName: `Curated ${request.stylePreference || 'Tailored'} Composition for ${request.occasion || 'Engagement'}`,
-      summary: `A high-contrast, structured composition calibrated for ${
-        request.occasion ? request.occasion.toLowerCase() : 'your day'
-      }. Built around tactile depth, tonal harmony, and quiet luxury proportions.`,
-      pieces: [
-        {
-          category: 'Outerwear',
-          item: outerwearItem,
-          suggestedDescription: outerwearItem ? outerwearItem.name : 'Tailored structured wool blazer or double-breasted overcoat.',
-          role: 'Anchor piece providing structure, silhouette framing, and thermal comfort.',
-          isOwned: !!outerwearItem,
-        },
-        {
-          category: 'Tops',
-          item: topItem,
-          suggestedDescription: topItem ? topItem.name : 'Fluid silk button-down or fine-gauge knit turtleneck.',
-          role: 'Subtle textural luminescence creating an elegant neckline.',
-          isOwned: !!topItem,
-        },
-        {
-          category: 'Bottoms',
-          item: bottomItem,
-          suggestedDescription: bottomItem ? bottomItem.name : 'High-waisted pleated wide-leg trousers.',
-          role: 'Elongating base balancing the upper proportions.',
-          isOwned: !!bottomItem,
-        },
-        {
-          category: 'Footwear',
-          item: footwearItem,
-          suggestedDescription: footwearItem ? footwearItem.name : 'Sleek point-toe calfskin boots or leather loafers.',
-          role: 'Grounding architectural footwear element.',
-          isOwned: !!footwearItem,
-        },
-      ],
-      whyItWorks: `The harmonic tension between tailored outerwear and fluid drape honors the refined minimalist aesthetic, matching color temperatures across your capsule pieces.`,
+      outfitName: `Curated ${request.stylePreference || 'Everyday'} Ensemble`,
+      summary: `A balanced composition built from your existing wardrobe.`,
+      pieces,
+      whyItWorks: `The pieces work together to provide a clean and functional silhouette.`,
       weatherReasoning: request.weatherDescription
-        ? `Calibrated for ${request.weatherDescription}: modular layering ensures effortless climate comfort throughout the day.`
-        : 'Versatile transitional layering adapted for modern indoor and outdoor movement.',
-      occasionReasoning: `Meets all dress code nuances of ${request.occasion || 'your engagement'} with effortless polish.`,
+        ? `Calibrated for ${request.weatherDescription} using available wardrobe pieces.`
+        : 'Versatile layering for modern movement.',
+      occasionReasoning: `Adaptable for ${request.occasion || 'your engagement'}.`,
       stylingTips: [
-        'Half-tuck the top into the high-rise waistband to define waist proportions.',
-        'Keep accessories understated: brushed matte gold or silver accents.',
-        'Roll outerwear cuffs back slightly to expose wrists and balance silhouette.',
+        'Ensure clean fit and styling.',
+        'Keep accessories understated.',
       ],
-      suggestedAccessories: [
-        'Sculptural brushed gold hoop earrings',
-        'Structured Italian box-calf tote',
-        'Slim leather belt with square buckle',
-      ],
-      confidenceScore: 96,
+      suggestedAccessories: [],
       generatedAt: new Date().toISOString(),
     };
   }

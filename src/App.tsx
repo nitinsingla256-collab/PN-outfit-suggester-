@@ -47,8 +47,11 @@ function PageLoadingSkeleton() {
   );
 }
 
+import { isStyleProfileComplete } from './utils/profileValidation';
+import { PersonalStyleProfileCard } from './components/profile/PersonalStyleProfileCard';
+
 function RouterView() {
-  const { currentRoute, user, navigateTo } = useApp();
+  const { currentRoute, user, navigateTo, isAuthenticated } = useApp();
 
   if (currentRoute === '/admin' && user.role !== 'supervisor' && user.role !== 'admin') {
     return (
@@ -117,12 +120,34 @@ export function AppContent() {
   const {
     isAuthenticated,
     authLoading,
+    user,
     isAddClothingModalOpen,
     selectedWardrobeItemForDetail,
     isCreateLookModalOpen,
     isFirstLoginMeasurementsModalOpen,
     setIsFirstLoginMeasurementsModalOpen,
   } = useApp();
+
+  // Force setup if authenticated and profile is not completely valid
+  const needsSetup = isAuthenticated && !isStyleProfileComplete(user.profile);
+
+  if (needsSetup) {
+    return (
+      <div className="w-full min-h-screen bg-slate-50 flex items-start justify-center p-4 py-8 sm:py-12 animate-in fade-in duration-500 overflow-y-auto">
+        <div className="w-full max-w-3xl">
+          <div className="mb-6 text-center">
+            <h1 className="text-2xl font-bold font-editorial text-slate-900">Welcome to PN</h1>
+            <p className="text-sm text-slate-500 mt-1">Please complete your style profile to begin building your digital wardrobe.</p>
+          </div>
+          <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
+            <div className="p-4 sm:p-6 lg:p-8">
+              <PersonalStyleProfileCard />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <AppLayout>
