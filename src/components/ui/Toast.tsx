@@ -17,14 +17,14 @@ export interface ToastProps {
 export function Toast({ toast, onDismiss }: ToastProps) {
   const icons = {
     success: <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />,
-    info: <Info className="w-4 h-4 text-sky-400 shrink-0" />,
+    info: <Info className="w-4 h-4 text-emerald-500 shrink-0" />,
     warning: <AlertCircle className="w-4 h-4 text-emerald-500 shrink-0" />,
     error: <XCircle className="w-4 h-4 text-rose-400 shrink-0" />,
   };
 
   const borders = {
     success: 'border-emerald-500/30 bg-white',
-    info: 'border-sky-500/30 bg-white',
+    info: 'border-emerald-500/30 bg-white',
     warning: 'border-emerald-500/30 bg-white',
     error: 'border-rose-500/30 bg-white',
   };

@@ -196,7 +196,7 @@ export function calculateBodyMetrics(heightCm?: number, weightKg?: number) {
 
   if (bmi < 18.5) {
     category = 'Slender & Elongated';
-    badgeColor = 'bg-sky-50 text-sky-800 border-sky-200';
+    badgeColor = 'bg-teal-50 text-teal-800 border-teal-200';
     tailoringRecommendation = 'Structured tailoring, layered knits, and horizontal textures (e.g. corduroy, heavier gauge wool) add volume and architectural presence.';
   } else if (bmi >= 18.5 && bmi < 25) {
     category = 'Harmonious Silhouette';
@@ -208,7 +208,7 @@ export function calculateBodyMetrics(heightCm?: number, weightKg?: number) {
     tailoringRecommendation = 'Unstructured blazers, vertical seam details, single-breasted coats, and slightly tapered trousers maintain sleek vertical lines.';
   } else {
     category = 'Substantial / Generous Fit';
-    badgeColor = 'bg-indigo-50 text-indigo-800 border-indigo-200';
+    badgeColor = 'bg-emerald-50 text-emerald-800 border-emerald-200';
     tailoringRecommendation = 'Monochromatic tonal layering, elongated outerwear hems, and high-rise pleated trousers optimize comfort and statuesque posture.';
   }
 

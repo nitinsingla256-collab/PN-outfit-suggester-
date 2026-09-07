@@ -460,7 +460,7 @@ export function AdminPage() {
             <Card className="p-5 bg-white border-gray-200">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">Registered Users</span>
-                <div className="p-2 rounded-xl bg-blue-50 text-blue-600">
+                <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600">
                   <Users className="w-4 h-4" />
                 </div>
               </div>
@@ -574,7 +574,7 @@ export function AdminPage() {
                     className="w-full flex items-center justify-between p-3 rounded-xl bg-gray-50 hover:bg-gray-100 border border-gray-200 text-xs font-medium text-gray-800 transition-colors text-left"
                   >
                     <div className="flex items-center gap-2.5">
-                      <Users className="w-4 h-4 text-blue-600" />
+                      <Users className="w-4 h-4 text-emerald-600" />
                       <span>Manage Registered Users</span>
                     </div>
                     <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
@@ -828,9 +828,9 @@ export function AdminPage() {
 
                 {/* Telemetry Stats */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-                  <div className="p-3 bg-blue-50/40 border border-blue-100 rounded-xl">
-                    <div className="text-lg font-bold text-blue-900">{selectedUserDetail.stats.wardrobeCount}</div>
-                    <div className="text-[11px] text-blue-700">Wardrobe Items</div>
+                  <div className="p-3 bg-emerald-50/50 border border-emerald-100 rounded-xl">
+                    <div className="text-lg font-bold text-emerald-900">{selectedUserDetail.stats.wardrobeCount}</div>
+                    <div className="text-[11px] text-emerald-700">Wardrobe Items</div>
                   </div>
                   <div className="p-3 bg-purple-50/40 border border-purple-100 rounded-xl">
                     <div className="text-lg font-bold text-purple-900">{selectedUserDetail.stats.outfitsCount}</div>
@@ -886,13 +886,13 @@ export function AdminPage() {
                         <span
                           className={`px-2 py-0.5 rounded text-[10px] font-mono font-semibold uppercase ${
                             log.category === 'AUTH'
-                              ? 'bg-blue-100 text-blue-800'
+                              ? 'bg-teal-100 text-teal-800'
                               : log.category === 'AI_STYLIST'
                               ? 'bg-amber-100 text-amber-800'
                               : log.category === 'WARDROBE'
                               ? 'bg-emerald-100 text-emerald-800'
                               : log.category === 'PLANNER'
-                              ? 'bg-indigo-100 text-indigo-800'
+                              ? 'bg-emerald-100 text-emerald-800'
                               : log.category === 'SETTINGS'
                               ? 'bg-pink-100 text-pink-800'
                               : log.category === 'OUTFIT'
@@ -981,11 +981,11 @@ export function AdminPage() {
                   </div>
                 </div>
 
-                <div className="p-3 bg-blue-50/50 rounded-xl border border-blue-100 flex items-start gap-2.5">
-                  <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                <div className="p-3 bg-teal-50/50 rounded-xl border border-teal-100 flex items-start gap-2.5">
+                  <CheckCircle2 className="w-4 h-4 text-teal-600 shrink-0 mt-0.5" />
                   <div>
-                    <div className="font-semibold text-blue-900">Encrypted Password Hashing</div>
-                    <div className="text-[11px] text-blue-700 mt-0.5">
+                    <div className="font-semibold text-teal-900">Encrypted Password Hashing</div>
+                    <div className="text-[11px] text-teal-700 mt-0.5">
                       Unique salt generation and SHA-512 cryptographic hashing.
                     </div>
                   </div>

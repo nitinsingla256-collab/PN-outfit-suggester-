@@ -126,7 +126,7 @@ export function Navbar() {
           {theme === 'Midnight Luxury' ? (
             <Sun className="w-4 h-4 text-amber-400" />
           ) : (
-            <Moon className="w-4 h-4 text-indigo-500" />
+            <Moon className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           )}
         </button>
 

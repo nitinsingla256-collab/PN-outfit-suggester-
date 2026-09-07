@@ -1503,7 +1503,7 @@ function StylistPageContent() {
                         )}{" "}
                       {/* Alternative Look Suggestion */}{" "}
                       {generationResult.alternativeLookSuggestion && (
-                        <div className="p-3 bg-emerald-50/50 rounded-xl border border-indigo-100 text-xs text-indigo-900 ">
+                        <div className="p-3 bg-emerald-50/50 rounded-xl border border-emerald-200 text-xs text-emerald-900 ">
                           {" "}
                           <span className="font-bold">
                             Alternative Styling Idea:{" "}
@@ -1580,7 +1580,7 @@ function StylistPageContent() {
                     {" "}
                     <div className="flex items-center justify-between">
                       {" "}
-                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 text-indigo-700 ">
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 ">
                         {" "}
                         {outfit.occasion || "Ensemble"}{" "}
                       </span>{" "}

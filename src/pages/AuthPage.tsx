@@ -298,20 +298,20 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode }) => {
 
                 <form onSubmit={handleSignIn} className="space-y-4">
                   {error && (
-                    <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 flex items-start gap-2.5 text-red-700 text-xs">
+                    <div className="mb-4 p-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 flex items-start gap-2.5 text-red-700 dark:text-red-300 text-xs">
                       <AlertCircle className="w-4 h-4 shrink-0 text-red-500 mt-0.5" />
                       <span>{error}</span>
                     </div>
                   )}
                   {successMessage && (
-                    <div className="mb-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200 flex items-start gap-2.5 text-emerald-700 text-xs">
+                    <div className="mb-4 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 flex items-start gap-2.5 text-emerald-700 dark:text-emerald-300 text-xs">
                       <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-500 mt-0.5" />
                       <span>{successMessage}</span>
                     </div>
                   )}
 
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                    <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1.5">
                       Email address
                     </label>
                     <input
@@ -320,12 +320,12 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode }) => {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="you@example.com"
-                      className="w-full bg-white border border-gray-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition"
+                      className="w-full bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 outline-none transition"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                    <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1.5">
                       Password
                     </label>
                     <div className="relative">
@@ -335,12 +335,12 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode }) => {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••"
-                        className="w-full bg-white border border-gray-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl pl-3 pr-10 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition"
+                        className="w-full bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl pl-3 pr-10 py-2.5 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 outline-none transition"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-200 focus:outline-none"
                       >
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
@@ -413,7 +413,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode }) => {
                   )}
 
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                    <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1.5">
                       Full name
                     </label>
                     <input
@@ -422,12 +422,12 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode }) => {
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="Your full name"
-                      className="w-full bg-white border border-gray-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition"
+                      className="w-full bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 outline-none transition"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                    <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1.5">
                       Email address
                     </label>
                     <input
@@ -436,12 +436,12 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode }) => {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="you@example.com"
-                      className="w-full bg-white border border-gray-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition"
+                      className="w-full bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 outline-none transition"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                    <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1.5">
                       Password
                     </label>
                     <div className="relative">
@@ -451,12 +451,12 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode }) => {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••"
-                        className="w-full bg-white border border-gray-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl pl-3 pr-10 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition"
+                        className="w-full bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl pl-3 pr-10 py-2.5 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 outline-none transition"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-200 focus:outline-none"
                       >
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
@@ -464,7 +464,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode }) => {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                    <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1.5">
                       Confirm password
                     </label>
                     <div className="relative">
@@ -474,7 +474,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode }) => {
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="••••••••"
-                        className="w-full bg-white border border-gray-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl pl-3 pr-10 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition"
+                        className="w-full bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl pl-3 pr-10 py-2.5 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 outline-none transition"
                       />
                     </div>
                   </div>
@@ -552,7 +552,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode }) => {
                     )}
 
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                      <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1.5">
                         Email address
                       </label>
                       <input
@@ -561,7 +561,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode }) => {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="you@example.com"
-                        className="w-full bg-white border border-gray-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition"
+                        className="w-full bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 outline-none transition"
                       />
                     </div>
                     <div className="pt-4 flex flex-col gap-3">
@@ -594,7 +594,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode }) => {
                     )}
 
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                      <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1.5">
                         Recovery code
                       </label>
                       <input
@@ -603,11 +603,11 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode }) => {
                         value={resetCode}
                         onChange={(e) => setResetCode(e.target.value)}
                         placeholder="Enter 6-digit code"
-                        className="w-full bg-white border border-gray-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition"
+                        className="w-full bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 outline-none transition"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                      <label className="block text-xs font-medium text-gray-700 dark:text-slate-300 mb-1.5">
                         New password
                       </label>
                       <div className="relative">
@@ -617,12 +617,12 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode }) => {
                           value={newPassword}
                           onChange={(e) => setNewPassword(e.target.value)}
                           placeholder="••••••••"
-                          className="w-full bg-white border border-gray-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl pl-3 pr-10 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition"
+                          className="w-full bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-xl pl-3 pr-10 py-2.5 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 outline-none transition"
                         />
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-200 focus:outline-none"
                         >
                           {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>

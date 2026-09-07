@@ -114,7 +114,7 @@ export function AutoOrganizeModal({
 
               <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1">
                 <div className="flex items-center gap-2 text-slate-500 text-xs font-medium">
-                  <TrendingUp className="w-3.5 h-3.5 text-indigo-600" />
+                  <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
                   <span>Top Style Archetype</span>
                 </div>
                 <div className="text-xl font-bold text-slate-900">

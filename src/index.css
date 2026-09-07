@@ -7,10 +7,15 @@
     --font-cormorant: 'Cormorant Garamond', Georgia, serif;
     --font-italiana: 'Italiana', serif;
 
-    /* Atelier High-Fashion Accents */
-    --color-primary: #059669; /* Emerald Green */
-    --color-primary-hover: #047857;
-    --color-primary-light: #ecfdf5;
+    /* Atelier High-Fashion Mint Green Accents */
+    --color-primary: #10B981; /* Mint Green */
+    --color-primary-hover: #059669;
+    --color-primary-light: #ECFDF5;
+    --color-mint: #10B981;
+    --color-mint-hover: #059669;
+    --color-mint-light: #ECFDF5;
+    --color-mint-border: #A7F3D0;
+    --color-mint-dark: #047857;
     
     /* Warm luxury neutrals */
     --color-champagne: #C5A880;
@@ -173,6 +178,25 @@
     color: #64748B;
   }
 
+  /* Base input & form styling for high visibility across all themes */
+  input,
+  select,
+  textarea {
+    color: #0F172A;
+    background-color: #FFFFFF;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: #64748B;
+    opacity: 1;
+  }
+
+  select option {
+    color: #0F172A;
+    background-color: #FFFFFF;
+  }
+
   /* Dark mode input & form styling */
   html.dark input,
   html.dark select,
@@ -180,22 +204,22 @@
   html[data-theme="midnight"] input,
   html[data-theme="midnight"] select,
   html[data-theme="midnight"] textarea {
-    background-color: #0F172A;
-    color: #F8FAFC;
+    background-color: #0F172A !important;
+    color: #F8FAFC !important;
     border-color: #334155;
   }
 
   html.dark select option,
   html[data-theme="midnight"] select option {
-    background-color: #0F172A;
-    color: #F8FAFC;
+    background-color: #0F172A !important;
+    color: #F8FAFC !important;
   }
 
   html.dark input::placeholder,
   html.dark textarea::placeholder,
   html[data-theme="midnight"] input::placeholder,
   html[data-theme="midnight"] textarea::placeholder {
-    color: #64748B;
+    color: #94A3B8;
   }
 }
 

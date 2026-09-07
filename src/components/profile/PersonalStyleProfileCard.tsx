@@ -147,15 +147,15 @@ export function PersonalStyleProfileCard() {
   };
 
   return (
-    <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
+    <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
       {/* Progress Header */}
-      <div className="bg-slate-50 border-b border-slate-200 p-4 sm:px-8">
+      <div className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 p-4 sm:px-8">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Step 0{step} of 06</span>
-          <span className="text-xs font-semibold text-emerald-600">{Math.round((step/6)*100)}% Complete</span>
+          <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Step 0{step} of 06</span>
+          <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">{Math.round((step/6)*100)}% Complete</span>
         </div>
-        <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
-          <div className="h-full bg-emerald-600 transition-all duration-500" style={{ width: `${(step/6)*100}%` }} />
+        <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+          <div className="h-full bg-emerald-600 dark:bg-emerald-500 transition-all duration-500" style={{ width: `${(step/6)*100}%` }} />
         </div>
       </div>
 
@@ -163,31 +163,33 @@ export function PersonalStyleProfileCard() {
         {step === 1 && (
           <div className="space-y-6 max-w-xl mx-auto">
             <div className="text-center space-y-2 mb-8">
-              <h2 className="text-2xl font-bold font-editorial text-slate-900">About You</h2>
-              <p className="text-sm text-slate-500">Provide basic details so we can tailor fit and sizing accurately.</p>
+              <h2 className="text-2xl font-bold font-editorial text-slate-900 dark:text-white">About You</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Provide basic details so we can tailor fit and sizing accurately.</p>
             </div>
             
             <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-2 font-mono">Age</label>
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2 font-mono">Age</label>
               <input
                 type="number"
                 min="13" max="120"
                 value={profile.age || ''}
                 onChange={e => setProfile({...profile, age: parseInt(e.target.value) || undefined})}
                 placeholder="e.g. 28"
-                className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full px-4 py-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-2 font-mono">Styling Basis (Gender)</label>
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2 font-mono">Styling Basis (Gender)</label>
               <div className="flex flex-wrap gap-2">
                 {['Men', 'Women', 'Non-binary', 'Prefer not to say'].map(g => (
                   <button
                     key={g}
                     onClick={() => setProfile({...profile, gender: g as any})}
                     className={`px-4 py-2.5 rounded-xl text-sm font-medium border transition-all ${
-                      profile.gender === g ? 'bg-slate-900 text-white border-slate-900 shadow-sm' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                      profile.gender === g
+                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
                     }`}
                   >
                     {g}
@@ -198,25 +200,25 @@ export function PersonalStyleProfileCard() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-2 font-mono">Height (cm)</label>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2 font-mono">Height (cm)</label>
                 <input
                   type="number"
                   min="100" max="250"
                   value={profile.heightCm || ''}
                   onChange={e => setProfile({...profile, heightCm: parseInt(e.target.value) || undefined})}
                   placeholder="e.g. 175"
-                  className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-4 py-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-2 font-mono">Weight (kg)</label>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2 font-mono">Weight (kg)</label>
                 <input
                   type="number"
                   min="30" max="250"
                   value={profile.weightKg || ''}
                   onChange={e => setProfile({...profile, weightKg: parseInt(e.target.value) || undefined})}
                   placeholder="e.g. 70"
-                  className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-4 py-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
             </div>
@@ -238,8 +240,8 @@ export function PersonalStyleProfileCard() {
         {step === 2 && (
           <div className="space-y-6 max-w-xl mx-auto">
             <div className="text-center space-y-2 mb-8">
-              <h2 className="text-2xl font-bold font-editorial text-slate-900">Live Photo</h2>
-              <p className="text-sm text-slate-500">Take a clear photo so PN can personalize your recommendations based on undertone and contrast.</p>
+              <h2 className="text-2xl font-bold font-editorial text-slate-900 dark:text-white">Live Photo</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Take a clear photo so PN can personalize your recommendations based on undertone and contrast.</p>
             </div>
             
             <LiveCamera 
@@ -259,50 +261,50 @@ export function PersonalStyleProfileCard() {
         {step === 3 && profile.visualAnalysis && (
           <div className="space-y-6 max-w-xl mx-auto">
             <div className="text-center space-y-2 mb-8">
-              <h2 className="text-2xl font-bold font-editorial text-slate-900">Your Visual Profile</h2>
-              <p className="text-sm text-slate-500">Review the AI visual analysis. You can adjust any details that don't look quite right.</p>
+              <h2 className="text-2xl font-bold font-editorial text-slate-900 dark:text-white">Your Visual Profile</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Review the AI visual analysis. You can adjust any details that don't look quite right.</p>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-2 font-mono">Face Shape</label>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2 font-mono">Face Shape</label>
                 <select
                   value={profile.visualAnalysis.faceShape}
                   onChange={(e) => setProfile({
                     ...profile,
                     visualAnalysis: { ...profile.visualAnalysis!, faceShape: e.target.value as FaceShape }
                   })}
-                  className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-4 py-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 >
-                  {FACE_SHAPES.map(s => <option key={s} value={s}>{s}</option>)}
+                  {FACE_SHAPES.map(s => <option key={s} value={s} className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">{s}</option>)}
                 </select>
               </div>
               
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-2 font-mono">Skin Undertone</label>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2 font-mono">Skin Undertone</label>
                 <select
                   value={profile.visualAnalysis.skinTone}
                   onChange={(e) => setProfile({
                     ...profile,
                     visualAnalysis: { ...profile.visualAnalysis!, skinTone: e.target.value as SkinToneUndertone }
                   })}
-                  className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-4 py-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 >
-                  {SKIN_TONES.map(s => <option key={s} value={s}>{s}</option>)}
+                  {SKIN_TONES.map(s => <option key={s} value={s} className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">{s}</option>)}
                 </select>
               </div>
 
-              <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-2 font-mono">Contrast Level</label>
+            <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2 font-mono">Contrast Level</label>
                 <select
                   value={profile.visualAnalysis.contrastLevel}
                   onChange={(e) => setProfile({
                     ...profile,
                     visualAnalysis: { ...profile.visualAnalysis!, contrastLevel: e.target.value as any }
                   })}
-                  className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-4 py-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 >
-                  {['High', 'Medium', 'Low', 'Soft'].map(s => <option key={s} value={s}>{s}</option>)}
+                  {['High', 'Medium', 'Low', 'Soft'].map(s => <option key={s} value={s} className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">{s}</option>)}
                 </select>
               </div>
             </div>
@@ -317,8 +319,8 @@ export function PersonalStyleProfileCard() {
         {step === 4 && (
           <div className="space-y-6">
             <div className="text-center space-y-2 mb-8 max-w-xl mx-auto">
-              <h2 className="text-2xl font-bold font-editorial text-slate-900">Your Style</h2>
-              <p className="text-sm text-slate-500">Select the aesthetics that match how you want to dress.</p>
+              <h2 className="text-2xl font-bold font-editorial text-slate-900 dark:text-white">Your Style</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Select the aesthetics that match how you want to dress.</p>
             </div>
             
             <StyleEducationGrid
@@ -343,19 +345,21 @@ export function PersonalStyleProfileCard() {
         {step === 5 && (
           <div className="space-y-8 max-w-xl mx-auto">
             <div className="text-center space-y-2 mb-8">
-              <h2 className="text-2xl font-bold font-editorial text-slate-900">Fit & Preferences</h2>
-              <p className="text-sm text-slate-500">Refine your sizing and color palette.</p>
+              <h2 className="text-2xl font-bold font-editorial text-slate-900 dark:text-white">Fit & Preferences</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Refine your sizing and color palette.</p>
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-2 font-mono">Preferred Fit</label>
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2 font-mono">Preferred Fit</label>
               <div className="flex flex-wrap gap-2">
                 {FITS.map(fit => (
                   <button
                     key={fit}
                     onClick={() => setProfile({...profile, preferredFit: fit})}
                     className={`px-4 py-2.5 rounded-xl text-sm font-medium border transition-all ${
-                      profile.preferredFit === fit ? 'bg-slate-900 text-white border-slate-900 shadow-sm' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                      profile.preferredFit === fit
+                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
                     }`}
                   >
                     {fit}
@@ -365,46 +369,46 @@ export function PersonalStyleProfileCard() {
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-2 font-mono">Sizing</label>
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2 font-mono">Sizing</label>
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <span className="text-xs text-slate-500 block mb-1">Top</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Top</span>
                   <select
                     value={profile.topSize || ''}
                     onChange={(e) => setProfile({...profile, topSize: e.target.value})}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm font-semibold focus:outline-none"
+                    className="w-full px-3 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   >
-                    <option value="">Select</option>
-                    {TOP_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
+                    <option value="" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">Select</option>
+                    {TOP_SIZES.map(s => <option key={s} value={s} className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">{s}</option>)}
                   </select>
                 </div>
                 <div>
-                  <span className="text-xs text-slate-500 block mb-1">Bottom</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Bottom</span>
                   <select
                     value={profile.bottomSize || ''}
                     onChange={(e) => setProfile({...profile, bottomSize: e.target.value})}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm font-semibold focus:outline-none"
+                    className="w-full px-3 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   >
-                    <option value="">Select</option>
-                    {BOTTOM_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
+                    <option value="" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">Select</option>
+                    {BOTTOM_SIZES.map(s => <option key={s} value={s} className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">{s}</option>)}
                   </select>
                 </div>
                 <div>
-                  <span className="text-xs text-slate-500 block mb-1">Shoe</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Shoe</span>
                   <select
                     value={profile.shoeSize || ''}
                     onChange={(e) => setProfile({...profile, shoeSize: e.target.value})}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm font-semibold focus:outline-none"
+                    className="w-full px-3 py-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   >
-                    <option value="">Select</option>
-                    {SHOE_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
+                    <option value="" className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">Select</option>
+                    {SHOE_SIZES.map(s => <option key={s} value={s} className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white">{s}</option>)}
                   </select>
                 </div>
               </div>
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-2 font-mono">Color Preferences</label>
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2 font-mono">Color Preferences</label>
               <div className="flex flex-wrap gap-2">
                 {POPULAR_COLORS.map(color => {
                   const isSelected = profile.preferredColors.includes(color);
@@ -413,7 +417,9 @@ export function PersonalStyleProfileCard() {
                       key={color}
                       onClick={() => toggleColorPreference(color)}
                       className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
-                        isSelected ? 'bg-emerald-700 text-white border-emerald-700 shadow-sm' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                        isSelected
+                          ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                          : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
                       }`}
                     >
                       {isSelected && <Check className="w-3 h-3 inline mr-1" />}
@@ -440,11 +446,11 @@ export function PersonalStyleProfileCard() {
 
         {step === 6 && (
           <div className="space-y-6 max-w-xl mx-auto text-center">
-            <div className="w-20 h-20 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-4">
+            <div className="w-20 h-20 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto mb-4 border border-emerald-100 dark:border-emerald-800">
               <ShieldCheck className="w-10 h-10" />
             </div>
-            <h2 className="text-3xl font-bold font-editorial text-slate-900">Ready to Style</h2>
-            <p className="text-sm text-slate-500 max-w-md mx-auto">
+            <h2 className="text-3xl font-bold font-editorial text-slate-900 dark:text-white">Ready to Style</h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">
               Your profile is complete. PN will now use these validated characteristics, precise fits, and visual analysis to generate accurate styling recommendations.
             </p>
             
@@ -452,7 +458,7 @@ export function PersonalStyleProfileCard() {
               <Button variant="outline" className="flex-1 py-3 rounded-2xl justify-center" onClick={prevStep}>Review</Button>
               <Button 
                 variant="primary" 
-                className="flex-1 py-3 rounded-2xl justify-center shadow-md bg-emerald-600 hover:bg-emerald-700" 
+                className="flex-1 py-3 rounded-2xl justify-center shadow-md bg-emerald-600 hover:bg-emerald-700 text-white" 
                 onClick={handleSaveFinal}
                 isLoading={isSaving}
               >

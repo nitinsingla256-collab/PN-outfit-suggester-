@@ -260,7 +260,7 @@ export function SettingsPage() {
               {/* Header */}
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-indigo-950/80 border border-indigo-800/60 flex items-center justify-center text-indigo-400">
+                  <div className="w-7 h-7 rounded-lg bg-emerald-950/80 border border-emerald-800/60 flex items-center justify-center text-emerald-400">
                     <Moon className="w-4 h-4" />
                   </div>
                   <div>
@@ -348,7 +348,7 @@ export function SettingsPage() {
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                <Moon className="w-3.5 h-3.5 text-indigo-400" />
+                <Moon className="w-3.5 h-3.5 text-emerald-400" />
                 <span>Midnight</span>
               </button>
             </div>

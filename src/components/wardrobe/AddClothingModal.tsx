@@ -1320,7 +1320,7 @@ export function AddClothingModal() {
 
             {/* Seasons Selection */}
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-gray-700">
+              <label className="text-xs font-medium text-gray-700 dark:text-slate-300">
                 Season Suitability
               </label>
               <div className="flex flex-wrap gap-2">
@@ -1333,8 +1333,8 @@ export function AddClothingModal() {
                       onClick={() => toggleSeason(s)}
                       className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-all ${
                         isSelected
-                          ? 'bg-emerald-50 border-emerald-300 text-emerald-800 font-semibold'
-                          : 'bg-gray-50 border-gray-300 text-gray-600 hover:bg-gray-100'
+                          ? 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-300 font-semibold'
+                          : 'bg-gray-50 dark:bg-slate-800 border-gray-300 dark:border-slate-700 text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700'
                       }`}
                     >
                       {s}
@@ -1386,13 +1386,13 @@ export function AddClothingModal() {
         {/* BATCH ITEM DETAIL MODAL (Quick edit single item inside batch) */}
         {selectedBatchItemForEdit && (
           <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl p-6 max-w-lg w-full space-y-4 shadow-2xl border border-gray-200 animate-fadeIn">
-              <div className="flex items-center justify-between pb-3 border-b border-gray-200">
-                <h4 className="text-base font-bold text-gray-900">Customize Piece Metadata</h4>
+            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 max-w-lg w-full space-y-4 shadow-2xl border border-gray-200 dark:border-slate-800 animate-fadeIn">
+              <div className="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-slate-800">
+                <h4 className="text-base font-bold text-gray-900 dark:text-white">Customize Piece Metadata</h4>
                 <button
                   type="button"
                   onClick={() => setSelectedBatchItemForEdit(null)}
-                  className="p-1 rounded-lg text-gray-400 hover:text-gray-700"
+                  className="p-1 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                 >
                   <X className="w-5 h-5" />
                 </button>
