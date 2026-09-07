@@ -26,29 +26,30 @@ export function WeatherWidget({ className = "" }: { className?: string }) {
         }
       }
     } catch {}
-    return {
-      temperatureCelsius: 0,
-      feelsLikeCelsius: 0,
-      condition: "Loading...",
-      isRaining: false,
-      windSpeed: 0,
-      lastUpdated: new Date().toISOString(),
-      locationName: user?.location || "Location not set",
-    };
+    return null;
   });
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [isUnavailable, setIsUnavailable] = useState(false);
 
   useEffect(() => {
     let mounted = true;
 
     async function fetchWeather() {
+      setLoading(true);
+      setIsUnavailable(false);
       try {
         const data = await weatherService.getAutoLocationWeather(
           user?.location || undefined,
         );
-        if (mounted) setWeather(data);
+        if (mounted) {
+          setWeather(data);
+          setLoading(false);
+        }
       } catch (err) {
-        console.warn("Weather notice:", err);
+        if (mounted) {
+          setIsUnavailable(true);
+          setLoading(false);
+        }
       }
     }
 
@@ -58,7 +59,38 @@ export function WeatherWidget({ className = "" }: { className?: string }) {
     };
   }, [user?.location]);
 
-  if (!weather) return null;
+  if (loading && !weather) {
+    return (
+      <div className={`relative overflow-hidden rounded-2xl bg-white/90 border border-slate-200/80 p-5 shadow-sm ${className}`}>
+        <div className="flex items-center justify-between pb-2 border-b border-slate-100 mb-3">
+          <span className="text-[10px] uppercase font-bold tracking-widest text-slate-500 flex items-center gap-1.5">
+            <MapPin className="w-3 h-3" />
+            {user?.location || "Location not set"}
+          </span>
+        </div>
+        <div className="text-xs text-slate-400 py-2">Loading live telemetry...</div>
+      </div>
+    );
+  }
+
+  if (isUnavailable || !weather) {
+    return (
+      <div className={`relative overflow-hidden rounded-2xl bg-white/90 dark:bg-gray-900 border border-slate-200/80 dark:border-gray-800 p-4 shadow-sm ${className}`}>
+        <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-gray-800 mb-2.5">
+          <span className="text-[10px] uppercase font-bold tracking-widest text-slate-500 flex items-center gap-1.5">
+            <MapPin className="w-3 h-3" />
+            {user?.location || "Location not set"}
+          </span>
+          <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-full">
+            Weather Unavailable
+          </span>
+        </div>
+        <p className="text-xs text-slate-500 mb-2.5">
+          Live climate telemetry unavailable. Enter your city to enable weather-calibrated styling.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div

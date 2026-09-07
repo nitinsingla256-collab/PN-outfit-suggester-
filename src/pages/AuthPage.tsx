@@ -37,11 +37,16 @@ function sanitizeAuthError(err: any): string {
   return msg;
 }
 
-export const AuthPage: React.FC = () => {
+interface AuthPageProps {
+  initialMode?: AuthMode;
+}
+
+export const AuthPage: React.FC<AuthPageProps> = ({ initialMode }) => {
   const { signIn, signUp, requestPasswordReset, resetPassword, showToast } =
     useApp();
 
   const [mode, setMode] = useState<AuthMode>(() => {
+    if (initialMode) return initialMode;
     if (typeof window !== "undefined") {
       const hash = window.location.hash.toLowerCase();
       if (hash.includes("forgot")) return "forgot";
@@ -190,20 +195,6 @@ export const AuthPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const fillDemoSupervisor = () => {
-    setMode("signin");
-    setEmail("nitinsingla256@gmail.com");
-    setPassword("1211");
-    setSuccessMessage("Admin credentials loaded. You may now click Sign In.");
-  };
-
-  const fillDemoClient = () => {
-    setMode("signin");
-    setEmail("client@paurvi.atelier");
-    setPassword("client123");
-    setSuccessMessage("Client credentials loaded. You may now click Sign In.");
   };
 
   return (
@@ -662,31 +653,14 @@ export const AuthPage: React.FC = () => {
             )}
           </div>
 
-          <div className="mt-12 pt-6 flex justify-between items-center text-[10px] text-gray-400 max-w-[420px] mx-auto w-full">
-            <div className="flex gap-4">
+          <div className="mt-12 pt-6 flex justify-center items-center text-[11px] text-gray-400 max-w-[420px] mx-auto w-full">
+            <div className="flex gap-6">
               <span className="flex items-center gap-1.5 font-medium">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" /> Secure & Private
               </span>
               <span className="flex items-center gap-1.5 font-medium">
                 <Sparkles className="w-3.5 h-3.5 text-emerald-500" /> AI Personalization
               </span>
-            </div>
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={fillDemoClient}
-                className="hover:text-emerald-500 transition-colors underline decoration-dotted"
-              >
-                Demo Client
-              </button>
-              <span>•</span>
-              <button
-                type="button"
-                onClick={fillDemoSupervisor}
-                className="hover:text-emerald-500 transition-colors underline decoration-dotted"
-              >
-                Demo Admin
-              </button>
             </div>
           </div>
         </div>

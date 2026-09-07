@@ -1,84 +1,96 @@
 import { Outfit } from '../types';
-import { INITIAL_OUTFITS } from '../data/seedData';
-
-const STORAGE_KEY = 'pn_local_outfits_dev';
+import { authService } from './authService';
 
 class OutfitService {
-  private getLocal(): Outfit[] {
-    try {
-      const data = localStorage.getItem(STORAGE_KEY);
-      if (data === null) {
-        this.setLocal(INITIAL_OUTFITS);
-        return [...INITIAL_OUTFITS];
-      }
-      const parsed = JSON.parse(data);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch { return []; }
-  }
-  private setLocal(items: Outfit[]) {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch {}
+  private getHeaders() {
+    const token = authService.getToken();
+    if (!token) throw new Error('Not authenticated');
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    };
   }
 
   async getAll(): Promise<Outfit[]> {
-    return this.getLocal();
-  }
-
-  async resetToSample(): Promise<Outfit[]> {
-    this.setLocal(INITIAL_OUTFITS);
-    return [...INITIAL_OUTFITS];
+    const res = await fetch('/api/user/outfits', {
+      headers: this.getHeaders()
+    });
+    if (!res.ok) throw new Error('Failed to fetch outfits');
+    const data = await res.json();
+    return data.outfits || [];
   }
 
   async getById(id: string): Promise<Outfit | null> {
-    return this.getLocal().find(i => i.id === id) || null;
+    const items = await this.getAll();
+    return items.find(i => i.id === id) || null;
   }
 
   async create(data: Omit<Outfit, 'id' | 'createdAt' | 'updatedAt' | 'timesWorn'>): Promise<Outfit> {
-    const items = this.getLocal();
-    const newItem: Outfit = {
-      ...data,
-      id: 'outfit_' + Date.now(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      timesWorn: 0,
-      isFavorite: false,
-    };
-    items.unshift(newItem);
-    this.setLocal(items);
-    return newItem;
+    const res = await fetch('/api/user/outfits', {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error('Failed to create outfit');
+    const json = await res.json();
+    return json.outfit;
   }
 
   async update(id: string, updates: Partial<Outfit>): Promise<Outfit> {
-    const items = this.getLocal();
-    const idx = items.findIndex(i => i.id === id);
-    if (idx === -1) throw new Error('Outfit not found');
-    items[idx] = { ...items[idx], ...updates, updatedAt: new Date().toISOString() };
-    this.setLocal(items);
-    return items[idx];
+    const res = await fetch(`/api/user/outfits/${id}`, {
+      method: 'PUT',
+      headers: this.getHeaders(),
+      body: JSON.stringify(updates)
+    });
+    if (!res.ok) throw new Error('Failed to update outfit');
+    const json = await res.json();
+    return json.outfit;
   }
 
   async delete(id: string): Promise<void> {
-    const items = this.getLocal();
-    this.setLocal(items.filter(i => i.id !== id));
+    const res = await fetch(`/api/user/outfits/${id}`, {
+      method: 'DELETE',
+      headers: this.getHeaders()
+    });
+    if (!res.ok) throw new Error('Failed to delete outfit');
   }
   
   async deleteMany(ids: string[]): Promise<void> {
-    const items = this.getLocal();
-    const idSet = new Set(ids);
-    this.setLocal(items.filter(i => !idSet.has(i.id)));
+    const res = await fetch(`/api/user/outfits/batch-delete`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ ids })
+    });
+    if (!res.ok) throw new Error('Failed to delete outfits');
   }
 
   async clearAll(): Promise<void> {
-    this.setLocal([]);
+    const res = await fetch('/api/user/outfits/clear', {
+      method: 'POST',
+      headers: this.getHeaders()
+    });
+    if (!res.ok) throw new Error('Failed to clear outfits');
   }
 
   async toggleFavorite(id: string, isFavorite: boolean): Promise<Outfit> {
-    return this.update(id, { isFavorite });
+    const res = await fetch(`/api/user/outfits/${id}/favorite`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ isFavorite })
+    });
+    if (!res.ok) throw new Error('Failed to update favorite status');
+    const json = await res.json();
+    return json.outfit;
   }
 
   async logWear(id: string): Promise<Outfit> {
-    const item = await this.getById(id);
-    if (!item) throw new Error('Outfit not found');
-    return this.update(id, { timesWorn: (item.timesWorn || 0) + 1 });
+    const res = await fetch(`/api/user/outfits/${id}/wear`, {
+      method: 'POST',
+      headers: this.getHeaders()
+    });
+    if (!res.ok) throw new Error('Failed to log wear');
+    const json = await res.json();
+    return json.outfit;
   }
 }
 

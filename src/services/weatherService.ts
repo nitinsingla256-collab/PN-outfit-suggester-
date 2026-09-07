@@ -242,15 +242,6 @@ export const weatherService = {
       console.warn('IP geolocation unavailable:', e);
     }
 
-    // Default neutral fallback (Mild temperate climate)
-    return {
-      temperatureCelsius: 20,
-      feelsLikeCelsius: 20,
-      condition: 'Clear',
-      isRaining: false,
-      windSpeed: 8,
-      lastUpdated: new Date().toISOString(),
-      locationName: preferredLocation || 'Local Region',
-    };
+    throw new Error('Weather unavailable for the requested location.');
   },
 };

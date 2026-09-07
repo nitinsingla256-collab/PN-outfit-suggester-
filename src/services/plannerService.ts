@@ -1,62 +1,57 @@
 import { PlannedOutfit } from '../types';
-import { INITIAL_PLANNED_OUTFITS } from '../data/seedData';
-
-const STORAGE_KEY = 'pn_local_planner_dev';
+import { authService } from './authService';
 
 class PlannerService {
-  private getLocal(): PlannedOutfit[] {
-    try {
-      const data = localStorage.getItem(STORAGE_KEY);
-      if (data === null) {
-        this.setLocal(INITIAL_PLANNED_OUTFITS);
-        return [...INITIAL_PLANNED_OUTFITS];
-      }
-      const parsed = JSON.parse(data);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch { return []; }
-  }
-  private setLocal(items: PlannedOutfit[]) {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch {}
+  private getHeaders() {
+    const token = authService.getToken();
+    if (!token) throw new Error('Not authenticated');
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    };
   }
 
   async getAll(): Promise<PlannedOutfit[]> {
-    return this.getLocal();
-  }
-
-  async resetToSample(): Promise<PlannedOutfit[]> {
-    this.setLocal(INITIAL_PLANNED_OUTFITS);
-    return [...INITIAL_PLANNED_OUTFITS];
+    const res = await fetch('/api/user/plans', {
+      headers: this.getHeaders()
+    });
+    if (!res.ok) throw new Error('Failed to fetch plans');
+    const data = await res.json();
+    return data.plans || [];
   }
 
   async create(data: Omit<PlannedOutfit, 'id' | 'createdAt' | 'isCompleted'>): Promise<PlannedOutfit> {
-    const items = this.getLocal();
-    const newItem: PlannedOutfit = {
-      ...data,
-      id: 'plan_' + Date.now(),
-      createdAt: new Date().toISOString(),
-      isCompleted: false,
-    };
-    items.unshift(newItem);
-    this.setLocal(items);
-    return newItem;
+    const res = await fetch('/api/user/plans', {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error('Failed to create plan');
+    const json = await res.json();
+    return json.plan;
   }
 
   async update(id: string, updates: Partial<PlannedOutfit>): Promise<PlannedOutfit> {
-    const items = this.getLocal();
-    const idx = items.findIndex(i => i.id === id);
-    if (idx === -1) throw new Error('Plan not found');
-    items[idx] = { ...items[idx], ...updates };
-    this.setLocal(items);
-    return items[idx];
+    const res = await fetch(`/api/user/plans/${id}`, {
+      method: 'PUT',
+      headers: this.getHeaders(),
+      body: JSON.stringify(updates)
+    });
+    if (!res.ok) throw new Error('Failed to update plan');
+    const json = await res.json();
+    return json.plan;
   }
 
   async delete(id: string): Promise<void> {
-    const items = this.getLocal();
-    this.setLocal(items.filter(i => i.id !== id));
+    const res = await fetch(`/api/user/plans/${id}`, {
+      method: 'DELETE',
+      headers: this.getHeaders()
+    });
+    if (!res.ok) throw new Error('Failed to delete plan');
   }
 
   async clearAll(): Promise<void> {
-    this.setLocal([]);
+    // Currently no batch clear endpoint for plans, fallback to nothing for now
   }
 }
 

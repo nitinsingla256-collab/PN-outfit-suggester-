@@ -1,4 +1,5 @@
 import { GoogleGenAI, Type } from '@google/genai';
+import { getGeminiModel } from './geminiConfig';
 import {
   WardrobeItem,
   PersonalStyleProfile,
@@ -585,7 +586,7 @@ Return JSON matching this schema:
 
   try {
     const response = await ai.models.generateContent({
-      model: process.env.GEMINI_MODEL || 'gemini-1.5-flash',
+      model: getGeminiModel(),
       contents: [prompt],
       config: {
         responseMimeType: 'application/json',

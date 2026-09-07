@@ -70,7 +70,6 @@ export function WardrobePage() {
     deleteWardrobeItem,
     deleteMultipleWardrobeItems,
     clearWardrobe,
-    resetToSampleWardrobe,
     reloadWardrobe,
     navigateTo,
     showToast,
@@ -801,7 +800,6 @@ export function WardrobePage() {
                 <Button
                   variant="secondary"
                   size="md"
-                  onClick={resetToSampleWardrobe}
                   className="rounded-2xl px-4"
                   leftIcon={<Sparkles className="w-4 h-4" />}
                 >

@@ -25,7 +25,6 @@ import { NotFoundPage } from './pages/NotFoundPage';
 const AddClothingModal = lazy(() => import('./components/wardrobe/AddClothingModal').then(m => ({ default: m.AddClothingModal })));
 const ClothingDetailModal = lazy(() => import('./components/wardrobe/ClothingDetailModal').then(m => ({ default: m.ClothingDetailModal })));
 const CreateLookModal = lazy(() => import('./components/outfits/CreateLookModal').then(m => ({ default: m.CreateLookModal })));
-const FirstLoginMeasurementsModal = lazy(() => import('./components/profile/FirstLoginMeasurementsModal').then(m => ({ default: m.FirstLoginMeasurementsModal })));
 
 function PageLoadingSkeleton() {
   return (
@@ -49,6 +48,7 @@ function PageLoadingSkeleton() {
 
 import { isStyleProfileComplete } from './utils/profileValidation';
 import { PersonalStyleProfileCard } from './components/profile/PersonalStyleProfileCard';
+import { ToastContainer } from './components/ui/Toast';
 
 function RouterView() {
   const { currentRoute, user, navigateTo, isAuthenticated } = useApp();
@@ -97,7 +97,8 @@ function RouterView() {
       case '/settings': return <SettingsPage key="settings" />;
       case '/admin': return <AdminPage key="admin" />;
       case '/auth': return <AuthPage key="auth" />;
-      case '/login': return <AuthPage key="login" />;
+      case '/login': return <AuthPage key="login" initialMode="signin" />;
+      case '/signup': return <AuthPage key="signup" initialMode="signup" />;
       default: return <NotFoundPage key="notfound" />;
     }
   };
@@ -121,30 +122,46 @@ export function AppContent() {
     isAuthenticated,
     authLoading,
     user,
+    currentRoute,
+    toasts,
+    dismissToast,
     isAddClothingModalOpen,
     selectedWardrobeItemForDetail,
     isCreateLookModalOpen,
-    isFirstLoginMeasurementsModalOpen,
-    setIsFirstLoginMeasurementsModalOpen,
   } = useApp();
 
+  if (authLoading) {
+    return <PageLoadingSkeleton />;
+  }
+
+  // If not authenticated, render auth view directly
+  if (!isAuthenticated) {
+    return (
+      <div className="w-full min-h-screen bg-gray-50 dark:bg-gray-950">
+        <AuthPage initialMode={currentRoute === '/signup' ? 'signup' : 'signin'} />
+        <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+      </div>
+    );
+  }
+
   // Force setup if authenticated and profile is not completely valid
-  const needsSetup = isAuthenticated && !isStyleProfileComplete(user.profile);
+  const needsSetup = !isStyleProfileComplete(user.profile);
 
   if (needsSetup) {
     return (
-      <div className="w-full min-h-screen bg-slate-50 flex items-start justify-center p-4 py-8 sm:py-12 animate-in fade-in duration-500 overflow-y-auto">
+      <div className="w-full min-h-screen bg-slate-50 dark:bg-gray-950 flex items-start justify-center p-4 py-8 sm:py-12 animate-in fade-in duration-500 overflow-y-auto">
         <div className="w-full max-w-3xl">
           <div className="mb-6 text-center">
-            <h1 className="text-2xl font-bold font-editorial text-slate-900">Welcome to PN</h1>
-            <p className="text-sm text-slate-500 mt-1">Please complete your style profile to begin building your digital wardrobe.</p>
+            <h1 className="text-2xl font-bold font-editorial text-slate-900 dark:text-slate-100">Welcome to PN</h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Please complete your style profile to begin building your digital wardrobe.</p>
           </div>
-          <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
+          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-slate-200 dark:border-gray-800 overflow-hidden">
             <div className="p-4 sm:p-6 lg:p-8">
               <PersonalStyleProfileCard />
             </div>
           </div>
         </div>
+        <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       </div>
     );
   }
@@ -165,13 +182,6 @@ export function AppContent() {
 
         {isCreateLookModalOpen && (
           <CreateLookModal />
-        )}
-
-        {isFirstLoginMeasurementsModalOpen && (
-          <FirstLoginMeasurementsModal
-            isOpen={isFirstLoginMeasurementsModalOpen}
-            onClose={() => setIsFirstLoginMeasurementsModalOpen(false)}
-          />
         )}
       </Suspense>
     </AppLayout>

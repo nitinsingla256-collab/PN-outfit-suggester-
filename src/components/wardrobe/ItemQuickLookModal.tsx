@@ -267,7 +267,7 @@ export function ItemQuickLookModal({
                       Material
                     </span>
                     <span className="font-semibold text-slate-800 truncate block mt-0.5">
-                      {item.material || 'Premium Fabric'}
+                      {item.material || 'Not specified'}
                     </span>
                   </div>
 

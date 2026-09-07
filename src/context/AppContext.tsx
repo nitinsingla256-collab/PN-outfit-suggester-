@@ -55,7 +55,6 @@ interface AppContextType {
   resetPassword: (email: string, resetCode: string, newPasswordPlain: string) => Promise<string>;
   updateProfile: (updates: Partial<User>) => Promise<void>;
   updateUser: (updates: Partial<User>) => Promise<void>;
-  resetToDemoData: () => Promise<void>;
   clearAllData: () => Promise<void>;
 
   // Wardrobe
@@ -66,7 +65,6 @@ interface AppContextType {
   deleteWardrobeItem: (id: string) => Promise<void>;
   deleteMultipleWardrobeItems: (ids: string[]) => Promise<void>;
   clearWardrobe: () => Promise<void>;
-  resetToSampleWardrobe: () => Promise<void>;
   toggleWardrobeFavorite: (id: string) => Promise<void>;
   recordWearItem: (id: string) => Promise<void>;
   reloadWardrobe: () => Promise<void>;
@@ -100,8 +98,6 @@ interface AppContextType {
   setIsCreateLookModalOpen: (open: boolean) => void;
   isPlanModalOpen: boolean;
   setIsPlanModalOpen: (open: boolean) => void;
-  isFirstLoginMeasurementsModalOpen: boolean;
-  setIsFirstLoginMeasurementsModalOpen: (open: boolean) => void;
   openMeasurementsModal: () => void;
   selectedWardrobeItemForDetail: WardrobeItem | null;
   setSelectedWardrobeItemForDetail: (item: WardrobeItem | null) => void;
@@ -123,6 +119,7 @@ const VALID_NAVIGATION_ROUTES: NavigationRoute[] = [
   '/admin',
   '/auth',
   '/login',
+  '/signup',
 ];
 
 function resolveCurrentRoute(): NavigationRoute {
@@ -236,12 +233,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isAddClothingModalOpen, setIsAddClothingModalOpen] = useState(false);
   const [isCreateLookModalOpen, setIsCreateLookModalOpen] = useState(false);
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
-  const [isFirstLoginMeasurementsModalOpen, setIsFirstLoginMeasurementsModalOpen] = useState(false);
   const [selectedWardrobeItemForDetail, setSelectedWardrobeItemForDetail] = useState<WardrobeItem | null>(null);
   const [quickOccasionForStylist, setQuickOccasionForStylist] = useState<OccasionType | null>(null);
 
   const openMeasurementsModal = useCallback(() => {
-    setIsFirstLoginMeasurementsModalOpen(false);
   }, []);
 
   // Sync route safely across standalone PWA, mobile Chrome, and embedded iframes
@@ -375,17 +370,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
         }
 
-        // If no active session, auto-authenticate as client account to establish valid JWT token
-        try {
-          const { user: authedUser } = await authService.signIn('client@paurvi.atelier', 'client123');
-          setUser(authedUser);
-          setIsAuthenticated(true);
-          await loadUserData();
-        } catch (autoErr) {
-          console.warn('Auto client sign-in deferred:', autoErr);
-          setUser(INITIAL_USER);
-          setIsAuthenticated(false);
-        }
+        // If no active session, user remains unauthenticated
+        setUser(INITIAL_USER);
+        setIsAuthenticated(false);
       } catch (err) {
         console.error('Auth initialization error:', err);
         setUser(INITIAL_USER);
@@ -408,7 +395,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       // Check if user should be asked height & weight
       if (!authedUser.measurements?.hasCompletedFirstLoginMeasurements) {
-        setIsFirstLoginMeasurementsModalOpen(false);
       }
 
       showToast({
@@ -436,7 +422,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setPlans([]);
 
       // Prompt new users for height and weight immediately after account creation
-      setIsFirstLoginMeasurementsModalOpen(false);
 
       showToast({
         title: 'Account Created',
@@ -498,30 +483,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [showToast]);
 
   const updateUser = updateProfile;
-
-  const resetToDemoData = useCallback(async () => {
-    try {
-      const [sampleWardrobe, sampleOutfits, samplePlans] = await Promise.all([
-        wardrobeService.resetToSample(),
-        outfitService.resetToSample(),
-        plannerService.resetToSample(),
-      ]);
-      setWardrobe(sampleWardrobe);
-      setOutfits(sampleOutfits);
-      setPlans(samplePlans);
-      showToast({
-        title: 'Sample Capsule Loaded',
-        description: 'Your wardrobe data has been restored with the curated capsule.',
-        type: 'success',
-      });
-    } catch {
-      showToast({
-        title: 'Reset Error',
-        description: 'Could not restore sample capsule data.',
-        type: 'error',
-      });
-    }
-  }, [showToast]);
 
   const clearAllData = useCallback(async () => {
     await Promise.all([
@@ -593,24 +554,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       description: 'All pieces have been removed from your wardrobe.',
       type: 'info',
     });
-  }, [showToast]);
-
-  const resetToSampleWardrobe = useCallback(async () => {
-    try {
-      const sampleItems = await wardrobeService.resetToSample();
-      setWardrobe(sampleItems);
-      showToast({
-        title: 'Sample Wardrobe Loaded',
-        description: 'Editorial sample items have been restored.',
-        type: 'success',
-      });
-    } catch {
-      showToast({
-        title: 'Reset Error',
-        description: 'Could not restore sample wardrobe items.',
-        type: 'error',
-      });
-    }
   }, [showToast]);
 
   const toggleWardrobeFavorite = useCallback(async (id: string) => {
@@ -778,7 +721,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       resetPassword,
       updateProfile,
       updateUser,
-      resetToDemoData,
       clearAllData,
       wardrobe,
       isLoadingWardrobe,
@@ -787,7 +729,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       deleteWardrobeItem,
       deleteMultipleWardrobeItems,
       clearWardrobe,
-      resetToSampleWardrobe,
       toggleWardrobeFavorite,
       recordWearItem,
       reloadWardrobe,
@@ -813,8 +754,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setIsCreateLookModalOpen,
       isPlanModalOpen,
       setIsPlanModalOpen,
-      isFirstLoginMeasurementsModalOpen,
-      setIsFirstLoginMeasurementsModalOpen,
       openMeasurementsModal,
       selectedWardrobeItemForDetail,
       setSelectedWardrobeItemForDetail,
@@ -837,7 +776,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       resetPassword,
       updateProfile,
       updateUser,
-      resetToDemoData,
       clearAllData,
       wardrobe,
       isLoadingWardrobe,
@@ -846,7 +784,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       deleteWardrobeItem,
       deleteMultipleWardrobeItems,
       clearWardrobe,
-      resetToSampleWardrobe,
       toggleWardrobeFavorite,
       recordWearItem,
       reloadWardrobe,
@@ -869,7 +806,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       isAddClothingModalOpen,
       isCreateLookModalOpen,
       isPlanModalOpen,
-      isFirstLoginMeasurementsModalOpen,
       openMeasurementsModal,
       selectedWardrobeItemForDetail,
       quickOccasionForStylist,

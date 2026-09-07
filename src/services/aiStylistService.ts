@@ -61,7 +61,7 @@ export class AIStylistService {
     };
   }
 
-  private async safePost<T = any>(url: string, body: any): Promise<{ ok: boolean; data: T | null }> {
+  private async safePost<T = any>(url: string, body: any): Promise<{ ok: boolean; data: T | null; error?: string }> {
     try {
       const response = await fetch(url, {
         method: 'POST',
@@ -73,7 +73,7 @@ export class AIStylistService {
       const text = await response.text();
 
       if (text.trim().startsWith('<') || contentType.includes('text/html')) {
-        return { ok: false, data: null };
+        return { ok: false, data: null, error: 'Server returned HTML instead of JSON' };
       }
 
       if (response.ok) {
@@ -81,12 +81,17 @@ export class AIStylistService {
           const parsed = JSON.parse(text);
           return { ok: true, data: parsed };
         } catch {
-          return { ok: false, data: null };
+          return { ok: false, data: null, error: 'Failed to parse JSON response' };
         }
       }
-      return { ok: false, data: null };
-    } catch {
-      return { ok: false, data: null };
+      try {
+        const errObj = JSON.parse(text);
+        return { ok: false, data: null, error: errObj.error || errObj.message || `Server returned ${response.status}` };
+      } catch {
+        return { ok: false, data: null, error: `Server returned ${response.status}` };
+      }
+    } catch (e: any) {
+      return { ok: false, data: null, error: e?.message || 'Network request failed' };
     }
   }
 
@@ -111,7 +116,7 @@ export class AIStylistService {
       isFavorite: !!item.isFavorite,
     }));
 
-    const res = await this.safePost<{ success: boolean; recommendation?: AIStylistResponse }>(
+    const res = await this.safePost<{ success: boolean; recommendation?: AIStylistResponse; error?: string }>(
       '/api/gemini/stylist',
       {
         ...request,
@@ -144,71 +149,7 @@ export class AIStylistService {
       return rec;
     }
 
-    // Client-side intelligent styling fallback calibrated to the user's actual items
-    const topItem = wardrobePool.find(p => p.category === 'Tops');
-    const bottomItem = wardrobePool.find(p => p.category === 'Bottoms');
-    const footwearItem = wardrobePool.find(p => p.category === 'Footwear');
-    const outerwearItem = wardrobePool.find(p => p.category === 'Outerwear');
-
-    if (!topItem || !bottomItem) {
-      throw new Error('Not enough compatible wardrobe pieces to form a complete outfit.');
-    }
-
-    const pieces = [
-      {
-        category: 'Tops',
-        item: topItem,
-        suggestedDescription: topItem.name,
-        role: 'Primary Silhouette',
-        isOwned: true,
-      },
-      {
-        category: 'Bottoms',
-        item: bottomItem,
-        suggestedDescription: bottomItem.name,
-        role: 'Anchor Structure',
-        isOwned: true,
-      }
-    ];
-
-    if (outerwearItem) {
-      pieces.push({
-        category: 'Outerwear',
-        item: outerwearItem,
-        suggestedDescription: outerwearItem.name,
-        role: 'Layering Element',
-        isOwned: true,
-      });
-    }
-
-    if (footwearItem) {
-      pieces.push({
-        category: 'Footwear',
-        item: footwearItem,
-        suggestedDescription: footwearItem.name,
-        role: 'Foundation',
-        isOwned: true,
-      });
-    }
-
-    return {
-      id: `ai_rec_${Date.now()}`,
-      requestId: `req_${Math.random().toString(36).substring(2, 9)}`,
-      outfitName: `Curated ${request.stylePreference || 'Everyday'} Ensemble`,
-      summary: `A balanced composition built from your existing wardrobe.`,
-      pieces,
-      whyItWorks: `The pieces work together to provide a clean and functional silhouette.`,
-      weatherReasoning: request.weatherDescription
-        ? `Calibrated for ${request.weatherDescription} using available wardrobe pieces.`
-        : 'Versatile layering for modern movement.',
-      occasionReasoning: `Adaptable for ${request.occasion || 'your engagement'}.`,
-      stylingTips: [
-        'Ensure clean fit and styling.',
-        'Keep accessories understated.',
-      ],
-      suggestedAccessories: [],
-      generatedAt: new Date().toISOString(),
-    };
+    throw new Error((res.data as any)?.error || res.error || 'Stylist engine failed to generate recommendation. Please retry.');
   }
 
   async analyzeGarment(params: {
@@ -282,174 +223,7 @@ export class AIStylistService {
       return res.data.report;
     }
 
-    // High-fashion fallback grounded dataset
-    return {
-      season: params?.season || "Autumn / Winter 2026",
-      lastUpdated: new Date().toISOString(),
-      headlineSummary: "The season pivots toward architectural tailoring, tactile earthy richness, and effortless drape, defined by quiet luxury subtleties and elevated utilitarian proportions.",
-      keyTakeaways: [
-        "Architectural outerwear with hourglass cinching and strong structured shoulders.",
-        "Rich espresso, oxblood, and warm terracotta replacing monochrome black.",
-        "Wide-leg puddle trousers paired with sharply pointed-toe footwear."
-      ],
-      searchQueries: [
-        "Autumn Winter 2026 fashion runway trends Vogue GQ",
-        "Key fashion color palettes and silhouettes 2026",
-        "Ready to wear trend report WWD"
-      ],
-      sources: [
-        {
-          title: "Vogue: The Top Seasonal Runway & Style Trends",
-          uri: "https://www.vogue.com/fashion/trends"
-        },
-        {
-          title: "GQ: Essential Menswear & Tailoring Directions",
-          uri: "https://www.gq.com/style"
-        },
-        {
-          title: "WWD: Ready-to-Wear Fashion Week Analysis",
-          uri: "https://wwd.com/fashion-news/fashion-features/"
-        },
-        {
-          title: "Harper's Bazaar: The Defining Silhouettes & Colors",
-          uri: "https://www.harpersbazaar.com/fashion/trends/"
-        }
-      ],
-      trends: [
-        {
-          id: "trend_1",
-          title: "Architectural Tailoring & Hourglass Coats",
-          category: "Key Silhouettes",
-          season: "Autumn / Winter 2026",
-          headline: "Strong structured shoulders balanced by sculpted waists and double-breasted closures.",
-          summary: "Runways across Milan and Paris emphasized powerful, statuesque outerwear that reclaims the authority of classic tailoring without feeling rigid. Think double-faced wool, extended lapels, and sharp waist cinching.",
-          keyElements: [
-            "Structured shoulder pads with clean linear drape",
-            "Double-breasted fastening with horn or matte metal buttons",
-            "Floor-grazing hemline with deep center vent"
-          ],
-          colorPalette: [
-            { name: "Charcoal Slate", hex: "#2E3842" },
-            { name: "Deep Camel", hex: "#B8860B" },
-            { name: "Obsidian", hex: "#1A1D20" }
-          ],
-          howToStyle: "Pair an oversized tailored coat with slim-cut knitwear and straight-leg trousers to let the outerwear silhouette remain the commanding focal point.",
-          matchingCategories: ["Outerwear", "Tops", "Bottoms"],
-          tag: "Runway Focus",
-          popularityScore: 98
-        },
-        {
-          id: "trend_2",
-          title: "Espresso & Oxblood Monochromatic Layers",
-          category: "Color Palettes",
-          season: "Autumn / Winter 2026",
-          headline: "Deep chocolate brown, rich espresso, and dark burgundy surpass traditional black.",
-          summary: "Designers shifted away from stark black in favor of deep roasted coffee tones, bitter chocolate leather, and wine-tinted burgundy, creating warm, rich textural depth in monochrome styling.",
-          keyElements: [
-            "Tonal layering across varying fabric textures",
-            "Supple calfskin in burnished dark cognac and espresso",
-            "Burgundy knitwear anchoring neutral outerwear"
-          ],
-          colorPalette: [
-            { name: "Espresso Brown", hex: "#3B2219" },
-            { name: "Oxblood Burgundy", hex: "#581825" },
-            { name: "Warm Almond", hex: "#D2B48C" }
-          ],
-          howToStyle: "Wear a dark brown wool sweater with camel or dark chocolate trousers, adding oxblood leather loafers or boots for a refined tonal contrast.",
-          matchingCategories: ["Tops", "Bottoms", "Footwear", "Outerwear"],
-          tag: "Color Trend",
-          popularityScore: 95
-        },
-        {
-          id: "trend_3",
-          title: "Tactile Luxury: Brushed Cashmere & Raw Denim",
-          category: "Fabrics & Textures",
-          season: "Autumn / Winter 2026",
-          headline: "The tension between rugged unwashed denim and ultra-soft fine gauge knitwear.",
-          summary: "A standout styling formula pairing stiff, deep indigo Japanese selvedge denim with cloud-soft brushed mohair or high-gauge cashmere turtlenecks, striking an effortless balance between casual and opulent.",
-          keyElements: [
-            "Clean dark-rinse selvedge denim with no distressing",
-            "Chunky ribbed collar and cuffs",
-            "Minimalist hardware and contrast stitching"
-          ],
-          colorPalette: [
-            { name: "Raw Indigo", hex: "#1F2937" },
-            { name: "Oatmeal Heather", hex: "#E5E0D8" },
-            { name: "Terracotta", hex: "#C25E3E" }
-          ],
-          howToStyle: "Tuck a fine knit into high-rise raw denim jeans and layer with an unbuttoned denim overshirt or lightweight trench.",
-          matchingCategories: ["Tops", "Bottoms", "Outerwear"],
-          tag: "Tactile Contrast",
-          popularityScore: 92
-        },
-        {
-          id: "trend_4",
-          title: "Sleek Elongated Point-Toe & Chelsea Hybrid",
-          category: "Accessories & Footwear",
-          season: "Autumn / Winter 2026",
-          headline: "Sharp angular toes and slim shaft Chelsea boots grounding fluid trousers.",
-          summary: "Footwear takes an architectural turn with elongated chiselled or pointed toes that peek out effortlessly beneath wide-leg pants and maxi outerwear.",
-          keyElements: [
-            "Slightly chiseled almond or pointed toe profile",
-            "Beveled block heel (3-4 cm)",
-            "Polished box-calf leather with high-shine luster"
-          ],
-          colorPalette: [
-            { name: "Patent Black", hex: "#111827" },
-            { name: "Burnished Cherry", hex: "#4A0E17" },
-            { name: "Dark Taupe", hex: "#4B443B" }
-          ],
-          howToStyle: "Let fluid, wide-leg trousers drape over the boot with just the clean, pointed toe exposed for a continuous elongating leg line.",
-          matchingCategories: ["Footwear", "Accessories"],
-          tag: "Footwear Statement",
-          popularityScore: 91
-        },
-        {
-          id: "trend_5",
-          title: "Fluid Pleated Trousers with Puddle Drapes",
-          category: "Key Silhouettes",
-          season: "Autumn / Winter 2026",
-          headline: "Relaxed high-waisted tailoring with generous leg volume and natural break.",
-          summary: "Rigid skinny cuts continue their retreat as designers double down on voluminous, fluid double-pleat trousers that move gracefully with every step.",
-          keyElements: [
-            "Double forward pleats for room through the hips",
-            "High natural waistline with internal tab closures",
-            "Extended leg length with a gentle puddle over footwear"
-          ],
-          colorPalette: [
-            { name: "Heather Slate", hex: "#64748B" },
-            { name: "Ecru Wool", hex: "#F1EBE1" },
-            { name: "Deep Navy", hex: "#0F172A" }
-          ],
-          howToStyle: "Pair with a cropped jacket or firmly tucked-in shirt to highlight the high-rise silhouette and accentuate waist proportions.",
-          matchingCategories: ["Bottoms"],
-          tag: "Silhouette Staple",
-          popularityScore: 96
-        },
-        {
-          id: "trend_6",
-          title: "Subtle Sculptural Metals & Suede Totes",
-          category: "Accessories & Footwear",
-          season: "Autumn / Winter 2026",
-          headline: "Brushed matte hardware and oversized slouchy suede carryalls.",
-          summary: "Accessories emphasize sensory materials: unlined velvety suede totes in warm tobacco hues paired with modernist, organic curved jewelry in brushed brass and chrome.",
-          keyElements: [
-            "Supple unstructured suede shoulder bags",
-            "Brushed matte gold and sculpted silver jewelry",
-            "Clean buckle-less belts with tab closures"
-          ],
-          colorPalette: [
-            { name: "Tobacco Suede", hex: "#8B5A2B" },
-            { name: "Brushed Gold", hex: "#D4AF37" },
-            { name: "Olive Moss", hex: "#4A5D4E" }
-          ],
-          howToStyle: "Carry a large suede tote in the crook of your arm or tucked under the shoulder to introduce organic texture to structured coats.",
-          matchingCategories: ["Bags", "Accessories", "Jewelry"],
-          tag: "Accessories Essential",
-          popularityScore: 89
-        }
-      ]
-    };
+    throw new Error(res.error || 'Runway trend intelligence unavailable.');
   }
 
   /**

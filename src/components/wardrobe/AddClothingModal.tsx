@@ -295,18 +295,18 @@ export function AddClothingModal() {
             imageUrl: b64,
             imageBase64: b64,
             mimeType: 'image/webp',
-            category: 'Tops',
-            type: 'Shirt',
-            color: 'Navy',
-            pattern: 'Solid',
-            style: 'Casual',
-            formality: 'Casual',
-            fit: 'Regular',
-            season: ['All-Season'],
-            occasion: ['Casual'],
-            tags: ['Wardrobe Piece'],
+            category: '',
+            type: '',
+            color: '',
+            pattern: '',
+            style: '',
+            formality: '',
+            fit: '',
+            season: [],
+            occasion: [],
+            tags: [],
             status: 'pending',
-          });
+          } as any);
         } catch (e) {
           console.error('Failed to read file:', e);
         }
@@ -1120,7 +1120,7 @@ export function AddClothingModal() {
 
                   <div>
                     <span className="text-gray-500 font-medium">Material</span>
-                    <div className="font-semibold text-gray-800 mt-0.5">{material || 'Denim (Likely)'}</div>
+                    <div className="font-semibold text-gray-800 mt-0.5">{material || 'Unknown'}</div>
                   </div>
 
                   <div>
@@ -1222,6 +1222,7 @@ export function AddClothingModal() {
                 value={category}
                 onChange={e => setCategory(e.target.value as ClothingCategory)}
               >
+                <option value="" disabled>Select Category</option>
                 {CATEGORIES.map(cat => (
                   <option key={cat} value={cat}>
                     {cat}
@@ -1295,6 +1296,7 @@ export function AddClothingModal() {
                 value={formality}
                 onChange={e => setFormality(e.target.value as ClothingFormality)}
               >
+                <option value="" disabled>Select Formality</option>
                 {FORMALITIES.map(f => (
                   <option key={f} value={f}>
                     {f}
@@ -1307,6 +1309,7 @@ export function AddClothingModal() {
                 value={fit}
                 onChange={e => setFit(e.target.value as ClothingFit)}
               >
+                <option value="" disabled>Select Fit</option>
                 <option value="Regular">Regular Fit</option>
                 <option value="Slim">Slim Fit</option>
                 <option value="Tailored">Tailored Fit</option>

@@ -15,7 +15,8 @@ export type NavigationRoute =
   | '/settings' 
   | '/admin'
   | '/auth'
-  | '/login';
+  | '/login'
+  | '/signup';
 
 export type ClothingCategory = 
   | 'Tops' 
@@ -90,7 +91,7 @@ export interface WardrobeItem {
   color: string;
   secondaryColor?: string;
   pattern?: string; // Solid, Striped, Plaid, Floral, Houndstooth, Textured, Graphic, Checked
-  material?: string; // Cotton, Denim (Likely), Linen, Wool, Silk, Leather, Cashmere, Knit
+  material?: string; // Cotton, Denim, Linen, Wool, Silk, Leather, Cashmere, Knit
   style?: string; // Casual, Smart Casual, Formal, Minimal, Streetwear, Old Money
   formality?: ClothingFormality;
   brand?: string;

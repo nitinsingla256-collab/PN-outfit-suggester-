@@ -1,6 +1,6 @@
 {
   "name": "PN Outfit Suggester",
   "description": "Personal digital wardrobe, luxury lookbook planner, and intelligent AI styling platform.",
-  "requestFramePermissions": [],
+  "requestFramePermissions": ["camera", "geolocation"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

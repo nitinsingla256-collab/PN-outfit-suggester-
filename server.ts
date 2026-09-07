@@ -1,4 +1,5 @@
 import { validateAndFixCategory } from "./server/wardrobeTaxonomy";
+import { getGeminiModel } from "./server/geminiConfig";
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -82,7 +83,7 @@ async function startServer() {
     res.json({
       status: 'operational',
       brand: 'PAURVI',
-      engine: 'Gemini 2.5 Flash',
+      engine: `Gemini (${getGeminiModel()})`,
       hasApiKey: !!process.env.GEMINI_API_KEY,
     });
   });
@@ -550,7 +551,7 @@ Extract the following JSON attributes:
 `;
 
       const response = await ai.models.generateContent({
-        model: process.env.GEMINI_MODEL || 'gemini-1.5-flash',
+        model: getGeminiModel(),
         contents: [
           {
             inlineData: {
@@ -656,7 +657,7 @@ ${hint ? `User context/hint: "${hint}"` : ''}
       contents.push(prompt);
 
       const response = await ai.models.generateContent({
-        model: process.env.GEMINI_MODEL || 'gemini-1.5-flash',
+        model: getGeminiModel(),
         contents,
         config: {
           responseMimeType: 'application/json',
@@ -719,12 +720,10 @@ ${hint ? `User context/hint: "${hint}"` : ''}
   app.post('/api/gemini/stylist', authMiddleware, async (req, res) => {
     try {
       const userId = req.user!.id;
-      const userProfile = req.body.userProfile || req.user?.profile || (db as any).data.users.find((u: any) => u.id === userId)?.profile;
-      const clientWardrobePool = Array.isArray(req.body.wardrobePool) && req.body.wardrobePool.length > 0
-        ? req.body.wardrobePool
-        : null;
-      const userWardrobe = clientWardrobePool || db.getWardrobe(userId);
-      const userWearHistory = (db as any).data.wearHistory[userId] || [];
+      // Authoritative server-side user data: always load authenticated user's actual profile and wardrobe
+      const userProfile = req.user?.profile || db.getUserById(userId)?.profile;
+      const userWardrobe = db.getWardrobe(userId);
+      const userWearHistory = (db as any).data.wearHistory?.[userId] || [];
 
       const result = await generateStylistRecommendations(
         userId,
@@ -820,7 +819,7 @@ TASK REQUIREMENTS:
 `;
 
       const response = await ai.models.generateContent({
-        model: process.env.GEMINI_MODEL || 'gemini-1.5-flash',
+        model: getGeminiModel(),
         contents: prompt,
         config: {
           responseMimeType: 'application/json',
@@ -1096,7 +1095,7 @@ GENERAL RULES:
       });
 
       const response = await ai.models.generateContent({
-        model: process.env.GEMINI_MODEL || 'gemini-1.5-flash',
+        model: getGeminiModel(),
         contents,
       });
 
@@ -1192,7 +1191,6 @@ GENERAL RULES:
             howToStyle: "Wear an unlined linen jacket over a fine supima cotton tank or open-collar knit polo with pleated linen trousers.",
             matchingCategories: ["Outerwear", "Tops", "Bottoms"],
             tag: "Runway Focus",
-            popularityScore: 97
           },
           {
             id: "trend_ss_2",
@@ -1214,7 +1212,6 @@ GENERAL RULES:
             howToStyle: "Incorporate a pale citron silk shirt or pastel knit tucked into bone-white trousers with neutral suede footwear.",
             matchingCategories: ["Tops", "Dresses", "Accessories"],
             tag: "Color Trend",
-            popularityScore: 94
           },
           {
             id: "trend_ss_3",
@@ -1236,7 +1233,6 @@ GENERAL RULES:
             howToStyle: "Layer an open-knit short-sleeve polo over an airy ribbed tank and tailored Bermuda shorts or lightweight chinos.",
             matchingCategories: ["Tops", "Outerwear"],
             tag: "Tactile Detail",
-            popularityScore: 93
           },
           {
             id: "trend_ss_4",
@@ -1258,7 +1254,6 @@ GENERAL RULES:
             howToStyle: "Pair woven leather slides with cropped trousers or linen shorts for an effortless Mediterranean resort vibe.",
             matchingCategories: ["Footwear", "Accessories"],
             tag: "Footwear Essential",
-            popularityScore: 91
           },
           {
             id: "trend_ss_5",
@@ -1280,7 +1275,6 @@ GENERAL RULES:
             howToStyle: "Carry a large raffia shopper under the arm with monochrome linen tailoring for a balanced contrast of textures.",
             matchingCategories: ["Bags", "Accessories"],
             tag: "Bags Trend",
-            popularityScore: 90
           },
           {
             id: "trend_ss_6",
@@ -1302,7 +1296,6 @@ GENERAL RULES:
             howToStyle: "Pair with an oversized poplin button-down shirt tucked in at the front, styled with leather loafers.",
             matchingCategories: ["Bottoms"],
             tag: "Silhouette Staple",
-            popularityScore: 92
           }
         ]
       };
@@ -1350,7 +1343,6 @@ GENERAL RULES:
             howToStyle: "Wear a fluid silk button-down over ecru wide-leg linen trousers, unbuttoned at the neckline with gold jewelry.",
             matchingCategories: ["Tops", "Dresses", "Accessories"],
             tag: "Resort Focus",
-            popularityScore: 96
           },
           {
             id: "trend_resort_2",
@@ -1372,7 +1364,6 @@ GENERAL RULES:
             howToStyle: "Pair a boxy camp-collar shirt with fluid drawstring trousers and leather sandals for a relaxed evening look.",
             matchingCategories: ["Tops", "Bottoms", "Dresses"],
             tag: "Vacation Core",
-            popularityScore: 94
           },
           {
             id: "trend_resort_3",
@@ -1394,7 +1385,6 @@ GENERAL RULES:
             howToStyle: "Wear a single oversized gold cuff on the bare forearm with a minimalist monochrome linen dress or shirt.",
             matchingCategories: ["Jewelry", "Accessories"],
             tag: "Jewelry Statement",
-            popularityScore: 92
           },
           {
             id: "trend_resort_4",
@@ -1416,7 +1406,6 @@ GENERAL RULES:
             howToStyle: "Layer a crochet vest or gauze overshirt over a simple silk slip dress or tailored trousers.",
             matchingCategories: ["Tops", "Outerwear", "Accessories"],
             tag: "Tactile Resort",
-            popularityScore: 89
           }
         ]
       };
@@ -1464,7 +1453,6 @@ GENERAL RULES:
           howToStyle: "Pair an oversized tailored coat with slim-cut knitwear and straight-leg trousers to let the outerwear silhouette remain the commanding focal point.",
           matchingCategories: ["Outerwear", "Tops", "Bottoms"],
           tag: "Runway Focus",
-          popularityScore: 98
         },
         {
           id: "trend_2",
@@ -1486,7 +1474,6 @@ GENERAL RULES:
           howToStyle: "Wear a dark brown wool sweater with camel or dark chocolate trousers, adding oxblood leather loafers or boots for a refined tonal contrast.",
           matchingCategories: ["Tops", "Bottoms", "Footwear", "Outerwear"],
           tag: "Color Trend",
-          popularityScore: 95
         },
         {
           id: "trend_3",
@@ -1508,7 +1495,6 @@ GENERAL RULES:
           howToStyle: "Tuck a fine knit into high-rise raw denim jeans and layer with an unbuttoned denim overshirt or lightweight trench.",
           matchingCategories: ["Tops", "Bottoms", "Outerwear"],
           tag: "Tactile Contrast",
-          popularityScore: 92
         },
         {
           id: "trend_4",
@@ -1530,7 +1516,6 @@ GENERAL RULES:
           howToStyle: "Let fluid, wide-leg trousers drape over the boot with just the clean, pointed toe exposed for a continuous elongating leg line.",
           matchingCategories: ["Footwear", "Accessories"],
           tag: "Footwear Statement",
-          popularityScore: 91
         },
         {
           id: "trend_5",
@@ -1552,7 +1537,6 @@ GENERAL RULES:
           howToStyle: "Pair with a cropped jacket or firmly tucked-in shirt to highlight the high-rise silhouette and accentuate waist proportions.",
           matchingCategories: ["Bottoms"],
           tag: "Silhouette Staple",
-          popularityScore: 96
         },
         {
           id: "trend_6",
@@ -1574,7 +1558,6 @@ GENERAL RULES:
           howToStyle: "Carry a large suede tote in the crook of your arm or tucked under the shoulder to introduce organic texture to structured coats.",
           matchingCategories: ["Bags", "Accessories", "Jewelry"],
           tag: "Accessories Essential",
-          popularityScore: 89
         }
       ]
     };
@@ -1648,8 +1631,7 @@ Provide an authoritative, editorial analysis of the top seasonal fashion movemen
       ],
       "howToStyle": "Practical, elegant styling advice on how an individual can style this trend using pieces from their personal wardrobe.",
       "matchingCategories": ["Outerwear", "Tops", "Bottoms"],
-      "tag": "e.g. Runway Focus, Quiet Luxury, Essential Core, Footwear Statement",
-      "popularityScore": 96
+      "tag": "e.g. Runway Focus, Quiet Luxury, Essential Core, Footwear Statement"
     }
   ]
 }
@@ -1658,7 +1640,7 @@ Provide an authoritative, editorial analysis of the top seasonal fashion movemen
 Generate 6 high-fashion trends covering diverse categories (Key Silhouettes, Color Palettes, Fabrics & Textures, Accessories & Footwear, Occasion & Vibe). Ensure hex colors match high-fashion palettes.`;
 
       const response = await ai.models.generateContent({
-        model: process.env.GEMINI_MODEL || 'gemini-1.5-flash',
+        model: getGeminiModel(),
         contents: prompt,
         config: {
           tools: [{ googleSearch: {} }],
@@ -1725,7 +1707,7 @@ Generate 6 high-fashion trends covering diverse categories (Key Silhouettes, Col
               howToStyle: t.howToStyle || 'Integrate with clean wardrobe staples for an effortless sartorial statement.',
               matchingCategories: t.matchingCategories || ['Tops', 'Bottoms', 'Outerwear'],
               tag: t.tag || 'Runway Direction',
-              popularityScore: t.popularityScore || 94,
+              popularityScore: typeof t.popularityScore === 'number' ? t.popularityScore : undefined,
               sources: extractedSources.slice(0, 2),
             }))
           : defaultTrendsData.trends,

@@ -120,7 +120,7 @@ function StylistPageContent() {
   const [dressCode, setDressCode] = useState("Smart Casual");
   const [location, setLocation] = useState(user.location || "Location not set");
   const [weatherDescription, setWeatherDescription] = useState("Weather unavailable");
-  const [temperatureCelsius, setTemperatureCelsius] = useState<number>(0);
+  const [temperatureCelsius, setTemperatureCelsius] = useState<number | undefined>(undefined);
   const [isWeatherLoading, setIsWeatherLoading] = useState(false);
   const [lastWeatherUpdate, setLastWeatherUpdate] = useState("");
   const [time, setTime] = useState("7:00 PM");
@@ -337,8 +337,8 @@ function StylistPageContent() {
         naturalQuery: promptToUse || undefined,
         occasion: occasion as OccasionType,
         dressCode,
-        location: location || "City Venue",
-        weatherDescription: `${temperatureCelsius}°C, ${weatherDescription.split(",")[1] || "Clear"}`,
+        location: location !== "Location not set" ? location : undefined,
+        weatherDescription: temperatureCelsius !== undefined ? `${temperatureCelsius}°C, ${weatherDescription}` : weatherDescription,
         temperatureCelsius,
         time,
         date,
@@ -358,7 +358,7 @@ function StylistPageContent() {
       setGenerationError(null);
       showToast({
         title: generateMore ? "3 Distinct Looks Synthesized" : "Curated Look Synthesized",
-        description: `Generated tailored ensemble with ${result.confidenceScore || 96}% styling score.`,
+        description: `Generated tailored ensemble with ${result.confidenceScore }% styling score.`,
         type: "success",
       });
     } catch (err: any) {
@@ -391,22 +391,10 @@ function StylistPageContent() {
               subtitle: "Classic, balanced, and timeless harmony",
               pieces: generationResult.pieces,
               whyItWorks: generationResult.whyItWorks,
-              bestFor: generationResult.bestFor || {
-                occasion,
-                time,
-                weather: `${temperatureCelsius}°C, Clear`,
-              },
-              styleNotes: generationResult.stylingTips || [
-                "Roll sleeves slightly for a relaxed vibe.",
-                "Ensure footwear complements the color tone.",
-              ],
-              score: generationResult.confidenceScore || 96,
-              scoreBreakdown: generationResult.scoreBreakdown || {
-                colorHarmony: 98,
-                occasionFit: 96,
-                weatherMatch: 95,
-                coherence: 97,
-              },
+              bestFor: generationResult.bestFor,
+              styleNotes: generationResult.stylingTips || [],
+              score: generationResult.confidenceScore,
+              scoreBreakdown: generationResult.scoreBreakdown,
             },
           ]
         : [];
@@ -436,7 +424,7 @@ function StylistPageContent() {
         imageUrl: look.pieces.find((p) => p.item?.imageUrl)?.item?.imageUrl,
         isFavorite: true,
         stylingNotes: (look.styleNotes || []).join(" · "),
-        weatherSuitability: `${temperatureCelsius}°C`,
+        weatherSuitability: temperatureCelsius !== undefined ? `${temperatureCelsius}°C` : 'Unknown',
         season: ["All-Season"],
       });
       setSavedLookIds((prev) => ({ ...prev, [look.id]: newLook.id }));
@@ -480,7 +468,7 @@ function StylistPageContent() {
           imageUrl: look.pieces.find((p) => p.item?.imageUrl)?.item?.imageUrl,
           isFavorite: false,
           stylingNotes: (look.styleNotes || []).join(" · "),
-          weatherSuitability: `${temperatureCelsius}°C`,
+          weatherSuitability: temperatureCelsius !== undefined ? `${temperatureCelsius}°C` : 'Unknown',
           season: ["All-Season"],
         });
         targetOutfitId = newLook.id;
@@ -810,13 +798,13 @@ function StylistPageContent() {
                 <Input
                   label="Temperature (°C)"
                   type="number"
-                  placeholder="18"
-                  value={temperatureCelsius.toString()}
+                  placeholder="e.g. 18"
+                  value={temperatureCelsius !== undefined ? temperatureCelsius.toString() : ''}
                   onChange={(e) =>
-                    setTemperatureCelsius(parseInt(e.target.value) || 18)
+                    setTemperatureCelsius(e.target.value ? parseInt(e.target.value) : undefined)
                   }
                   leftIcon={
-                    <Thermometer className="w-3.5 h-3.5 text-gray-400" />
+                    <CloudSun className="w-3.5 h-3.5 text-slate-400" />
                   }
                 />{" "}
               </div>{" "}
@@ -1133,7 +1121,7 @@ function StylistPageContent() {
                                 </span>{" "}
                                 <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 ">
                                   {" "}
-                                  {look.score || 96}%{" "}
+                                  {look.score }%{" "}
                                 </span>{" "}
                               </div>{" "}
                               <h4 className="font-bold text-sm text-gray-900 line-clamp-1">
@@ -1233,7 +1221,7 @@ function StylistPageContent() {
                             <span className="text-xs font-bold uppercase tracking-wider text-gray-700 flex items-center gap-1.5">
                               {" "}
                               <Sparkles className="w-3.5 h-3.5 text-emerald-600 " />{" "}
-                              Styling Score: {currentLook.score || 96} /
+                              Styling Score: {currentLook.score } /
                               100{" "}
                             </span>{" "}
                             <span className="text-xs font-semibold text-emerald-600 ">
@@ -1364,7 +1352,7 @@ function StylistPageContent() {
                                         if (parent && !parent.querySelector('.fallback-icon')) {
                                           const fallback = document.createElement('div');
                                           fallback.className = 'w-full h-full flex flex-col items-center justify-center text-gray-400 p-2 text-center fallback-icon';
-                                          fallback.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-1"><path d="M20.38 3.46L16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"/></svg><span class="text-[10px]">Suggested</span>';
+                                          fallback.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-1"><path d="M20.38 3.46L16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"/></svg><span class="text-[10px]">No Image</span>';
                                           parent.appendChild(fallback);
                                         }
                                       }}
@@ -1374,7 +1362,7 @@ function StylistPageContent() {
                                       {" "}
                                       <Shirt className="w-6 h-6 mb-1" />{" "}
                                       <span className="text-[10px]">
-                                        Suggested
+                                        No Image
                                       </span>{" "}
                                     </div>
                                   )}{" "}
@@ -1483,7 +1471,7 @@ function StylistPageContent() {
                               <span className="font-semibold text-gray-800 ">
                                 {" "}
                                 {currentLook.bestFor?.weather ||
-                                  `${temperatureCelsius}°C, Clear`}{" "}
+                                  (temperatureCelsius !== undefined ? `${temperatureCelsius}°C, ${weatherDescription}` : weatherDescription)}{" "}
                               </span>{" "}
                             </div>{" "}
                           </div>{" "}

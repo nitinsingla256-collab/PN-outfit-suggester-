@@ -34,7 +34,6 @@ export function SettingsPage() {
     theme,
     setTheme,
     clearAllData,
-    resetToDemoData,
     showToast,
     openMeasurementsModal,
     navigateTo,
@@ -511,15 +510,6 @@ export function SettingsPage() {
               leftIcon={<Download className="w-3.5 h-3.5" />}
             >
               Export PN Backup (JSON)
-            </Button>
-
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={resetToDemoData}
-              leftIcon={<Sparkles className="w-3.5 h-3.5 text-emerald-600" />}
-            >
-              Load Sample Capsule
             </Button>
 
             <Button

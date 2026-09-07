@@ -1,5 +1,5 @@
 import { WardrobeItem } from '../types';
-import { INITIAL_WARDROBE_ITEMS } from '../data/seedData';
+import { authService } from './authService';
 
 export interface WardrobeFilterOptions {
   category?: string;
@@ -13,117 +13,106 @@ export interface WardrobeFilterOptions {
   onlyFavorites?: boolean;
 }
 
-const STORAGE_KEY = 'pn_local_wardrobe_dev';
-
 class WardrobeService {
-  private getLocal(): WardrobeItem[] {
-    try {
-      const data = localStorage.getItem(STORAGE_KEY);
-      if (data === null) {
-        // New user starts with an empty wardrobe - no forced starter items
-        this.setLocal([]);
-        return [];
-      }
-      const parsed = JSON.parse(data);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch { return []; }
-  }
-  private setLocal(items: WardrobeItem[]) {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-    } catch (err: any) {
-      const isQuota =
-        err?.name === 'QuotaExceededError' ||
-        err?.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
-        err?.code === 22 ||
-        err?.code === 1014;
-
-      if (isQuota) {
-        console.error('LocalStorage QuotaExceededError in WardrobeService:', err);
-        throw new Error(
-          'Browser storage limit reached. Please optimize images or remove older pieces before saving new items.'
-        );
-      }
-      throw err;
-    }
+  private getHeaders() {
+    const token = authService.getToken();
+    if (!token) throw new Error('Not authenticated');
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    };
   }
 
   async getAll(): Promise<WardrobeItem[]> {
-    return this.getLocal();
-  }
-
-  async resetToSample(): Promise<WardrobeItem[]> {
-    this.setLocal(INITIAL_WARDROBE_ITEMS);
-    return [...INITIAL_WARDROBE_ITEMS];
+    const res = await fetch('/api/user/wardrobe', {
+      headers: this.getHeaders()
+    });
+    if (!res.ok) throw new Error('Failed to fetch wardrobe');
+    const data = await res.json();
+    return data.items || [];
   }
 
   async getById(id: string): Promise<WardrobeItem | null> {
-    const items = this.getLocal();
+    const items = await this.getAll();
     return items.find(i => i.id === id) || null;
   }
 
   async create(itemData: Omit<WardrobeItem, 'id' | 'createdAt' | 'updatedAt' | 'timesWorn'>): Promise<WardrobeItem> {
-    const items = this.getLocal();
-    const newItem: WardrobeItem = {
-      ...itemData,
-      id: 'item_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      timesWorn: 0,
-      isFavorite: false,
-    };
-    const updated = [newItem, ...items];
-    // Persist first before returning
-    this.setLocal(updated);
-    return newItem;
+    const res = await fetch('/api/user/wardrobe', {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify(itemData)
+    });
+    if (!res.ok) throw new Error('Failed to create item');
+    const data = await res.json();
+    return data.item;
   }
 
   async update(id: string, updates: Partial<WardrobeItem>): Promise<WardrobeItem> {
-    const items = this.getLocal();
-    const idx = items.findIndex(i => i.id === id);
-    if (idx === -1) throw new Error('Item not found');
-    const updatedItem = { ...items[idx], ...updates, updatedAt: new Date().toISOString() };
-    const updatedItems = [...items];
-    updatedItems[idx] = updatedItem;
-    this.setLocal(updatedItems);
-    return updatedItem;
+    const res = await fetch(`/api/user/wardrobe/${id}`, {
+      method: 'PUT',
+      headers: this.getHeaders(),
+      body: JSON.stringify(updates)
+    });
+    if (!res.ok) throw new Error('Failed to update item');
+    const data = await res.json();
+    return data.item;
   }
 
   async delete(id: string): Promise<void> {
-    const items = this.getLocal();
-    this.setLocal(items.filter(i => i.id !== id));
+    const res = await fetch(`/api/user/wardrobe/${id}`, {
+      method: 'DELETE',
+      headers: this.getHeaders()
+    });
+    if (!res.ok) throw new Error('Failed to delete item');
   }
 
   async deleteMany(ids: string[]): Promise<void> {
-    const items = this.getLocal();
-    const idSet = new Set(ids);
-    this.setLocal(items.filter(i => !idSet.has(i.id)));
+    const res = await fetch(`/api/user/wardrobe/batch-delete`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ ids })
+    });
+    if (!res.ok) throw new Error('Failed to delete items');
   }
 
   async clearAll(): Promise<void> {
-    this.setLocal([]);
+    const res = await fetch('/api/user/wardrobe/clear', {
+      method: 'POST',
+      headers: this.getHeaders()
+    });
+    if (!res.ok) throw new Error('Failed to clear wardrobe');
   }
 
   async toggleFavorite(id: string, isFavorite: boolean): Promise<WardrobeItem> {
-    return this.update(id, { isFavorite });
+    const res = await fetch(`/api/user/wardrobe/${id}`, {
+      method: 'PUT',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ isFavorite })
+    });
+    if (!res.ok) throw new Error('Failed to update favorite status');
+    const data = await res.json();
+    return data.item;
   }
 
   async logWear(id: string): Promise<WardrobeItem> {
-    const item = await this.getById(id);
-    if (!item) throw new Error('Item not found');
-    return this.update(id, { timesWorn: (item.timesWorn || 0) + 1 });
+    const res = await fetch(`/api/user/wardrobe/${id}/wear`, {
+      method: 'POST',
+      headers: this.getHeaders()
+    });
+    if (!res.ok) throw new Error('Failed to log wear');
+    const data = await res.json();
+    return data.item;
   }
   
-  // Minimal filter implementation since filtering is typically handled client-side anyway
-  // Some parts of the app might call this for server-side search emulation
   filter(items: WardrobeItem[], options: WardrobeFilterOptions): WardrobeItem[] {
     let result = [...items];
     
     if (options.searchQuery) {
       const q = options.searchQuery.toLowerCase();
       result = result.filter(i => 
-        i.name.toLowerCase().includes(q) || 
-        i.brand?.toLowerCase().includes(q) ||
+         i.name.toLowerCase().includes(q) || 
+         i.brand?.toLowerCase().includes(q) ||
         i.color?.toLowerCase().includes(q)
       );
     }

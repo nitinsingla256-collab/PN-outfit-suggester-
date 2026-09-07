@@ -290,35 +290,6 @@ class PaurviDatabase {
 
       this.save();
     }
-    const hasClient = this.data.users.some(u => u.email.toLowerCase() === 'client@paurvi.atelier');
-    if (!hasClient) {
-      const { hash, salt } = hashPassword('client123');
-      const client: StoredUser = {
-        id: 'usr_client_paurvi',
-        name: 'Client',
-        email: 'client@paurvi.atelier',
-        passwordHash: hash,
-        salt,
-        role: 'user',
-        status: 'Active',
-        joinedDate: new Date().toISOString().split('T')[0],
-        lastActive: new Date().toISOString(),
-        pronouns: 'they/them',
-        bio: 'Personal digital wardrobe and luxury styling studio.',
-        location: '',
-        preferences: defaultPreferences(),
-      };
-
-      this.data.users.push(client);
-      this.data.wardrobes[client.id] = [];
-      this.data.outfits[client.id] = [];
-      this.data.plans[client.id] = [];
-      this.data.wearHistory[client.id] = [];
-      this.data.stylistConversations[client.id] = [];
-      this.data.aiRequestsCount[client.id] = 0;
-
-      this.save();
-    }
   }
 
   // --- Auth Operations ---
