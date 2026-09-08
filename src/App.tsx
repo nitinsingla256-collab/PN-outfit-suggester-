@@ -126,6 +126,9 @@ export function AppContent() {
     toasts,
     dismissToast,
     isAddClothingModalOpen,
+    setIsAddClothingModalOpen,
+    addWardrobeItem,
+    showToast,
     selectedWardrobeItemForDetail,
     isCreateLookModalOpen,
   } = useApp();
@@ -173,7 +176,34 @@ export function AppContent() {
       {/* Conditionally rendered modals for pristine memory and zero idle CPU usage */}
       <Suspense fallback={null}>
         {isAddClothingModalOpen && (
-          <AddClothingModal />
+          <AddClothingModal 
+            isOpen={isAddClothingModalOpen}
+            onClose={() => setIsAddClothingModalOpen(false)}
+            onSaveItem={async (finalGarment) => {
+              try {
+                await addWardrobeItem({
+                  name: finalGarment.name,
+                  category: finalGarment.category as any,
+                  subcategory: finalGarment.subcategory,
+                  color: finalGarment.color,
+                  secondaryColor: finalGarment.secondaryColor,
+                  pattern: finalGarment.pattern,
+                  material: finalGarment.material,
+                  fit: finalGarment.fit as any,
+                  formality: finalGarment.formality as any,
+                  season: finalGarment.season,
+                  tags: finalGarment.tags,
+                  cost: finalGarment.price,
+                  imageUrl: finalGarment.imageBase64,
+                  isFavorite: false,
+                });
+                showToast({ type: 'success', title: 'Garment successfully added to wardrobe' });
+              } catch (e) {
+                showToast({ type: 'error', title: 'Failed to add garment' });
+                console.error(e);
+              }
+            }}
+          />
         )}
 
         {selectedWardrobeItemForDetail && (

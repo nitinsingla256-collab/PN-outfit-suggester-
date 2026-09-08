@@ -87,10 +87,11 @@ export function applyHardFilters(
       const isHeavySweater =
         item.category === 'Tops' &&
         /chunky|heavy knit|wool cable|fleece/i.test(item.name + ' ' + (item.material || ''));
+      const isHeavyWinterMaterial = /heavy wool|boiled wool|fleece|down|shearling|thick knit/i.test((item.material || '') + ' ' + item.name);
 
-      // Very hot (> 25°C): eliminate heavy coats & bulky winter knits
+      // Warm conditions (> 25°C / 77°F): eliminate heavy wool, fleece, down, and heavy layering
       if (temperatureCelsius > 25) {
-        if (isHeavyOuterwear || isHeavySweater) return false;
+        if (isHeavyOuterwear || isHeavySweater || isHeavyWinterMaterial) return false;
       }
 
       // Cold (< 13°C): eliminate shorts, tank tops, sandals, slides
@@ -456,17 +457,24 @@ export async function rankAndReasonWithGemini(
     type: a.type || 'Accessory',
   }));
 
-  const prompt = `You are an elite editorial fashion stylist and personal image consultant for client ${userName}.
-You will evaluate and curate 3 distinct look options pre-assembled from their verified wardrobe inventory:
-- LOOK 1: 'SAFE & REFINED' (Classic, balanced, low risk)
-- LOOK 2: 'MODERN' (Current trends, elevated proportions)
-- LOOK 3: 'STATEMENT' (Bold color pop, high fashion contrast)
+  const prompt = `You are the Lead Stylist & Textile Analyst Engine for PN Outfit Suggester advising client ${userName}.
 
-Styling Principles to Enforce:
-1. The 60-30-10 Color Rule: 60% dominant base garment, 30% secondary neutral/tone, 10% accent or pop.
-2. Thermal Comfort: Ground every evaluation in temperature (${request.temperatureCelsius !== undefined ? `${request.temperatureCelsius}°C` : 'mild'}) and weather conditions (${request.weatherDescription || 'fair'}).
-3. Visual Balance & Proportions: Detail fabric drape, contrast levels, and silhouette coordination without generic clichés.
-4. Gap Analysis: Explicitly identify if an essential piece (e.g. trench coat, leather belt, merino layer) would elevate or complete the look.
+Core Directives:
+1. Zero Hallucination: Recommend ONLY items present in the user's provided Wardrobe Inventory. NEVER invent garments or accessories.
+2. Taxonomy Grounding: Parse and filter items strictly by Category, Subcategory, Formality, Pattern, Fit, Material, and Color.
+3. Thermal & Weather Filtering: Exclude garments that violate current weather conditions (e.g., exclude heavy wool or heavy layering when temperatures exceed 25°C/77°F).
+
+Output Rules:
+Generate 3 distinct outfit options in structured JSON:
+- LOOK 1 ('SAFE & REFINED'): Classic, balanced, low-risk harmony using neutral bases.
+- LOOK 2 ('MODERN'): Trending silhouettes, relaxed draping, and contemporary proportion pairing.
+- LOOK 3 ('STATEMENT'): High-contrast pairing with an intentional 10% color accent pop.
+
+Styling Mechanics to Enforce:
+- Color Strategy: Apply the 60-30-10 distribution rule (60% dominant base garment, 30% neutral/secondary piece, 10% accent or pop).
+- Thermal Comfort: Ground evaluations in temperature (${request.temperatureCelsius !== undefined ? `${request.temperatureCelsius}°C` : 'mild'}) and weather conditions (${request.weatherDescription || 'fair'}).
+- Rationale: Provide a concise "whyItWorks" visual balance justification detailing silhouette balance, texture contrast, and proportions.
+- Gap Analysis: List 1-2 missing wardrobe pieces ("gapAnalysis") that would complete or elevate each look.
 
 CANDIDATES TO EVALUATE:
 ${JSON.stringify(candidatesPayload, null, 2)}

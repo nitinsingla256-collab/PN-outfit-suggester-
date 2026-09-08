@@ -60,6 +60,21 @@ function authMiddleware(req: Request, res: Response, next: NextFunction) {
   return res.status(401).json({ error: 'Authentication required. Please sign in.' });
 }
 
+// Optional Authentication middleware - populates user if token valid, but allows proceeding
+function optionalAuthMiddleware(req: Request, res: Response, next: NextFunction) {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.substring(7).trim();
+    if (token) {
+      const user = db.getUserByToken(token);
+      if (user) {
+        req.user = user;
+      }
+    }
+  }
+  next();
+}
+
 // Supervisor / Admin Role Guard middleware
 function supervisorMiddleware(req: Request, res: Response, next: NextFunction) {
   if (!req.user) {
@@ -608,9 +623,10 @@ Extract the following JSON attributes:
     }
   });
 
-  app.post('/api/gemini/analyze-garment', authMiddleware, async (req, res) => {
+  app.post('/api/gemini/analyze-garment', optionalAuthMiddleware, async (req, res) => {
     try {
-      const { imageUrl, imageBase64, mimeType, hint } = req.body;
+      const { imageUrl, mimeType, hint } = req.body;
+      const imageBase64 = req.body.imageBase64 || req.body.image;
 
       if (!imageUrl && !imageBase64 && !hint) {
         return res.status(400).json({ error: 'Please provide an image or garment description to analyze.' });
