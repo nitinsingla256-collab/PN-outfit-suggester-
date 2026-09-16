@@ -90,10 +90,9 @@ function supervisorMiddleware(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
-async function startServer() {
-  const app = express();
-  const PORT = 3000;
+export const app = express();
 
+export function setupApiRoutes() {
   app.use(express.json({ limit: '20mb' }));
 
   // ==========================================
@@ -1825,6 +1824,17 @@ Generate 6 high-fashion trends covering diverse categories (Key Silhouettes, Col
       });
     }
   });
+}
+
+async function startServer() {
+  setupApiRoutes();
+
+  // Protect /api routes from being swallowed by the SPA fallback
+  app.use('/api', (req, res) => {
+    res.status(404).json({ error: `API Route Not Found: ${req.method} ${req.originalUrl}` });
+  });
+
+  const PORT = 3000;
 
   // Vite middleware in dev or static files in production
   if (process.env.NODE_ENV !== 'production') {
@@ -1860,4 +1870,6 @@ Generate 6 high-fashion trends covering diverse categories (Key Silhouettes, Col
   });
 }
 
-startServer();
+if (!process.env.VERCEL && !process.env.EDGEONE) {
+  startServer();
+}

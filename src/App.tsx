@@ -192,7 +192,7 @@ export function AppContent() {
                   fit: finalGarment.fit as any,
                   formality: finalGarment.formality as any,
                   season: finalGarment.season,
-                  tags: finalGarment.tags,
+                  tags: finalGarment.styleTags,
                   cost: finalGarment.price,
                   imageUrl: finalGarment.imageBase64,
                   isFavorite: false,

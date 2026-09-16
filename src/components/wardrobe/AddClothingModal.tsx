@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { GarmentAnalyzer, ExtractedGarment } from './GarmentAnalyzer';
+import { GarmentAnalyzer } from './GarmentAnalyzer';
+import { ExtractedGarment } from '../../schemas/garmentSchema';
 import { GarmentFormModal } from './GarmentFormModal';
 
 export interface AddClothingModalProps {

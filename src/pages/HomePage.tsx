@@ -4,6 +4,9 @@ import { Button } from "../components/ui/Button";
 import { EmptyState } from "../components/ui/EmptyState";
 import { Plus, Sparkles, Layers, Image as ImageIcon } from "lucide-react";
 
+import { generateCapsules } from '../services/capsuleEngine';
+import { CapsuleShowcase } from '../components/capsules/CapsuleShowcase';
+
 export function HomePage() {
   const {
     user,
@@ -33,6 +36,8 @@ export function HomePage() {
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .slice(0, 8);
   }, [wardrobe]);
+
+  const capsules = useMemo(() => generateCapsules(wardrobe as any), [wardrobe]);
 
   return (
     <div className="max-w-5xl mx-auto space-y-10 animate-in fade-in duration-500 py-4">
@@ -107,6 +112,8 @@ export function HomePage() {
               ))}
             </div>
           </div>
+
+          <CapsuleShowcase capsules={capsules} onSelectCapsule={(id) => console.log('Selected capsule:', id)} />
 
           {/* Recent Items */}
           <div>

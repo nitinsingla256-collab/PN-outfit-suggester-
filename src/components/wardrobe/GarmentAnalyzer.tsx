@@ -1,19 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Upload, Loader2, Sparkles, AlertCircle } from 'lucide-react';
-
-export interface ExtractedGarment {
-  name: string;
-  category: string;
-  subcategory: string;
-  color: string;
-  secondaryColor?: string;
-  pattern: string;
-  material: string;
-  fit: string;
-  formality: string;
-  season: string[];
-  tags: string[];
-}
+import { ExtractedGarment, ExtractedGarmentSchema } from '../../schemas/garmentSchema';
 
 interface GarmentAnalyzerProps {
   onAnalysisComplete: (garment: ExtractedGarment, imageBase64: string) => void;
@@ -67,8 +54,16 @@ export const GarmentAnalyzer: React.FC<GarmentAnalyzerProps> = ({
         throw new Error(`Analysis failed with status ${response.status}`);
       }
 
-      const data: ExtractedGarment = await response.json();
-      onAnalysisComplete(data, base64Image);
+      const jsonResponse = await response.json();
+      const rawData = jsonResponse.analysis || jsonResponse;
+      
+      // Map 'tags' to 'styleTags' if backend returns 'tags'
+      if (rawData.tags && !rawData.styleTags) {
+        rawData.styleTags = rawData.tags;
+      }
+
+      const parsedData = ExtractedGarmentSchema.parse(rawData);
+      onAnalysisComplete(parsedData, base64Image);
     } catch (err) {
       setError('Failed to analyze image. Please ensure the clothing item is clearly visible.');
     } finally {
