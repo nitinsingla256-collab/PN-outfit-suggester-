@@ -17,7 +17,47 @@ export const GarmentAnalyzer: React.FC<GarmentAnalyzerProps> = ({
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const optimizeImageForVision = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        const img = new Image();
+        img.onload = () => {
+          const MAX_DIM = 1200;
+          let width = img.width;
+          let height = img.height;
+          if (width > MAX_DIM || height > MAX_DIM) {
+            if (width > height) {
+              height = Math.round((height * MAX_DIM) / width);
+              width = MAX_DIM;
+            } else {
+              width = Math.round((width * MAX_DIM) / height);
+              height = MAX_DIM;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, width, height);
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', 0.88));
+            return;
+          }
+          resolve(result);
+        };
+        img.onerror = () => resolve(result);
+        img.src = result;
+      };
+      reader.onerror = () => resolve('');
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -26,14 +66,18 @@ export const GarmentAnalyzer: React.FC<GarmentAnalyzerProps> = ({
       return;
     }
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64String = reader.result as string;
-      setImagePreview(base64String);
+    try {
+      const optimizedBase64 = await optimizeImageForVision(file);
+      if (!optimizedBase64) {
+        setError('Could not process the selected image.');
+        return;
+      }
+      setImagePreview(optimizedBase64);
       setError(null);
-      analyzeGarmentImage(base64String);
-    };
-    reader.readAsDataURL(file);
+      analyzeGarmentImage(optimizedBase64);
+    } catch (_err) {
+      setError('Failed to prepare image for analysis.');
+    }
   };
 
   const handleManualEntry = () => {
@@ -194,26 +238,33 @@ export const GarmentAnalyzer: React.FC<GarmentAnalyzerProps> = ({
       )}
 
       {error && (
-        <div className="mt-4 p-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 space-y-3">
-          <div className="flex items-center gap-2 text-rose-700 dark:text-rose-300 text-xs font-medium">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{error}</span>
+        <div className="mt-4 p-4 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 space-y-3">
+          <div className="flex items-start gap-2.5 text-amber-900 dark:text-amber-200 text-xs font-medium">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+            <div className="space-y-1">
+              <span className="font-bold">{error}</span>
+              {error.includes('GEMINI_API_KEY') && (
+                <p className="text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed">
+                  To enable live AI vision scanning, add <code className="px-1 py-0.5 rounded bg-amber-200/60 dark:bg-amber-900/80 font-mono text-[10px]">GEMINI_API_KEY</code> in your EdgeOne Project Settings → Environment Variables. You can also proceed immediately below using this photo.
+                </p>
+              )}
+            </div>
           </div>
           {imagePreview && !isAnalyzing && (
             <div className="flex gap-2 pt-1">
               <button
                 type="button"
-                onClick={() => analyzeGarmentImage(imagePreview)}
-                className="flex-1 py-2 px-3 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition-colors"
+                onClick={handleManualEntry}
+                className="flex-1 py-2.5 px-4 text-xs font-bold rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors shadow-sm"
               >
-                Retry Analysis
+                Continue with this Photo →
               </button>
               <button
                 type="button"
-                onClick={handleManualEntry}
-                className="flex-1 py-2 px-3 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                onClick={() => analyzeGarmentImage(imagePreview)}
+                className="py-2.5 px-3 text-xs font-semibold rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               >
-                Enter Details Manually
+                Retry
               </button>
             </div>
           )}
