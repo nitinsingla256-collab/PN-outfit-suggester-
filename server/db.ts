@@ -391,7 +391,197 @@ class PaurviDatabase {
   getOrCreateClientUser(): StoredUser {
     const existing = this.data.users.find(u => u.id === 'usr_client_paurvi' || u.role === 'user');
     if (existing) return existing;
-    return this.data.users[0];
+    return this.createUser('Client', 'client@pn.outfit', 'client123', 'user');
+  }
+
+  getOrCreateAdminUser(): StoredUser {
+    const existing = this.data.users.find(u => u.role === 'admin' || u.role === 'supervisor');
+    if (existing) return existing;
+    return this.createUser('Master Administrator', 'admin@pn.outfit', '1211', 'admin');
+  }
+
+  getAllUsers(): StoredUser[] {
+    return [...this.data.users];
+  }
+
+  createSessionForUser(userId: string): { user: StoredUser; token: string } {
+    const user = this.data.users.find(u => u.id === userId);
+    if (!user) throw new Error('User not found');
+    user.lastActive = new Date().toISOString();
+    const token = generateToken();
+    const session: StoredSession = {
+      token,
+      userId: user.id,
+      createdAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    };
+    this.data.sessions.push(session);
+    this.save();
+    return { user, token };
+  }
+
+  seedWardrobeIfEmpty(userId: string): any[] {
+    const current = this.data.wardrobes[userId] || [];
+    if (current.length > 0) return current;
+
+    const sampleItems = [
+      {
+        id: `item_seed_1_${userId.slice(-4)}`,
+        name: 'Crisp Poplin Button-Down Shirt',
+        category: 'Tops',
+        subcategory: 'Shirts',
+        color: 'White',
+        secondaryColor: 'None',
+        pattern: 'Solid',
+        material: 'Egyptian Cotton',
+        fit: 'Tailored',
+        formality: 'Smart Casual',
+        season: ['Spring', 'Summer', 'Fall', 'Winter'],
+        styleTags: ['capsule-essential', 'minimalist', 'office', 'versatile'],
+        imageUrl: 'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?auto=format&fit=crop&q=80&w=800',
+        timesWorn: 3,
+        isFavorite: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+      {
+        id: `item_seed_2_${userId.slice(-4)}`,
+        name: 'Charcoal Fine Merino Crewneck',
+        category: 'Tops',
+        subcategory: 'Knitwear',
+        color: 'Charcoal',
+        secondaryColor: 'None',
+        pattern: 'Solid',
+        material: 'Merino Wool',
+        fit: 'Regular',
+        formality: 'Smart Casual',
+        season: ['Fall', 'Winter', 'Spring'],
+        styleTags: ['layering', 'quiet-luxury', 'cozy'],
+        imageUrl: 'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?auto=format&fit=crop&q=80&w=800',
+        timesWorn: 5,
+        isFavorite: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+      {
+        id: `item_seed_3_${userId.slice(-4)}`,
+        name: 'Pleated High-Rise Wool Trousers',
+        category: 'Bottoms',
+        subcategory: 'Trousers',
+        color: 'Navy',
+        secondaryColor: 'None',
+        pattern: 'Solid',
+        material: 'Virgin Wool',
+        fit: 'Tailored',
+        formality: 'Formal',
+        season: ['Spring', 'Fall', 'Winter'],
+        styleTags: ['tailored', 'architectural', 'business-casual'],
+        imageUrl: 'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?auto=format&fit=crop&q=80&w=800',
+        timesWorn: 4,
+        isFavorite: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+      {
+        id: `item_seed_4_${userId.slice(-4)}`,
+        name: 'Japanese Selvedge Raw Denim',
+        category: 'Bottoms',
+        subcategory: 'Jeans',
+        color: 'Indigo',
+        secondaryColor: 'None',
+        pattern: 'Solid',
+        material: 'Heavy Denim',
+        fit: 'Straight',
+        formality: 'Casual',
+        season: ['Spring', 'Summer', 'Fall', 'Winter'],
+        styleTags: ['heritage', 'durable', 'streetwear', 'casual-core'],
+        imageUrl: 'https://images.unsplash.com/photo-1542272604-780c96856592?auto=format&fit=crop&q=80&w=800',
+        timesWorn: 7,
+        isFavorite: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+      {
+        id: `item_seed_5_${userId.slice(-4)}`,
+        name: 'Double-Breasted Camel Wool Overcoat',
+        category: 'Outerwear',
+        subcategory: 'Coats',
+        color: 'Camel',
+        secondaryColor: 'None',
+        pattern: 'Solid',
+        material: 'Wool & Cashmere',
+        fit: 'Tailored',
+        formality: 'Formal',
+        season: ['Fall', 'Winter'],
+        styleTags: ['statement-coat', 'investment-piece', 'quiet-luxury'],
+        imageUrl: 'https://images.unsplash.com/photo-1544022613-e87ca75a784a?auto=format&fit=crop&q=80&w=800',
+        timesWorn: 2,
+        isFavorite: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+      {
+        id: `item_seed_6_${userId.slice(-4)}`,
+        name: 'Italian Calfskin Chelsea Boots',
+        category: 'Footwear',
+        subcategory: 'Boots',
+        color: 'Black',
+        secondaryColor: 'None',
+        pattern: 'Solid',
+        material: 'Full-Grain Leather',
+        fit: 'Sleek',
+        formality: 'Smart Casual',
+        season: ['Fall', 'Winter', 'Spring'],
+        styleTags: ['sleek', 'evening', 'versatile-footwear'],
+        imageUrl: 'https://images.unsplash.com/photo-1638247025967-b4e38f787b76?auto=format&fit=crop&q=80&w=800',
+        timesWorn: 6,
+        isFavorite: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+      {
+        id: `item_seed_7_${userId.slice(-4)}`,
+        name: 'Minimalist Court Low-Top Sneakers',
+        category: 'Footwear',
+        subcategory: 'Sneakers',
+        color: 'White',
+        secondaryColor: 'Off-White',
+        pattern: 'Solid',
+        material: 'Nappa Leather',
+        fit: 'Low-Profile',
+        formality: 'Casual',
+        season: ['Spring', 'Summer', 'Fall'],
+        styleTags: ['clean', 'minimalist', 'daily-rotation'],
+        imageUrl: 'https://images.unsplash.com/photo-1560769629-975ec94e6a86?auto=format&fit=crop&q=80&w=800',
+        timesWorn: 9,
+        isFavorite: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+      {
+        id: `item_seed_8_${userId.slice(-4)}`,
+        name: 'Midnight Silk Knit Tie & Scarf',
+        category: 'Accessories',
+        subcategory: 'Ties & Scarves',
+        color: 'Midnight Blue',
+        secondaryColor: 'None',
+        pattern: 'Textured',
+        material: 'Mulberry Silk',
+        fit: 'Draped',
+        formality: 'Formal',
+        season: ['Spring', 'Fall', 'Winter'],
+        styleTags: ['sartorial-accent', 'luxury-touch'],
+        imageUrl: 'https://images.unsplash.com/photo-1520903920243-00d872a2d1c9?auto=format&fit=crop&q=80&w=800',
+        timesWorn: 2,
+        isFavorite: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    ];
+
+    this.data.wardrobes[userId] = sampleItems;
+    this.save();
+    return sampleItems;
   }
 
   invalidateSession(token: string): boolean {
@@ -485,7 +675,11 @@ class PaurviDatabase {
   // --- Wardrobe Operations ---
 
   getWardrobe(userId: string): any[] {
-    return this.data.wardrobes[userId] || [];
+    const items = this.data.wardrobes[userId] || [];
+    if (items.length === 0) {
+      return this.seedWardrobeIfEmpty(userId);
+    }
+    return items;
   }
 
   addWardrobeItem(userId: string, itemData: any): any {

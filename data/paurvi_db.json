@@ -9,7 +9,7 @@
       "role": "supervisor",
       "status": "Active",
       "joinedDate": "2026-08-29",
-      "lastActive": "2026-09-19T10:55:27.884Z",
+      "lastActive": "2026-09-19T10:58:00.255Z",
       "pronouns": "she/they",
       "bio": "Lead Atelier Supervisor & Haute Horlogerie Archivist.",
       "location": "",
@@ -121,7 +121,7 @@
       "role": "user",
       "status": "Active",
       "joinedDate": "2026-08-29",
-      "lastActive": "2026-08-29T12:53:42.031Z",
+      "lastActive": "2026-09-19T12:19:13.736Z",
       "pronouns": "they/them",
       "bio": "Personal digital wardrobe and luxury styling studio.",
       "location": "",
@@ -563,11 +563,242 @@
       "userId": "usr_supervisor_paurvi",
       "createdAt": "2026-09-19T10:55:27.884Z",
       "expiresAt": "2026-10-19T10:55:27.884Z"
+    },
+    {
+      "token": "paurvi_tok_d933be33f9e86193353b6364b7f3e8300f6de319e741c64cf04b75d373116cc7",
+      "userId": "usr_supervisor_paurvi",
+      "createdAt": "2026-09-19T10:58:00.256Z",
+      "expiresAt": "2026-10-19T10:58:00.256Z"
+    },
+    {
+      "token": "paurvi_tok_c0cca0a0158c2e018f04137a14c45fea02cc3618e2494f237972e40ac97df3ab",
+      "userId": "usr_client_paurvi",
+      "createdAt": "2026-09-19T12:19:13.736Z",
+      "expiresAt": "2026-10-19T12:19:13.736Z"
     }
   ],
   "wardrobes": {
     "usr_supervisor_paurvi": [],
-    "usr_client_paurvi": [],
+    "usr_client_paurvi": [
+      {
+        "id": "item_seed_1_urvi",
+        "name": "Crisp Poplin Button-Down Shirt",
+        "category": "Tops",
+        "subcategory": "Shirts",
+        "color": "White",
+        "secondaryColor": "None",
+        "pattern": "Solid",
+        "material": "Egyptian Cotton",
+        "fit": "Tailored",
+        "formality": "Smart Casual",
+        "season": [
+          "Spring",
+          "Summer",
+          "Fall",
+          "Winter"
+        ],
+        "styleTags": [
+          "capsule-essential",
+          "minimalist",
+          "office",
+          "versatile"
+        ],
+        "imageUrl": "https://images.unsplash.com/photo-1598033129183-c4f50c736f10?auto=format&fit=crop&q=80&w=800",
+        "timesWorn": 3,
+        "isFavorite": true,
+        "createdAt": "2026-09-19T12:19:13.735Z",
+        "updatedAt": "2026-09-19T12:19:13.735Z"
+      },
+      {
+        "id": "item_seed_2_urvi",
+        "name": "Charcoal Fine Merino Crewneck",
+        "category": "Tops",
+        "subcategory": "Knitwear",
+        "color": "Charcoal",
+        "secondaryColor": "None",
+        "pattern": "Solid",
+        "material": "Merino Wool",
+        "fit": "Regular",
+        "formality": "Smart Casual",
+        "season": [
+          "Fall",
+          "Winter",
+          "Spring"
+        ],
+        "styleTags": [
+          "layering",
+          "quiet-luxury",
+          "cozy"
+        ],
+        "imageUrl": "https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?auto=format&fit=crop&q=80&w=800",
+        "timesWorn": 5,
+        "isFavorite": true,
+        "createdAt": "2026-09-19T12:19:13.735Z",
+        "updatedAt": "2026-09-19T12:19:13.735Z"
+      },
+      {
+        "id": "item_seed_3_urvi",
+        "name": "Pleated High-Rise Wool Trousers",
+        "category": "Bottoms",
+        "subcategory": "Trousers",
+        "color": "Navy",
+        "secondaryColor": "None",
+        "pattern": "Solid",
+        "material": "Virgin Wool",
+        "fit": "Tailored",
+        "formality": "Formal",
+        "season": [
+          "Spring",
+          "Fall",
+          "Winter"
+        ],
+        "styleTags": [
+          "tailored",
+          "architectural",
+          "business-casual"
+        ],
+        "imageUrl": "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?auto=format&fit=crop&q=80&w=800",
+        "timesWorn": 4,
+        "isFavorite": true,
+        "createdAt": "2026-09-19T12:19:13.735Z",
+        "updatedAt": "2026-09-19T12:19:13.735Z"
+      },
+      {
+        "id": "item_seed_4_urvi",
+        "name": "Japanese Selvedge Raw Denim",
+        "category": "Bottoms",
+        "subcategory": "Jeans",
+        "color": "Indigo",
+        "secondaryColor": "None",
+        "pattern": "Solid",
+        "material": "Heavy Denim",
+        "fit": "Straight",
+        "formality": "Casual",
+        "season": [
+          "Spring",
+          "Summer",
+          "Fall",
+          "Winter"
+        ],
+        "styleTags": [
+          "heritage",
+          "durable",
+          "streetwear",
+          "casual-core"
+        ],
+        "imageUrl": "https://images.unsplash.com/photo-1542272604-780c96856592?auto=format&fit=crop&q=80&w=800",
+        "timesWorn": 7,
+        "isFavorite": false,
+        "createdAt": "2026-09-19T12:19:13.735Z",
+        "updatedAt": "2026-09-19T12:19:13.735Z"
+      },
+      {
+        "id": "item_seed_5_urvi",
+        "name": "Double-Breasted Camel Wool Overcoat",
+        "category": "Outerwear",
+        "subcategory": "Coats",
+        "color": "Camel",
+        "secondaryColor": "None",
+        "pattern": "Solid",
+        "material": "Wool & Cashmere",
+        "fit": "Tailored",
+        "formality": "Formal",
+        "season": [
+          "Fall",
+          "Winter"
+        ],
+        "styleTags": [
+          "statement-coat",
+          "investment-piece",
+          "quiet-luxury"
+        ],
+        "imageUrl": "https://images.unsplash.com/photo-1544022613-e87ca75a784a?auto=format&fit=crop&q=80&w=800",
+        "timesWorn": 2,
+        "isFavorite": true,
+        "createdAt": "2026-09-19T12:19:13.735Z",
+        "updatedAt": "2026-09-19T12:19:13.735Z"
+      },
+      {
+        "id": "item_seed_6_urvi",
+        "name": "Italian Calfskin Chelsea Boots",
+        "category": "Footwear",
+        "subcategory": "Boots",
+        "color": "Black",
+        "secondaryColor": "None",
+        "pattern": "Solid",
+        "material": "Full-Grain Leather",
+        "fit": "Sleek",
+        "formality": "Smart Casual",
+        "season": [
+          "Fall",
+          "Winter",
+          "Spring"
+        ],
+        "styleTags": [
+          "sleek",
+          "evening",
+          "versatile-footwear"
+        ],
+        "imageUrl": "https://images.unsplash.com/photo-1638247025967-b4e38f787b76?auto=format&fit=crop&q=80&w=800",
+        "timesWorn": 6,
+        "isFavorite": true,
+        "createdAt": "2026-09-19T12:19:13.735Z",
+        "updatedAt": "2026-09-19T12:19:13.735Z"
+      },
+      {
+        "id": "item_seed_7_urvi",
+        "name": "Minimalist Court Low-Top Sneakers",
+        "category": "Footwear",
+        "subcategory": "Sneakers",
+        "color": "White",
+        "secondaryColor": "Off-White",
+        "pattern": "Solid",
+        "material": "Nappa Leather",
+        "fit": "Low-Profile",
+        "formality": "Casual",
+        "season": [
+          "Spring",
+          "Summer",
+          "Fall"
+        ],
+        "styleTags": [
+          "clean",
+          "minimalist",
+          "daily-rotation"
+        ],
+        "imageUrl": "https://images.unsplash.com/photo-1560769629-975ec94e6a86?auto=format&fit=crop&q=80&w=800",
+        "timesWorn": 9,
+        "isFavorite": false,
+        "createdAt": "2026-09-19T12:19:13.735Z",
+        "updatedAt": "2026-09-19T12:19:13.735Z"
+      },
+      {
+        "id": "item_seed_8_urvi",
+        "name": "Midnight Silk Knit Tie & Scarf",
+        "category": "Accessories",
+        "subcategory": "Ties & Scarves",
+        "color": "Midnight Blue",
+        "secondaryColor": "None",
+        "pattern": "Textured",
+        "material": "Mulberry Silk",
+        "fit": "Draped",
+        "formality": "Formal",
+        "season": [
+          "Spring",
+          "Fall",
+          "Winter"
+        ],
+        "styleTags": [
+          "sartorial-accent",
+          "luxury-touch"
+        ],
+        "imageUrl": "https://images.unsplash.com/photo-1520903920243-00d872a2d1c9?auto=format&fit=crop&q=80&w=800",
+        "timesWorn": 2,
+        "isFavorite": true,
+        "createdAt": "2026-09-19T12:19:13.735Z",
+        "updatedAt": "2026-09-19T12:19:13.735Z"
+      }
+    ],
     "usr_1788189774471_4d3bcaba": [],
     "usr_1788347656399_e86996db": [],
     "usr_1788351778534_ba9f4efb": [],
@@ -616,6 +847,15 @@
     "usr_1789573180335_de7baa60": []
   },
   "activityLogs": [
+    {
+      "id": "log_1789815480256_fe78f0",
+      "userId": "usr_supervisor_paurvi",
+      "userName": "Nitin Singla (Admin)",
+      "userEmail": "nitinsingla256@gmail.com",
+      "action": "User signed into PAURVI",
+      "category": "AUTH",
+      "timestamp": "2026-09-19T10:58:00.256Z"
+    },
     {
       "id": "log_1789815327884_6466a5",
       "userId": "usr_supervisor_paurvi",

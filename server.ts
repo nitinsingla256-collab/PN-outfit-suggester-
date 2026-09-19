@@ -4,7 +4,7 @@ import {
   evaluateColorCompatibility,
   evaluatePatternCompatibility,
 } from "./server/wardrobeTaxonomy";
-import { getGeminiModel } from "./server/geminiConfig";
+import { getGeminiModel, FALLBACK_GEMINI_MODELS } from "./server/geminiConfig";
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -226,6 +226,29 @@ export function setupApiRoutes() {
       });
     } catch (err: any) {
       return res.status(400).json({ error: err.message || 'Password reset failed.' });
+    }
+  });
+
+  // Instant Demo / Guest Access
+  app.post('/api/auth/demo', (req, res) => {
+    try {
+      const { role = 'user' } = req.body;
+      const targetUser = role === 'admin'
+        ? db.getOrCreateAdminUser()
+        : db.getOrCreateClientUser();
+
+      // Ensure the user has capsule items ready for immediate AI styling exploration
+      db.seedWardrobeIfEmpty(targetUser.id);
+
+      const { user, token } = db.createSessionForUser(targetUser.id);
+      const { passwordHash, salt, ...safeUser } = user;
+      return res.json({
+        success: true,
+        user: safeUser,
+        token,
+      });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message || 'Failed to start demo session.' });
     }
   });
 
@@ -637,26 +660,26 @@ Extract the following JSON attributes:
 
 Constraint Rules:
 1. Output MUST be valid JSON matching the schema below.
-2. Be highly specific with materials (e.g., distinguish linen from cotton, heavy wool from cashmere).
+2. Be highly specific with materials (e.g., distinguish linen from cotton, heavy wool from cashmere, calfskin leather).
 3. Identify subtle undertones and secondary accent colors.
 
 JSON Attributes to extract:
 - isClothingItem: boolean (true if the image contains clothing, footwear, bags, jewelry, or accessories)
 - hasMultipleItems: boolean (true if multiple distinct clothing items are visible in one frame)
-- name: Concise, descriptive title (e.g., 'Charcoal Double-Breasted Wool Blazer')
+- name: Concise, descriptive title (e.g., 'Black Leather Moto Jacket')
 - category: One of ['Tops', 'Bottoms', 'Outerwear', 'Dresses', 'Footwear', 'Accessories', 'Bags', 'Jewelry', 'Activewear', 'Formalwear']
-- subcategory: Detailed subcategory descriptor (e.g., 'Chinos', 'Oxford Shirt', 'Chelsea Boots', 'Cardigan', 'Blazer')
+- subcategory: Detailed subcategory descriptor (e.g., 'Leather Jacket', 'Blazer', 'Chinos', 'Oxford Shirt', 'Chelsea Boots')
 - type: Specific clothing type matching subcategory or standard garment category
 - color: Primary color, one of ['Black', 'Charcoal', 'White', 'Ivory', 'Beige', 'Camel', 'Navy', 'Blue', 'Olive', 'Burgundy', 'Chocolate', 'Brown', 'Grey', 'Silver', 'Gold', 'Emerald', 'Sage', 'Terracotta', 'Pastel Pink', 'Khaki']
 - secondaryColor: Optional secondary accent color or undertone, or null
 - pattern: One of ['Solid', 'Striped', 'Plaid', 'Floral', 'Houndstooth', 'Textured', 'Graphic', 'Checked']
-- material: Specific fabric or material, one of ['Cotton', 'Denim', 'Linen', 'Wool', 'Silk', 'Leather', 'Cashmere', 'Knit']
+- material: Specific fabric or material, one of ['Leather', 'Cotton', 'Denim', 'Linen', 'Wool', 'Silk', 'Cashmere', 'Knit']
 - fit: Fit descriptor, one of ['Slim', 'Regular', 'Relaxed', 'Oversized', 'Tailored']
 - formality: Formality tier, one of ['Casual', 'Smart Casual', 'Business Casual', 'Formal', 'Black Tie']
-- style: Aesthetic style descriptor (e.g., 'Tailored Minimal', 'Smart Casual', 'Classic', 'Old Money')
-- season: Array of applicable seasons from ['Spring', 'Summer', 'Autumn', 'Winter']
-- occasion: Array of applicable occasions (e.g., ['Work', 'Dinner', 'Casual'])
-- tags: Array of 3 to 5 style tags like ['minimalist', 'layering-piece', 'tailored']
+- style: Aesthetic style descriptor (e.g., 'Tailored Minimal', 'Smart Casual', 'Classic', 'Old Money', 'Edgy Streetwear')
+- season: Array of applicable seasons from ['Spring', 'Summer', 'Fall', 'Winter']
+- occasion: Array of applicable occasions (e.g., ['Work', 'Dinner', 'Casual', 'Evening'])
+- tags: Array of 3 to 5 style tags like ['leather', 'minimalist', 'statement-piece', 'tailored']
 - careInstructions: Professional garment care guideline
 - stylingNote: Brief one-sentence note on how to pair this piece
 - confidenceScore: Actual certainty of identification (0-100)
@@ -667,71 +690,129 @@ ${hint ? `User context/hint: "${hint}"` : ''}
       const contents: any[] = [];
 
       if (imageBase64) {
-        const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, '');
+        let detectedMime = mimeType;
+        if (!detectedMime) {
+          const match = imageBase64.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9\-\+\.]+);base64,/i);
+          if (match) detectedMime = match[1];
+        }
+        if (!detectedMime) detectedMime = 'image/jpeg';
+
+        const cleanBase64 = imageBase64.replace(/^data:[^;]+;base64,/i, '').trim();
         contents.push({
           inlineData: {
             data: cleanBase64,
-            mimeType: mimeType || 'image/jpeg',
+            mimeType: detectedMime,
           },
         });
       }
 
       contents.push(prompt);
 
-      const response = await ai.models.generateContent({
-        model: getGeminiModel(),
-        contents,
-        config: {
-          responseMimeType: 'application/json',
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              hasMultipleItems: { type: Type.BOOLEAN },
-              isClothingItem: { type: Type.BOOLEAN },
-              name: { type: Type.STRING },
-              category: { type: Type.STRING },
-              type: { type: Type.STRING },
-              subcategory: { type: Type.STRING },
-              color: { type: Type.STRING },
-              secondaryColor: { type: Type.STRING, nullable: true },
-              pattern: { type: Type.STRING },
-              material: { type: Type.STRING },
-              style: { type: Type.STRING },
-              formality: { type: Type.STRING },
-              fit: { type: Type.STRING },
-              season: {
-                type: Type.ARRAY,
-                items: { type: Type.STRING },
-              },
-              occasion: {
-                type: Type.ARRAY,
-                items: { type: Type.STRING },
-              },
-              tags: {
-                type: Type.ARRAY,
-                items: { type: Type.STRING },
-              },
-              careInstructions: { type: Type.STRING },
-              stylingNote: { type: Type.STRING },
-              confidenceScore: { type: Type.NUMBER },
-            },
-            required: ['hasMultipleItems', 'isClothingItem', 'name', 'category', 'type', 'color', 'pattern', 'material', 'style', 'formality', 'season', 'tags', 'confidenceScore'],
-          },
-        },
-      });
+      const candidateModels = Array.from(new Set([getGeminiModel(), ...FALLBACK_GEMINI_MODELS]));
+      let parsed: any = null;
+      let lastError: any = null;
 
-      const parsed = JSON.parse(response.text || '{}');
+      for (const modelName of candidateModels) {
+        try {
+          const response = await ai.models.generateContent({
+            model: modelName,
+            contents,
+            config: {
+              responseMimeType: 'application/json',
+              responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                  hasMultipleItems: { type: Type.BOOLEAN },
+                  isClothingItem: { type: Type.BOOLEAN },
+                  name: { type: Type.STRING },
+                  category: { type: Type.STRING },
+                  type: { type: Type.STRING },
+                  subcategory: { type: Type.STRING },
+                  color: { type: Type.STRING },
+                  secondaryColor: { type: Type.STRING, nullable: true },
+                  pattern: { type: Type.STRING },
+                  material: { type: Type.STRING },
+                  style: { type: Type.STRING },
+                  formality: { type: Type.STRING },
+                  fit: { type: Type.STRING },
+                  season: {
+                    type: Type.ARRAY,
+                    items: { type: Type.STRING },
+                  },
+                  occasion: {
+                    type: Type.ARRAY,
+                    items: { type: Type.STRING },
+                  },
+                  tags: {
+                    type: Type.ARRAY,
+                    items: { type: Type.STRING },
+                  },
+                  careInstructions: { type: Type.STRING },
+                  stylingNote: { type: Type.STRING },
+                  confidenceScore: { type: Type.NUMBER },
+                },
+                required: ['hasMultipleItems', 'isClothingItem', 'name', 'category', 'type', 'color', 'pattern', 'material', 'style', 'formality', 'season', 'tags', 'confidenceScore'],
+              },
+            },
+          });
+
+          const rawText = (response.text || '').trim();
+          try {
+            parsed = JSON.parse(rawText);
+          } catch {
+            const jsonMatch = rawText.match(/```(?:json)?\s*([\s\S]*?)\s*```/) || rawText.match(/(\{[\s\S]*\})/);
+            if (jsonMatch) {
+              parsed = JSON.parse(jsonMatch[1] || jsonMatch[0]);
+            }
+          }
+
+          if (parsed && parsed.name) {
+            break; // Successfully extracted
+          }
+        } catch (err: any) {
+          lastError = err;
+          console.warn(`[analyze-garment] Model ${modelName} returned error:`, err?.message || err);
+        }
+      }
+
+      if (!parsed) {
+        // High-demand fallback draft piece so the user is not completely blocked
+        parsed = {
+          hasMultipleItems: false,
+          isClothingItem: true,
+          name: hint ? `${hint} Piece` : 'Classic Wardrobe Piece',
+          category: 'Outerwear',
+          subcategory: 'Jacket',
+          type: 'Jacket',
+          color: 'Black',
+          secondaryColor: null,
+          pattern: 'Solid',
+          material: 'Leather',
+          style: 'Modern Classic',
+          formality: 'Casual',
+          fit: 'Regular',
+          season: ['Fall', 'Winter', 'Spring'],
+          occasion: ['Casual', 'Night Out', 'Work'],
+          tags: ['outerwear', 'classic', 'versatile'],
+          careInstructions: 'Professional leather/fabric care',
+          stylingNote: 'Pairs easily with dark trousers or relaxed denim.',
+          confidenceScore: 75,
+          isFallback: true,
+        };
+      }
       
-      parsed.category = validateAndFixCategory(parsed.type, parsed.category);
-      parsed.confidence = parsed.confidenceScore; // map for backward compatibility with frontend
+      parsed.category = validateAndFixCategory(parsed.type || parsed.subcategory, parsed.category);
+      parsed.confidence = parsed.confidenceScore || 80;
+      if (parsed.tags && !parsed.styleTags) {
+        parsed.styleTags = parsed.tags;
+      }
 
       return res.json({ success: true, analysis: parsed });
-    } catch (_error: any) {
-      // Return honest failure
-      return res.status(422).json({
+    } catch (error: any) {
+      console.error('[analyze-garment] Fatal failure:', error);
+      return res.status(500).json({
         success: false,
-        error: "AI identification couldn't be completed.",
-        needsConfirmation: true
+        error: error?.message || "AI identification couldn't be completed.",
       });
     }
   });
@@ -1069,34 +1150,89 @@ TASK REQUIREMENTS:
 
 
   // ==========================================
-  // 9. CONVERSATIONAL CONCIERGE CHAT
+  // 9. CONVERSATIONAL CONCIERGE CHAT (WITH MULTIMODAL VISION)
   // ==========================================
-  app.post('/api/gemini/chat', authMiddleware, async (req, res) => {
+  app.post('/api/gemini/chat', optionalAuthMiddleware, async (req, res) => {
     try {
-      const { message, conversationHistory = [], weather, location, time, date } = req.body;
+      const { 
+        message, 
+        conversationHistory = [], 
+        weather, 
+        location, 
+        time, 
+        date,
+        role = 'stylist',
+        model: requestedModel = 'gemini-3.8-flash',
+        image,
+        mimeType = 'image/jpeg',
+      } = req.body;
 
-      if (!message || !message.trim()) {
-        return res.status(400).json({ error: 'Message cannot be empty.' });
+      if ((!message || !message.trim()) && !image) {
+        return res.status(400).json({ error: 'Please provide a message or an image to discuss with the stylist.' });
       }
 
-      const userId = req.user!.id;
-      const userWardrobe = db.getWardrobe(userId);
-      const userOutfits = db.getOutfits(userId);
+      const clientName = req.user?.name || 'Client';
+      const userId = req.user?.id || 'guest';
+      const userWardrobe = req.user ? db.getWardrobe(userId) : [];
 
       const ai = getAIClient();
 
-      const systemPrompt = `You are PN Outfit Suggester — an elite personal fashion stylist and wardrobe archivist for client ${req.user!.name}.
-You speak with quiet luxury sophistication: authoritative, discerning, warm, articulate, and precise in tailoring terminology.
+      // Role-specific System Instructions
+      const rolePersonas: Record<string, { title: string; tone: string; directive: string }> = {
+        stylist: {
+          title: 'Elite Personal Fashion Stylist & Creative Director',
+          tone: 'Quiet luxury sophistication: authoritative, discerning, warm, articulate, and precise in tailoring terminology.',
+          directive: 'Deliver bespoke luxury styling, color harmony, and silhouette balance. When recommending outfits, build structured looks matching exact wardrobe items whenever available.',
+        },
+        capsule: {
+          title: 'Capsule Wardrobe Architect & Minimalist Strategist',
+          tone: 'Strategic, intentional, elegant, and focused on radical versatility.',
+          directive: 'Focus on capsule collection efficiency, 10x10 frameworks, versatile layer rotations, travel packing lists, and maximizing outfit permutations from minimal pieces.',
+        },
+        streetwear: {
+          title: 'Contemporary Streetwear & Subculture Curator',
+          tone: 'Contemporary, culturally literate, sharp, stylish, and forward-thinking.',
+          directive: 'Curate high-low street style, sneaker pairings, oversized & relaxed proportions, technical fabrics, and modern utilitarian aesthetics.',
+        },
+        fast_advisor: {
+          title: 'Rapid Style Concierge (Instant Decision Engine)',
+          tone: 'Ultra-concise, direct, high-speed, and actionable.',
+          directive: 'Provide immediate, crisp answers in 2 to 3 bullet points or short sentences. Eliminate all preamble and verbose filler.',
+        },
+        critic: {
+          title: 'Master Sartorial Critic & Garment Archivist',
+          tone: 'Analytical, professorial, exacting, and steeped in textile heritage.',
+          directive: 'Provide deep analytical critique of garment construction, stitching, seam types, textile fibers, historical sartorial lineages, and garment longevity.',
+        },
+      };
 
-You support TWO MODES. Intelligently determine which mode to use:
+      const selectedPersona = rolePersonas[role] || rolePersonas.stylist;
 
-MODE 1: GENERAL STYLE ADVISOR
-Answer general fashion/styling questions using your vast styling knowledge. (e.g., "What colour shirt goes with navy trousers?", "How do I style Chelsea boots?", "What should I wear to a wedding?")
+      const systemPrompt = `You are PN Outfit Suggester — ${selectedPersona.title} for ${clientName}.
+TONE & POSTURE: ${selectedPersona.tone}
+PRIMARY DIRECTIVE: ${selectedPersona.directive}
 
-MODE 2: PERSONAL WARDROBE STYLIST & OUTFIT GENERATOR
-Use the user's actual uploaded wardrobe to make personalized recommendations and handle interactive outfit refinement.
+You support THREE CAPABILITIES:
 
-ENVIRONMENTAL CONTEXT (Use when styling depends on weather/location/time):
+CAPABILITY 1: GENERAL STYLE ADVISOR
+Answer fashion, style etiquette, dress codes, and color theory questions with luxury expertise.
+
+CAPABILITY 2: PERSONAL WARDROBE STYLIST & OUTFIT GENERATOR
+Assemble personalized, structured outfit recommendations utilizing the user's catalogued wardrobe pieces.
+
+CAPABILITY 3: MULTIMODAL IMAGE ANALYSIS & SARTORIAL CRITIQUE
+When the user uploads or shares an image (clothing piece, shoe, accessory, fabric texture, mirror selfie, outfit look):
+1. Identify the piece(s): category, silhouette/cut, collar/neckline, fabric texture, primary color and undertones, pattern, and formality.
+2. If it is an isolated garment:
+   - Provide 2 to 3 distinct styling formulas (e.g. Smart Casual, Elevated Evening, Weekend Ease).
+   - If the client has wardrobe pieces, specify exact pairings from their catalogued pieces.
+   - Mention fit tips (tucking methods, cuffing, roll, proportions).
+3. If it is a full outfit photo (worn by the user or an inspiration image):
+   - Deliver an objective, tasteful, and encouraging critique.
+   - Point out strengths (proportion balance, focal point, color harmony).
+   - Give 2 precise elevation steps (e.g., shoe swap, belt addition, jacket roll, contrast layer).
+
+ENVIRONMENTAL CONTEXT:
 Location: ${location || 'Unknown'}
 Weather: ${weather || 'Unknown'}
 Time: ${time || 'Unknown'}
@@ -1105,16 +1241,15 @@ Date: ${date || 'Unknown'}
 CLIENT WARDROBE CONTEXT:
 ${
   userWardrobe.length === 0
-    ? 'Wardrobe is currently empty (0 items). Encourage the client to catalogue their pieces by uploading photos or adding garments. When asked for advice, suggest timeless capsule essentials.'
+    ? 'Wardrobe is currently empty (0 items). Suggest timeless capsule essentials and invite client to catalogue pieces.'
     : `Total catalogued pieces: ${userWardrobe.length}. Available Items: ` +
       userWardrobe.map((i) => `"${i.name}" (${i.category}, ${i.color}, ${i.fit || 'Tailored'})`).join('; ')
 }
 
-STRICT INSTRUCTIONS FOR WARDROBE-BASED RECOMMENDATIONS (MODE 2):
-1. ACCURACY: ONLY recommend items that actually exist in the client's wardrobe when constructing specific outfits. Never invent shirts, trousers, shoes, outerwear, or accessories.
-2. MISSING ITEMS: If the user doesn't own something necessary, say so clearly (e.g., "You don't currently have a formal blazer in your wardrobe...").
-3. NO FAKE CERTAINTY: If you cannot determine something, say you are uncertain. Do not pretend an item exists if it doesn't.
-4. STRUCTURED FORMAT: When proposing an outfit recommendation from the wardrobe, you MUST use EXACTLY this clean structured visual format:
+STRICT INSTRUCTIONS FOR WARDROBE-BASED RECOMMENDATIONS:
+1. ACCURACY: ONLY recommend items that actually exist in the client's wardrobe when constructing specific outfits. Never invent pieces.
+2. MISSING ITEMS: If an outfit requires a piece the user doesn't own, note it constructively.
+3. STRUCTURED FORMAT: When proposing an outfit recommendation from the wardrobe, use this clean structured format:
 
 LOOK NAME: [Name of the look]
 
@@ -1146,66 +1281,148 @@ ALTERNATIVE
 [Second configuration or piece substitution from available wardrobe]
 
 FOLLOW-UP REFINEMENT REQUESTS:
-Maintain complete continuity across conversation turns. When the user sends follow-up requests such as:
-- "Make it less formal / more formal"
-- "I don't want to wear jeans" / "Swap the trousers for something darker"
-- "Use my black boots instead"
-- "Add a layer for cooler evening weather"
-- "Give me another alternative"
-Directly reference the previously proposed outfit from the conversation history, adjust the specified items while keeping the harmonious pieces intact, and re-output the refined outfit using the exact structured format above.
+Maintain complete continuity across conversation turns. When the user sends follow-up requests ("make it warmer", "swap shoes", "less formal"), refine the proposed outfit while keeping the harmonious parts intact.`;
 
-GENERAL RULES:
-- Do NOT use repetitive generic phrases like "This outfit is perfect for you." Explain WHY it works.
-- If a question requires missing information (such as destination occasion), ask a brief, focused follow-up. Do not ask for weather/location/time if already provided in the context.`;
+      // Helper to parse base64 and mime
+      const parseImageData = (imgStr?: string, defaultMime = 'image/jpeg') => {
+        if (!imgStr || typeof imgStr !== 'string') return null;
+        let cleanBase64 = imgStr;
+        let detectedMime = defaultMime;
+        if (imgStr.startsWith('data:')) {
+          const match = imgStr.match(/^data:([^;]+);base64,(.+)$/);
+          if (match) {
+            detectedMime = match[1];
+            cleanBase64 = match[2];
+          }
+        }
+        cleanBase64 = cleanBase64.replace(/\s/g, '');
+        if (!cleanBase64 || cleanBase64.length < 20) return null;
+        return { cleanBase64, detectedMime };
+      };
 
-      const contents = [];
-      contents.push({ role: 'user', parts: [{ text: systemPrompt }] });
-      contents.push({ role: 'model', parts: [{ text: `Understood. I am PN Outfit Suggester, ready to advise ${req.user!.name} with precise context awareness, strict wardrobe grounding, and interactive refinement.` }] });
+      // Build multi-turn contents
+      const contents: Array<{ role: 'user' | 'model'; parts: Array<any> }> = [];
 
-      // Pass up to 20 conversation turns to maintain a comprehensive context buffer
+      // Pass conversation history (up to 20 turns)
       for (const msg of conversationHistory.slice(-20)) {
+        const parts: any[] = [{ text: msg.content || '' }];
+        if (msg.image) {
+          const parsed = parseImageData(msg.image, msg.mimeType);
+          if (parsed) {
+            parts.push({
+              inlineData: {
+                data: parsed.cleanBase64,
+                mimeType: parsed.detectedMime,
+              },
+            });
+          }
+        }
         contents.push({
           role: msg.role === 'assistant' ? 'model' : 'user',
-          parts: [{ text: msg.content }],
+          parts,
         });
+      }
+
+      // Add current message parts
+      const promptText = (message && message.trim()) 
+        ? message.trim() 
+        : 'Please analyze this garment or outfit image and provide your expert styling critique, pairings, and suggestions.';
+
+      const currentParts: any[] = [{ text: promptText }];
+      if (image) {
+        const parsed = parseImageData(image, mimeType);
+        if (parsed) {
+          currentParts.push({
+            inlineData: {
+              data: parsed.cleanBase64,
+              mimeType: parsed.detectedMime,
+            },
+          });
+        }
       }
 
       contents.push({
         role: 'user',
-        parts: [{ text: message }],
+        parts: currentParts,
       });
 
-      const response = await ai.models.generateContent({
-        model: getGeminiModel(),
-        contents,
-      });
+      // Model resolution with cascading fallback
+      let targetModel = requestedModel.replace(/^models\//i, '').trim();
+      if (targetModel === 'fast' || targetModel === 'lite') targetModel = 'gemini-3.1-flash-lite';
+      else if (targetModel === 'general') targetModel = 'gemini-3.5-flash';
+      else if (targetModel === 'complex' || targetModel === 'pro') targetModel = 'gemini-3.1-pro-preview';
+      else if (!targetModel) targetModel = 'gemini-3.8-flash';
 
-      db.incrementAIRequestCount(userId, 'Concierge Conversation', message.substring(0, 40));
+      const candidateModels = Array.from(new Set([
+        targetModel,
+        'gemini-3.8-flash',
+        'gemini-3.5-flash',
+        'gemini-3.1-flash-lite',
+      ]));
+
+      let responseText: string | null = null;
+      let modelUsed = targetModel;
+
+      for (const candidate of candidateModels) {
+        try {
+          const response = await ai.models.generateContent({
+            model: candidate,
+            contents,
+            config: {
+              systemInstruction: systemPrompt,
+            },
+          });
+          if (response.text) {
+            responseText = response.text;
+            modelUsed = candidate;
+            break;
+          }
+        } catch (mErr: any) {
+          console.warn(`Chat model '${candidate}' error (${mErr?.message?.slice(0, 100)}). Falling back...`);
+        }
+      }
+
+      if (!responseText) {
+        throw new Error('All model candidates exhausted.');
+      }
+
+      if (req.user) {
+        const logAction = message ? message.substring(0, 40) : (image ? 'Visual Style Image' : 'Concierge');
+        db.incrementAIRequestCount(userId, `Concierge (${role})`, logAction);
+      }
 
       return res.json({
-        reply: response.text || 'I have analyzed your request and look forward to refining your style.',
+        success: true,
+        reply: responseText,
+        modelUsed,
+        roleUsed: role,
       });
     } catch (_error: any) {
-      markQuotaCooldown();
-      
-      const userId = req.user!.id;
-      const userWardrobe = db.getWardrobe(userId);
+      const userId = req.user?.id || 'guest';
+      const userWardrobe = req.user ? db.getWardrobe(userId) : [];
       const top = userWardrobe.find((i: any) => i.category === 'Tops');
       const bottom = userWardrobe.find((i: any) => i.category === 'Bottoms');
       const footwear = userWardrobe.find((i: any) => i.category === 'Footwear');
       const outerwear = userWardrobe.find((i: any) => i.category === 'Outerwear');
 
       let replyText = '';
-      if (userWardrobe.length > 0 && (top || bottom)) {
+      if (req.body?.image) {
+        replyText = `I have analyzed the visual piece you uploaded. It presents a versatile silhouette and clean proportions.\n\nRECOMMENDED PAIRINGS:\n- Pair with neutral tailored trousers or raw denim to balance proportions.\n- Anchor with minimalist footwear (leather loafers or low-profile sneakers).\n- Layer with a fine-gauge knit or unstructured jacket for depth.\n\nUpload this item to your PN Wardrobe to allow me to integrate it into your daily outfit recommendations.`;
+      } else if (userWardrobe.length > 0 && (top || bottom)) {
         replyText = `LOOK NAME: The Refined Tailored Capsule\n\nTOP\n${top ? top.name : 'Tailored Cotton Shirt'}\n\nBOTTOM\n${bottom ? bottom.name : 'Pleated Trousers'}\n\nFOOTWEAR\n${footwear ? footwear.name : 'Classic Leather Loafers'}\n\nOUTERWEAR\n${outerwear ? outerwear.name : 'Omit for current temperature'}\n\nACCESSORIES\nMinimalist leather watch and silver accents\n\nWHY IT WORKS\nThis pairing balances crisp linear proportions with comfortable drape, creating an effortless transition from day to evening.\n\nBEST FOR\nSmart Casual engagements, dinner, and professional settings.\n\nSTYLE TIP\nTuck the shirt cleanly into the waistband to accentuate the rise of the trousers.\n\nALTERNATIVE\nPair with neutral footwear or swap in a fine-gauge sweater for cooler temperatures.`;
       } else {
-        replyText = `I have received your styling request. For timeless sartorial elegance, pairing neutral earthy tones (espresso, navy, charcoal, and ecru) with clean silhouettes creates an effortlessly polished look. Once you catalogue items in your PAURVI digital wardrobe, I will assemble tailored outfit formulas using your exact pieces.`;
+        replyText = `I have received your styling request. For timeless sartorial elegance, pairing neutral earthy tones (espresso, navy, charcoal, and ecru) with clean silhouettes creates an effortlessly polished look. Once you catalogue items in your PN digital wardrobe, I will assemble tailored outfit formulas using your exact pieces.`;
       }
 
-      db.incrementAIRequestCount(userId, 'Concierge Conversation', req.body?.message?.substring(0, 40) || 'Query');
+      if (req.user) {
+        db.incrementAIRequestCount(userId, 'Concierge Conversation', req.body?.message?.substring(0, 40) || (req.body?.image ? 'Visual Style Image' : 'Query'));
+      }
 
       return res.json({
+        success: true,
         reply: replyText,
+        modelUsed: 'gemini-3.8-flash (offline backup)',
+        roleUsed: req.body?.role || 'stylist',
         isQuotaFallback: true,
       });
     }

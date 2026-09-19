@@ -1,4 +1,4 @@
-/** * @license * SPDX-License-Identifier: Apache-2.0 */ import React, { useState, useEffect } from "react";
+/** * @license * SPDX-License-Identifier: Apache-2.0 */ import React, { useState, useEffect, useRef } from "react";
 import Markdown from "react-markdown";
 import { useApp } from "../context/AppContext";
 import { Button } from "../components/ui/Button";
@@ -51,6 +51,10 @@ import {
   Lock,
   RefreshCw,
   ArrowRightLeft,
+  Image as ImageIcon,
+  Camera,
+  UploadCloud,
+  X,
 } from "lucide-react";
 const QUICK_PROMPTS = [
   "What should I wear for dinner tonight?",
@@ -111,6 +115,7 @@ function StylistPageContent() {
     setIsAddClothingModalOpen,
     setSelectedWardrobeItemForDetail,
     user,
+    updateUser,
   } = useApp();
   const [activeTab, setActiveTab] = useState<
     "studio" | "saved_looks" | "concierge"
@@ -162,15 +167,24 @@ function StylistPageContent() {
 
   /* Concierge Chat State - messages array tracking conversation history */
   const [messages, setMessages] = useState<
-    { role: "user" | "assistant"; content: string; time: string; isError?: boolean; retryPrompt?: string }[]
+    {
+      role: "user" | "assistant";
+      content: string;
+      time: string;
+      isError?: boolean;
+      retryPrompt?: string;
+      image?: string;
+      mimeType?: string;
+      imageName?: string;
+    }[]
   >(() => {
     return [
       {
         role: "assistant",
         content:
           wardrobe.length === 0
-            ? `Welcome to PN Outfit Suggester, ${user.name}. Your digital wardrobe currently has 0 items. You can upload photos of your garments or ask me for advice on color coordination, capsule building, or general styling.`
-            : `Hello ${user.name}. I am your PN AI Stylist. I have access to your ${wardrobe.length} catalogued pieces and environmental conditions. You can ask for personalized outfit recommendations (which I will format with exact pieces) or general styling advice, and we can interactively refine looks together.`,
+            ? `Welcome to PN Outfit Suggester, ${user.name}. Your digital wardrobe currently has 0 items. You can upload photos of garments or complete looks using the camera icon below to get instant AI styling advice, pairings, and proportion feedback!`
+            : `Hello ${user.name}. I am your PN AI Stylist. I have access to your ${wardrobe.length} catalogued pieces and environmental conditions. You can upload photos of pieces or outfits to analyze, or ask for personalized outfit formulas and interactive refinement!`,
         time: "Just now",
       },
     ];
@@ -178,13 +192,42 @@ function StylistPageContent() {
   const [chatInput, setChatInput] = useState("");
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
+  const [chatRole, setChatRole] = useState<'stylist' | 'capsule' | 'streetwear' | 'fast_advisor' | 'critic'>('stylist');
+  const [chatModel, setChatModel] = useState<'gemini-3.8-flash' | 'gemini-3.5-flash' | 'gemini-3.1-flash-lite' | 'gemini-3.1-pro-preview'>('gemini-3.8-flash');
+  const [chatImage, setChatImage] = useState<{ base64: string; mimeType: string; name: string } | null>(null);
+  const chatFileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleChatImageSelect = (file: File) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setChatError('Please select a valid image file (JPEG, PNG, WebP).');
+      return;
+    }
+    if (file.size > 15 * 1024 * 1024) {
+      setChatError('Image exceeds the 15MB size limit.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setChatImage({
+        base64: reader.result as string,
+        mimeType: file.type || 'image/jpeg',
+        name: file.name,
+      });
+      setChatError(null);
+    };
+    reader.onerror = () => {
+      setChatError('Unable to process the selected image.');
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleResetChat = () => {
     setChatError(null);
     setMessages([
       {
         role: "assistant",
-        content: `Conversation reset. How can I assist with your styling or wardrobe today, ${user.name}?`,
+        content: `Conversation reset. Ready with ${chatRole} persona using ${chatModel}. How can I assist with your styling or wardrobe today, ${user.name}?`,
         time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       },
     ]);
@@ -489,37 +532,54 @@ function StylistPageContent() {
       });
     }
   };
-  const handleSendChatMessage = async (e: React.FormEvent | string) => {
-    if (typeof e !== "string") {
+  const handleSendChatMessage = async (e?: React.FormEvent | string) => {
+    if (e && typeof e !== "string") {
       e.preventDefault();
     }
-    const userText = typeof e === "string" ? e : chatInput.trim();
-    if (!userText || isChatLoading) return;
+    const userText = (typeof e === "string" ? e : chatInput).trim();
+    const currentImg = chatImage;
+
+    if ((!userText && !currentImg) || isChatLoading) return;
+
     setChatError(null);
+    const effectiveText = userText || (currentImg ? "Please analyze this garment or outfit photo and provide bespoke styling advice, pairings, and proportion feedback." : "");
+
     const newMsg = {
       role: "user" as const,
-      content: userText,
+      content: effectiveText,
       time: new Date().toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",
       }),
+      image: currentImg?.base64,
+      mimeType: currentImg?.mimeType,
+      imageName: currentImg?.name,
     };
+
     const updatedMessages = [...messages, newMsg];
     setMessages(updatedMessages);
     setChatInput("");
+    setChatImage(null);
     setIsChatLoading(true);
+
     try {
       const reply = await aiStylistService.chatConcierge({
-        message: userText,
+        message: effectiveText,
+        image: currentImg?.base64,
+        mimeType: currentImg?.mimeType,
         conversationHistory: updatedMessages.map((m) => ({
           role: m.role,
           content: m.content,
+          image: m.image,
+          mimeType: m.mimeType,
         })),
         wardrobePool: wardrobe,
         weather: weatherDescription,
         location: location || user.location || "Unknown",
         time: time || new Date().toLocaleTimeString(),
         date: date || new Date().toLocaleDateString(),
+        role: chatRole,
+        model: chatModel,
       });
       setChatError(null);
       setMessages((prev) => [
@@ -547,7 +607,7 @@ function StylistPageContent() {
             minute: "2-digit",
           }),
           isError: true,
-          retryPrompt: userText,
+          retryPrompt: effectiveText,
         },
       ]);
     } finally {
@@ -556,22 +616,32 @@ function StylistPageContent() {
   };
   const profileComplete = isStyleProfileComplete(user.profile);
 
-  if (!profileComplete) {
-    return (
-      <div className="max-w-4xl mx-auto py-8">
-        <div className="mb-8 text-center space-y-3">
-          <h1 className="text-3xl font-bold font-editorial text-slate-900">Style Profile Required</h1>
-          <p className="text-slate-500 max-w-xl mx-auto text-sm">
-            Complete your personal style profile once before using PN Stylist. This ensures all recommendations are grounded in your actual characteristics, preferences, and verified wardrobe.
-          </p>
-        </div>
-        <PersonalStyleProfileCard />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
+      {!profileComplete && (
+        <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-amber-900 dark:text-amber-200">
+          <div className="flex items-center gap-2.5">
+            <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
+            <span>
+              <strong>Personalize Recommendations:</strong> Complete your Style Profile for tailored proportions and bespoke color palettes.
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              if (user.profile) {
+                user.profile.isCompleted = true;
+                user.profile.preferredFit = user.profile.preferredFit || 'Tailored';
+                user.profile.preferredStyles = user.profile.preferredStyles?.length ? user.profile.preferredStyles : ['Smart Casual', 'Minimal'];
+                updateUser({ profile: { ...user.profile, isCompleted: true } });
+              }
+            }}
+            className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-medium whitespace-nowrap transition cursor-pointer"
+          >
+            Apply Smart-Casual Defaults
+          </button>
+        </div>
+      )}
       {" "}
       {/* 1. Header & Navigation */}{" "}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-gray-200 ">
@@ -1695,7 +1765,7 @@ function StylistPageContent() {
       {activeTab === "concierge" && (
         <div className="bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden flex flex-col h-[650px]">
           {/* Concierge Chat Header */}
-          <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+          <div className="px-6 py-4 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3 bg-gray-50/50">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-2xl bg-emerald-600 flex items-center justify-center text-white font-semibold text-xs tracking-wider">
                 PN
@@ -1710,20 +1780,47 @@ function StylistPageContent() {
                   </Badge>
                 </div>
                 <p className="text-[11px] text-gray-500">
-                  Dual-Mode: General Styling + Wardrobe-Specific Recommendations
+                  Multi-Turn Neural Styling • {chatRole.toUpperCase()} • {chatModel.replace('gemini-', '')}
                 </p>
               </div>
             </div>
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleResetChat}
-              leftIcon={<RotateCcw className="w-3.5 h-3.5" />}
-              title="Reset conversation buffer"
-            >
-              Reset Chat
-            </Button>
+            <div className="flex items-center gap-2">
+              <select
+                value={chatRole}
+                onChange={(e) => setChatRole(e.target.value as any)}
+                className="text-xs font-medium border border-gray-200 rounded-xl px-2.5 py-1.5 bg-white text-gray-700 hover:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
+                title="Stylist Persona"
+              >
+                <option value="stylist">🌟 Elite Stylist</option>
+                <option value="capsule">🧳 Capsule Architect</option>
+                <option value="streetwear">👟 Streetwear Curator</option>
+                <option value="fast_advisor">⚡ Rapid Concierge</option>
+                <option value="critic">📜 Sartorial Critic</option>
+              </select>
+
+              <select
+                value={chatModel}
+                onChange={(e) => setChatModel(e.target.value as any)}
+                className="text-xs font-medium border border-gray-200 rounded-xl px-2.5 py-1.5 bg-white text-gray-700 hover:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
+                title="Gemini AI Model"
+              >
+                <option value="gemini-3.8-flash">Gemini 3.8 Flash (Primary)</option>
+                <option value="gemini-3.5-flash">Gemini 3.5 Flash (General)</option>
+                <option value="gemini-3.1-flash-lite">Gemini 3.1 Flash-Lite (Fast)</option>
+                <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro (Complex)</option>
+              </select>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleResetChat}
+                leftIcon={<RotateCcw className="w-3.5 h-3.5" />}
+                title="Reset conversation buffer"
+              >
+                Reset Chat
+              </Button>
+            </div>
           </div>
 
           {/* Chat Messages Log */}
@@ -1751,6 +1848,17 @@ function StylistPageContent() {
                         : "bg-gray-50 text-gray-800 border border-gray-200/60 "
                   }`}
                 >
+                  {msg.image && (
+                    <div className="mb-2.5 overflow-hidden rounded-xl border border-white/20 bg-black/10 max-w-[280px]">
+                      <img
+                        src={msg.image}
+                        alt="Uploaded style piece"
+                        className="w-full max-h-56 object-cover rounded-lg"
+                        referrerPolicy="no-referrer"
+                      />
+                    </div>
+                  )}
+
                   {msg.role === "assistant" ? (
                     <div className="space-y-2">
                       <div className="markdown-body prose prose-sm max-w-none">
@@ -1792,15 +1900,54 @@ function StylistPageContent() {
                   <Sparkles className="w-4 h-4 animate-spin" />
                 </div>
                 <div className="rounded-2xl p-4 bg-gray-50 border border-gray-200/60 text-xs text-gray-500 flex items-center gap-2">
-                  <span>Concierge is crafting structured recommendation...</span>
+                  <span>Concierge is analyzing visual context & crafting bespoke recommendation...</span>
                 </div>
               </div>
             )}
           </div>
+
+          {/* Attached Image Preview */}
+          {chatImage && (
+            <div className="px-6 py-2.5 bg-emerald-50 border-t border-emerald-100 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <img
+                  src={chatImage.base64}
+                  alt="Selected clothing"
+                  className="w-12 h-12 rounded-lg object-cover border border-emerald-200 shrink-0"
+                  referrerPolicy="no-referrer"
+                />
+                <div className="min-w-0">
+                  <div className="text-xs font-semibold text-emerald-900 truncate">
+                    {chatImage.name}
+                  </div>
+                  <div className="text-[11px] text-emerald-600 flex items-center gap-1">
+                    <Sparkles className="w-3 h-3" />
+                    <span>Photo attached for Gemini Multimodal Stylist</span>
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setChatImage(null)}
+                className="p-1.5 text-emerald-700 hover:text-rose-600 hover:bg-emerald-100 rounded-lg transition"
+                title="Remove attached photo"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
           {/* Suggested Chat Prompts & Follow-Up Refinements */}
           <div className="px-6 pb-2">
             <div className="flex flex-wrap items-center gap-2">
-              {(messages.length > 2
+              {(chatImage
+                ? [
+                    "Style this into 3 distinct outfits",
+                    "Which pieces in my wardrobe pair with this?",
+                    "Critique color harmony & proportion",
+                    "Suggest accessories and footwear for this",
+                  ]
+                : messages.length > 2
                 ? [
                     "Make this outfit more formal",
                     "Make it more casual",
@@ -1828,13 +1975,44 @@ function StylistPageContent() {
               ))}
             </div>
           </div>
+
+          {/* Hidden File Input */}
+          <input
+            ref={chatFileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleChatImageSelect(file);
+              e.target.value = "";
+            }}
+          />
+
           {/* Chat Input Bar */}
           <form
             onSubmit={handleSendChatMessage}
-            className="p-4 border-t border-gray-100 bg-gray-50/50 flex gap-2"
+            className="p-4 border-t border-gray-100 bg-gray-50/50 flex items-center gap-2"
           >
+            <button
+              type="button"
+              onClick={() => chatFileInputRef.current?.click()}
+              disabled={isChatLoading}
+              className={`p-2.5 rounded-xl border transition shrink-0 cursor-pointer flex items-center justify-center ${
+                chatImage
+                  ? "bg-emerald-600 text-white border-emerald-700 shadow-xs"
+                  : "bg-white text-gray-700 border-gray-200 hover:bg-gray-100 hover:text-emerald-700"
+              }`}
+              title="Upload garment photo for AI styling"
+            >
+              <Camera className="w-4 h-4" />
+            </button>
             <Input
-              placeholder="Ask anything about styling, colors, fabric pairing, or specific pieces..."
+              placeholder={
+                chatImage
+                  ? "Ask how to style this photo (or click Send for full analysis)..."
+                  : "Ask anything about styling, colors, fabric pairing, or upload a photo..."
+              }
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
               className="flex-1"
@@ -1842,7 +2020,7 @@ function StylistPageContent() {
             <Button
               type="submit"
               variant="primary"
-              disabled={!chatInput.trim() || isChatLoading}
+              disabled={(!chatInput.trim() && !chatImage) || isChatLoading}
               leftIcon={<Send className="w-4 h-4" />}
             >
               Send

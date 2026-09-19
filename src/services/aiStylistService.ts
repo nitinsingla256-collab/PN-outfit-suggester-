@@ -172,14 +172,18 @@ export class AIStylistService {
 
   async chatConcierge(params: {
     message: string;
-    conversationHistory: { role: 'user' | 'assistant'; content: string }[];
-    wardrobePool: WardrobeItem[];
+    image?: string;
+    mimeType?: string;
+    conversationHistory: { role: 'user' | 'assistant'; content: string; image?: string; mimeType?: string }[];
+    wardrobePool?: WardrobeItem[];
     weather?: string;
     location?: string;
     time?: string;
     date?: string;
+    role?: string;
+    model?: string;
   }): Promise<string> {
-    const res = await this.safePost<{ success: boolean; reply?: string }>(
+    const res = await this.safePost<{ success: boolean; reply?: string; modelUsed?: string; roleUsed?: string }>(
       '/api/gemini/chat',
       params
     );
@@ -189,6 +193,39 @@ export class AIStylistService {
     }
 
     return "I am analyzing your wardrobe pieces. For this occasion, I recommend prioritizing clean lines, tailored proportions, and complementary neutral tones.";
+  }
+
+  async chatConciergeDetailed(params: {
+    message: string;
+    image?: string;
+    mimeType?: string;
+    conversationHistory: { role: 'user' | 'assistant'; content: string; image?: string; mimeType?: string }[];
+    wardrobePool?: WardrobeItem[];
+    weather?: string;
+    location?: string;
+    time?: string;
+    date?: string;
+    role?: string;
+    model?: string;
+  }): Promise<{ reply: string; modelUsed?: string; roleUsed?: string }> {
+    const res = await this.safePost<{ success: boolean; reply?: string; modelUsed?: string; roleUsed?: string }>(
+      '/api/gemini/chat',
+      params
+    );
+
+    if (res.ok && res.data?.reply) {
+      return {
+        reply: res.data.reply,
+        modelUsed: res.data.modelUsed,
+        roleUsed: res.data.roleUsed,
+      };
+    }
+
+    return {
+      reply: "I am analyzing your wardrobe pieces. For this occasion, I recommend prioritizing clean lines, tailored proportions, and complementary neutral tones.",
+      modelUsed: 'gemini-3.8-flash',
+      roleUsed: params.role || 'stylist',
+    };
   }
 
   async getFashionTrends(params?: {

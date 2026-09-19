@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Upload, Loader2, Sparkles, AlertCircle } from 'lucide-react';
 import { ExtractedGarment, ExtractedGarmentSchema } from '../../schemas/garmentSchema';
+import { authService } from '../../services/authService';
 
 interface GarmentAnalyzerProps {
   onAnalysisComplete: (garment: ExtractedGarment, imageBase64: string) => void;
@@ -35,23 +36,44 @@ export const GarmentAnalyzer: React.FC<GarmentAnalyzerProps> = ({
     reader.readAsDataURL(file);
   };
 
+  const handleManualEntry = () => {
+    const defaultGarment: ExtractedGarment = {
+      name: 'Custom Wardrobe Piece',
+      category: 'Outerwear',
+      subcategory: 'Jacket',
+      color: 'Black',
+      secondaryColor: 'None',
+      pattern: 'Solid',
+      material: 'Leather',
+      fit: 'Regular',
+      formality: 'Casual',
+      season: ['Spring', 'Summer', 'Fall', 'Winter'],
+      styleTags: ['wardrobe-essential'],
+    };
+    onAnalysisComplete(defaultGarment, imagePreview || '');
+  };
+
   const analyzeGarmentImage = async (base64Image: string) => {
     setIsAnalyzing(true);
     setError(null);
 
     try {
-      const token = localStorage.getItem('paurvi_auth_token') || localStorage.getItem('token');
+      const mimeMatch = base64Image.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9\-\+\.]+);base64,/i);
+      const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+
+      const token = authService.getToken();
       const response = await fetch('/api/gemini/analyze-garment', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ image: base64Image }),
+        body: JSON.stringify({ image: base64Image, mimeType }),
       });
 
       if (!response.ok) {
-        throw new Error(`Analysis failed with status ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Analysis failed with status ${response.status}`);
       }
 
       const jsonResponse = await response.json();
@@ -62,10 +84,29 @@ export const GarmentAnalyzer: React.FC<GarmentAnalyzerProps> = ({
         rawData.styleTags = rawData.tags;
       }
 
-      const parsedData = ExtractedGarmentSchema.parse(rawData);
-      onAnalysisComplete(parsedData, base64Image);
-    } catch (err) {
-      setError('Failed to analyze image. Please ensure the clothing item is clearly visible.');
+      const parseResult = ExtractedGarmentSchema.safeParse(rawData);
+      if (parseResult.success) {
+        onAnalysisComplete(parseResult.data, base64Image);
+      } else {
+        // Construct fallback using as much rawData as possible
+        const fallbackGarment: ExtractedGarment = {
+          name: rawData.name || 'Wardrobe Item',
+          category: rawData.category || 'Outerwear',
+          subcategory: rawData.subcategory || 'Jacket',
+          color: rawData.color || 'Black',
+          secondaryColor: rawData.secondaryColor || 'None',
+          pattern: 'Solid',
+          material: rawData.material || 'Leather',
+          fit: 'Regular',
+          formality: 'Casual',
+          season: Array.isArray(rawData.season) && rawData.season.length ? rawData.season : ['Fall', 'Winter'],
+          styleTags: Array.isArray(rawData.tags) ? rawData.tags : ['essential'],
+        };
+        onAnalysisComplete(fallbackGarment, base64Image);
+      }
+    } catch (err: any) {
+      console.error('Garment analyzer error:', err);
+      setError(err?.message || 'Failed to analyze image. You can retry or enter the garment details manually.');
     } finally {
       setIsAnalyzing(false);
     }
@@ -153,9 +194,29 @@ export const GarmentAnalyzer: React.FC<GarmentAnalyzerProps> = ({
       )}
 
       {error && (
-        <div className="mt-4 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 flex items-center gap-2 text-rose-700 dark:text-rose-300 text-xs font-medium">
-          <AlertCircle className="w-4 h-4 shrink-0" />
-          <span>{error}</span>
+        <div className="mt-4 p-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 space-y-3">
+          <div className="flex items-center gap-2 text-rose-700 dark:text-rose-300 text-xs font-medium">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{error}</span>
+          </div>
+          {imagePreview && !isAnalyzing && (
+            <div className="flex gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => analyzeGarmentImage(imagePreview)}
+                className="flex-1 py-2 px-3 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition-colors"
+              >
+                Retry Analysis
+              </button>
+              <button
+                type="button"
+                onClick={handleManualEntry}
+                className="flex-1 py-2 px-3 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              >
+                Enter Details Manually
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

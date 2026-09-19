@@ -8,6 +8,7 @@ import { Sidebar } from './Sidebar';
 import { Navbar } from './Navbar';
 import { MobileNav } from './MobileNav';
 import { ToastContainer } from '../ui/Toast';
+import { GeminiChatbot } from '../chat/GeminiChatbot';
 import { useApp } from '../../context/AppContext';
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
@@ -35,6 +36,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           {children}
         </main>
       </div>
+
+      {/* Persistent Gemini AI Multi-Turn Chatbot */}
+      <GeminiChatbot />
 
       {/* Mobile Navigation */}
       <MobileNav />
