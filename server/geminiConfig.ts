@@ -3,8 +3,8 @@
  * Primary model: 'gemini-3.6-flash'
  */
 
-export const PRIMARY_GEMINI_MODEL = 'gemini-3.8-flash';
-export const FALLBACK_GEMINI_MODELS = ['gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.1-flash-lite'];
+export const PRIMARY_GEMINI_MODEL = 'gemini-3.7-flash';
+export const FALLBACK_GEMINI_MODELS = ['gemini-3.7-flash', 'gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.1-flash-lite'];
 
 // Disallowed / deprecated legacy models that must be resolved to the primary model
 const DEPRECATED_MODEL_PATTERNS = [

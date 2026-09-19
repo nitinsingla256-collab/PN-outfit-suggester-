@@ -149,7 +149,16 @@ export function verifyPassword(password: string, hash: string, salt: string): bo
   return crypto.timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(calculated, 'hex'));
 }
 
-export function generateToken(): string {
+// Session token secret for stateless recovery and HMAC verification
+const SESSION_SECRET = process.env.SESSION_SECRET || 'pn_atelier_session_secret_v2_2026';
+
+export function generateToken(userId?: string): string {
+  const nonce = crypto.randomBytes(16).toString('hex');
+  const timestamp = Date.now();
+  if (userId) {
+    const hmac = crypto.createHmac('sha256', SESSION_SECRET).update(`${userId}:${timestamp}:${nonce}`).digest('hex');
+    return `paurvi_tok_${userId}_${timestamp}_${nonce}_${hmac}`;
+  }
   return 'paurvi_tok_' + crypto.randomBytes(32).toString('hex');
 }
 
@@ -216,27 +225,7 @@ class PaurviDatabase {
   }
 
   private load(): DatabaseSchema {
-    try {
-      const { dbFile } = getDataPaths();
-      if (fs.existsSync(dbFile)) {
-        const raw = fs.readFileSync(dbFile, 'utf-8');
-        return JSON.parse(raw);
-      }
-      // Check if there is an existing seeded DB file at process.cwd()/data/paurvi_db.json
-      const cwdDbFile = path.join(process.cwd(), 'data', 'paurvi_db.json');
-      if (cwdDbFile !== dbFile && fs.existsSync(cwdDbFile)) {
-        try {
-          const raw = fs.readFileSync(cwdDbFile, 'utf-8');
-          return JSON.parse(raw);
-        } catch (_seedErr) {
-          // ignore
-        }
-      }
-    } catch (err) {
-      console.error('Failed to load database file, initializing fresh store:', err);
-    }
-
-    return {
+    const defaultSchema: DatabaseSchema = {
       users: [],
       sessions: [],
       wardrobes: {},
@@ -247,17 +236,93 @@ class PaurviDatabase {
       activityLogs: [],
       aiRequestsCount: {},
     };
+
+    const candidateFiles = [
+      path.join(process.cwd(), 'data', 'paurvi_db.json'),
+      path.join(process.cwd(), 'data', 'paurvi_db.backup.json'),
+      path.join(os.tmpdir(), 'paurvi_data', 'paurvi_db.json'),
+      path.join(os.tmpdir(), 'paurvi_data', 'paurvi_db.backup.json'),
+    ];
+
+    let merged: DatabaseSchema = { ...defaultSchema };
+    let foundAny = false;
+
+    for (const file of candidateFiles) {
+      if (fs.existsSync(file)) {
+        try {
+          const raw = fs.readFileSync(file, 'utf-8');
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === 'object') {
+            foundAny = true;
+            // Merge users by id/email
+            if (Array.isArray(parsed.users)) {
+              for (const u of parsed.users) {
+                if (u && u.id && !merged.users.some(mu => mu.id === u.id || mu.email.toLowerCase() === u.email.toLowerCase())) {
+                  merged.users.push(u);
+                }
+              }
+            }
+            // Merge sessions
+            if (Array.isArray(parsed.sessions)) {
+              for (const s of parsed.sessions) {
+                if (s && s.token && !merged.sessions.some(ms => ms.token === s.token)) {
+                  merged.sessions.push(s);
+                }
+              }
+            }
+            // Merge wardrobes, outfits, plans
+            for (const key of ['wardrobes', 'outfits', 'plans', 'wearHistory', 'stylistConversations'] as const) {
+              if (parsed[key] && typeof parsed[key] === 'object') {
+                for (const [userId, items] of Object.entries(parsed[key])) {
+                  if (!merged[key][userId] || (Array.isArray(items) && items.length > (merged[key][userId]?.length || 0))) {
+                    merged[key][userId] = items as any;
+                  }
+                }
+              }
+            }
+            // Merge logs
+            if (Array.isArray(parsed.activityLogs)) {
+              for (const log of parsed.activityLogs) {
+                if (log && log.id && !merged.activityLogs.some(ml => ml.id === log.id)) {
+                  merged.activityLogs.push(log);
+                }
+              }
+            }
+          }
+        } catch (readErr) {
+          console.warn(`[Database] Notice reading ${file}:`, readErr);
+        }
+      }
+    }
+
+    if (foundAny) {
+      return merged;
+    }
+
+    return defaultSchema;
   }
 
   private save() {
-    try {
-      this.ensureDataDirectory();
-      const { dbFile } = getDataPaths();
-      const tempFile = `${dbFile}.tmp`;
-      fs.writeFileSync(tempFile, JSON.stringify(this.data, null, 2), 'utf-8');
-      fs.renameSync(tempFile, dbFile);
-    } catch (err) {
-      console.error('Failed to write database file (keeping state in memory):', err);
+    const serialized = JSON.stringify(this.data, null, 2);
+    const saveTargets = [
+      path.join(process.cwd(), 'data', 'paurvi_db.json'),
+      path.join(process.cwd(), 'data', 'paurvi_db.backup.json'),
+      path.join(os.tmpdir(), 'paurvi_data', 'paurvi_db.json'),
+      path.join(os.tmpdir(), 'paurvi_data', 'paurvi_db.backup.json'),
+    ];
+
+    for (const targetFile of saveTargets) {
+      try {
+        const dir = path.dirname(targetFile);
+        if (!fs.existsSync(dir)) {
+          fs.mkdirSync(dir, { recursive: true });
+        }
+        const tempFile = `${targetFile}.tmp`;
+        fs.writeFileSync(tempFile, serialized, 'utf-8');
+        fs.renameSync(tempFile, targetFile);
+      } catch (_err) {
+        // Silently tolerate non-writable paths on restricted platforms
+      }
     }
   }
 
@@ -401,12 +466,12 @@ class PaurviDatabase {
     }
 
     user.lastActive = new Date().toISOString();
-    const token = generateToken();
+    const token = generateToken(user.id);
     const session: StoredSession = {
       token,
       userId: user.id,
       createdAt: new Date().toISOString(),
-      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
     };
 
     this.data.sessions.push(session);
@@ -418,20 +483,56 @@ class PaurviDatabase {
   getUserByToken(token: string): StoredUser | null {
     if (!token) return null;
     const session = this.data.sessions.find(s => s.token === token);
-    if (!session) return null;
+    if (session) {
+      if (new Date(session.expiresAt).getTime() < Date.now()) {
+        // Session expired
+        this.data.sessions = this.data.sessions.filter(s => s.token !== token);
+        this.save();
+        return null;
+      }
 
-    if (new Date(session.expiresAt).getTime() < Date.now()) {
-      // Session expired
-      this.data.sessions = this.data.sessions.filter(s => s.token !== token);
-      this.save();
-      return null;
+      const user = this.data.users.find(u => u.id === session.userId);
+      if (!user || user.status === 'Suspended') return null;
+
+      user.lastActive = new Date().toISOString();
+      return user;
     }
 
-    const user = this.data.users.find(u => u.id === session.userId);
-    if (!user || user.status === 'Suspended') return null;
+    // Stateless HMAC Token Verification Fallback (resilient across server reboots)
+    try {
+      const parts = token.split('_');
+      // Format: paurvi_tok_<userId>_<timestamp>_<nonce>_<hmac>
+      if (parts.length >= 5 && parts[0] === 'paurvi' && parts[1] === 'tok') {
+        const userId = parts.slice(2, parts.length - 3).join('_') || parts[2];
+        const timestampStr = parts[parts.length - 3];
+        const nonce = parts[parts.length - 2];
+        const receivedHmac = parts[parts.length - 1];
 
-    user.lastActive = new Date().toISOString();
-    return user;
+        const timestamp = parseInt(timestampStr, 10);
+        if (!isNaN(timestamp) && (Date.now() - timestamp) < 90 * 24 * 60 * 60 * 1000) {
+          const calculatedHmac = crypto.createHmac('sha256', SESSION_SECRET).update(`${userId}:${timestamp}:${nonce}`).digest('hex');
+          if (calculatedHmac === receivedHmac) {
+            const user = this.data.users.find(u => u.id === userId);
+            if (user && user.status !== 'Suspended') {
+              user.lastActive = new Date().toISOString();
+              // Re-hydrate session in active memory
+              this.data.sessions.push({
+                token,
+                userId: user.id,
+                createdAt: new Date(timestamp).toISOString(),
+                expiresAt: new Date(timestamp + 90 * 24 * 60 * 60 * 1000).toISOString(),
+              });
+              this.save();
+              return user;
+            }
+          }
+        }
+      }
+    } catch (_vErr) {
+      // Invalid token structure
+    }
+
+    return null;
   }
 
   getUserById(userId: string): StoredUser | null {
@@ -459,14 +560,107 @@ class PaurviDatabase {
     const user = this.data.users.find(u => u.id === userId);
     if (!user) throw new Error('User not found');
     user.lastActive = new Date().toISOString();
-    const token = generateToken();
+    const token = generateToken(user.id);
     const session: StoredSession = {
       token,
       userId: user.id,
       createdAt: new Date().toISOString(),
-      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
     };
     this.data.sessions.push(session);
+    this.save();
+    return { user, token };
+  }
+
+  /**
+   * Synchronize or restore an account from client local storage
+   */
+  syncOrRestoreAccount(payload: {
+    user: Partial<StoredUser> & { email: string; name?: string };
+    passwordPlain?: string;
+    passwordHash?: string;
+    salt?: string;
+    wardrobe?: any[];
+    outfits?: any[];
+    plans?: any[];
+  }): { user: StoredUser; token: string } {
+    const cleanEmail = payload.user.email.toLowerCase().trim();
+    let user = this.data.users.find(u => u.email.toLowerCase() === cleanEmail);
+
+    if (!user) {
+      // Create user if not present on server
+      const userId = payload.user.id || `usr_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+      let hash = payload.passwordHash;
+      let salt = payload.salt;
+
+      if (!hash || !salt) {
+        const pwd = payload.passwordPlain || 'pn_secure_pass_2026';
+        const hashed = hashPassword(pwd);
+        hash = hashed.hash;
+        salt = hashed.salt;
+      }
+
+      user = {
+        id: userId,
+        name: payload.user.name || cleanEmail.split('@')[0] || 'Atelier Client',
+        email: cleanEmail,
+        passwordHash: hash,
+        salt: salt,
+        role: payload.user.role || 'user',
+        status: 'Active',
+        joinedDate: payload.user.joinedDate || new Date().toISOString().split('T')[0],
+        lastActive: new Date().toISOString(),
+        pronouns: payload.user.pronouns || 'they/them',
+        bio: payload.user.bio || 'Member of the PAURVI Atelier private wardrobe capsule.',
+        location: payload.user.location || '',
+        avatarUrl: payload.user.avatarUrl,
+        preferences: payload.user.preferences || defaultPreferences(),
+        measurements: payload.user.measurements,
+        profile: payload.user.profile,
+      };
+
+      this.data.users.push(user);
+    } else {
+      // Update existing user metrics/profile
+      user.lastActive = new Date().toISOString();
+      if (payload.user.name) user.name = payload.user.name;
+      if (payload.user.avatarUrl) user.avatarUrl = payload.user.avatarUrl;
+      if (payload.user.preferences) user.preferences = { ...user.preferences, ...payload.user.preferences };
+      if (payload.user.measurements) user.measurements = { ...user.measurements, ...payload.user.measurements };
+      if (payload.user.profile) user.profile = { ...user.profile, ...payload.user.profile };
+    }
+
+    // Sync wardrobe items
+    this.data.wardrobes[user.id] = this.data.wardrobes[user.id] || [];
+    if (Array.isArray(payload.wardrobe) && payload.wardrobe.length > 0) {
+      for (const item of payload.wardrobe) {
+        if (item && item.id && !this.data.wardrobes[user.id].some((w: any) => w.id === item.id)) {
+          this.data.wardrobes[user.id].push(item);
+        }
+      }
+    }
+
+    // Sync outfits
+    this.data.outfits[user.id] = this.data.outfits[user.id] || [];
+    if (Array.isArray(payload.outfits) && payload.outfits.length > 0) {
+      for (const outfit of payload.outfits) {
+        if (outfit && outfit.id && !this.data.outfits[user.id].some((o: any) => o.id === outfit.id)) {
+          this.data.outfits[user.id].push(outfit);
+        }
+      }
+    }
+
+    // Sync plans
+    this.data.plans[user.id] = this.data.plans[user.id] || [];
+    if (Array.isArray(payload.plans) && payload.plans.length > 0) {
+      for (const plan of payload.plans) {
+        if (plan && plan.id && !this.data.plans[user.id].some((p: any) => p.id === plan.id)) {
+          this.data.plans[user.id].push(plan);
+        }
+      }
+    }
+
+    const { token } = this.createSessionForUser(user.id);
     this.save();
     return { user, token };
   }

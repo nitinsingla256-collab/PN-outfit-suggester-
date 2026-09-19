@@ -13,6 +13,24 @@ export interface WardrobeFilterOptions {
   onlyFavorites?: boolean;
 }
 
+const getLocalKey = () => {
+  const user = authService.getCurrentUser();
+  return user ? `pn_wardrobe_${user.id}` : 'pn_wardrobe_guest';
+};
+
+const getLocalWardrobe = (): WardrobeItem[] => {
+  try {
+    const raw = localStorage.getItem(getLocalKey());
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+};
+
+const setLocalWardrobe = (items: WardrobeItem[]) => {
+  try {
+    localStorage.setItem(getLocalKey(), JSON.stringify(items));
+  } catch {}
+};
+
 class WardrobeService {
   private getHeaders() {
     const token = authService.getToken();
@@ -24,12 +42,29 @@ class WardrobeService {
   }
 
   async getAll(): Promise<WardrobeItem[]> {
-    const res = await fetch('/api/user/wardrobe', {
-      headers: this.getHeaders()
-    });
-    if (!res.ok) throw new Error('Failed to fetch wardrobe');
-    const data = await res.json();
-    return data.items || [];
+    try {
+      const res = await fetch('/api/user/wardrobe', {
+        headers: this.getHeaders()
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const serverItems: WardrobeItem[] = data.items || [];
+        const localItems = getLocalWardrobe();
+        
+        // Merge missing local items if any
+        const merged = [...serverItems];
+        for (const loc of localItems) {
+          if (!merged.some(m => m.id === loc.id)) {
+            merged.push(loc);
+          }
+        }
+        setLocalWardrobe(merged);
+        return merged;
+      }
+    } catch (_err) {
+      // offline or network error
+    }
+    return getLocalWardrobe();
   }
 
   async getById(id: string): Promise<WardrobeItem | null> {
@@ -38,71 +73,127 @@ class WardrobeService {
   }
 
   async create(itemData: Omit<WardrobeItem, 'id' | 'createdAt' | 'updatedAt' | 'timesWorn'>): Promise<WardrobeItem> {
-    const res = await fetch('/api/user/wardrobe', {
-      method: 'POST',
-      headers: this.getHeaders(),
-      body: JSON.stringify(itemData)
-    });
-    if (!res.ok) throw new Error('Failed to create item');
-    const data = await res.json();
-    return data.item;
+    let createdItem: WardrobeItem | null = null;
+    try {
+      const res = await fetch('/api/user/wardrobe', {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify(itemData)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        createdItem = data.item;
+      }
+    } catch (_err) {}
+
+    if (!createdItem) {
+      createdItem = {
+        id: `item_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        ...itemData,
+        timesWorn: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      } as WardrobeItem;
+    }
+
+    const current = getLocalWardrobe();
+    setLocalWardrobe([createdItem, ...current.filter(c => c.id !== createdItem!.id)]);
+    return createdItem;
   }
 
   async update(id: string, updates: Partial<WardrobeItem>): Promise<WardrobeItem> {
-    const res = await fetch(`/api/user/wardrobe/${id}`, {
-      method: 'PUT',
-      headers: this.getHeaders(),
-      body: JSON.stringify(updates)
-    });
-    if (!res.ok) throw new Error('Failed to update item');
-    const data = await res.json();
-    return data.item;
+    let updatedItem: WardrobeItem | null = null;
+    try {
+      const res = await fetch(`/api/user/wardrobe/${id}`, {
+        method: 'PUT',
+        headers: this.getHeaders(),
+        body: JSON.stringify(updates)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        updatedItem = data.item;
+      }
+    } catch (_err) {}
+
+    const current = getLocalWardrobe();
+    const existing = current.find(c => c.id === id);
+    if (!updatedItem && existing) {
+      updatedItem = { ...existing, ...updates, updatedAt: new Date().toISOString() };
+    }
+
+    if (updatedItem) {
+      setLocalWardrobe(current.map(c => c.id === id ? updatedItem! : c));
+      return updatedItem;
+    }
+
+    throw new Error('Failed to update item');
   }
 
   async delete(id: string): Promise<void> {
-    const res = await fetch(`/api/user/wardrobe/${id}`, {
-      method: 'DELETE',
-      headers: this.getHeaders()
-    });
-    if (!res.ok) throw new Error('Failed to delete item');
+    try {
+      await fetch(`/api/user/wardrobe/${id}`, {
+        method: 'DELETE',
+        headers: this.getHeaders()
+      });
+    } catch (_err) {}
+    const current = getLocalWardrobe();
+    setLocalWardrobe(current.filter(c => c.id !== id));
   }
 
   async deleteMany(ids: string[]): Promise<void> {
-    const res = await fetch(`/api/user/wardrobe/batch-delete`, {
-      method: 'POST',
-      headers: this.getHeaders(),
-      body: JSON.stringify({ ids })
-    });
-    if (!res.ok) throw new Error('Failed to delete items');
+    try {
+      await fetch(`/api/user/wardrobe/batch-delete`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify({ ids })
+      });
+    } catch (_err) {}
+    const current = getLocalWardrobe();
+    setLocalWardrobe(current.filter(c => !ids.includes(c.id)));
   }
 
   async clearAll(): Promise<void> {
-    const res = await fetch('/api/user/wardrobe/clear', {
-      method: 'POST',
-      headers: this.getHeaders()
-    });
-    if (!res.ok) throw new Error('Failed to clear wardrobe');
+    try {
+      await fetch('/api/user/wardrobe/clear', {
+        method: 'POST',
+        headers: this.getHeaders()
+      });
+    } catch (_err) {}
+    setLocalWardrobe([]);
   }
 
   async toggleFavorite(id: string, isFavorite: boolean): Promise<WardrobeItem> {
-    const res = await fetch(`/api/user/wardrobe/${id}`, {
-      method: 'PUT',
-      headers: this.getHeaders(),
-      body: JSON.stringify({ isFavorite })
-    });
-    if (!res.ok) throw new Error('Failed to update favorite status');
-    const data = await res.json();
-    return data.item;
+    return this.update(id, { isFavorite });
   }
 
   async logWear(id: string): Promise<WardrobeItem> {
-    const res = await fetch(`/api/user/wardrobe/${id}/wear`, {
-      method: 'POST',
-      headers: this.getHeaders()
-    });
-    if (!res.ok) throw new Error('Failed to log wear');
-    const data = await res.json();
-    return data.item;
+    try {
+      const res = await fetch(`/api/user/wardrobe/${id}/wear`, {
+        method: 'POST',
+        headers: this.getHeaders()
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.item) {
+          const current = getLocalWardrobe();
+          setLocalWardrobe(current.map(c => c.id === id ? data.item : c));
+          return data.item;
+        }
+      }
+    } catch (_err) {}
+
+    const current = getLocalWardrobe();
+    const existing = current.find(c => c.id === id);
+    if (existing) {
+      const updated = {
+        ...existing,
+        timesWorn: (existing.timesWorn || 0) + 1,
+        lastWorn: new Date().toISOString(),
+      };
+      setLocalWardrobe(current.map(c => c.id === id ? updated : c));
+      return updated;
+    }
+    throw new Error('Failed to log wear');
   }
   
   filter(items: WardrobeItem[], options: WardrobeFilterOptions): WardrobeItem[] {

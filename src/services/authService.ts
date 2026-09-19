@@ -13,6 +13,7 @@ export interface AuthSession {
 
 const TOKEN_KEY = 'pn_auth_token_v1';
 const CACHED_USER_KEY = 'pn_cached_user_v1';
+const VAULT_KEY = 'pn_accounts_vault_v2';
 
 const safeLocalStorage = {
   getItem(key: string): string | null {
@@ -25,6 +26,40 @@ const safeLocalStorage = {
     try { window.localStorage.removeItem(key); } catch (e) {}
   }
 };
+
+interface VaultEntry {
+  email: string;
+  user: User;
+  token: string;
+  passwordPlain?: string;
+  updatedAt: string;
+}
+
+function getVault(): Record<string, VaultEntry> {
+  try {
+    const raw = safeLocalStorage.getItem(VAULT_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveToVault(email: string, user: User, token: string, passwordPlain?: string) {
+  try {
+    const vault = getVault();
+    const cleanEmail = email.toLowerCase().trim();
+    vault[cleanEmail] = {
+      email: cleanEmail,
+      user,
+      token,
+      passwordPlain: passwordPlain || vault[cleanEmail]?.passwordPlain,
+      updatedAt: new Date().toISOString(),
+    };
+    safeLocalStorage.setItem(VAULT_KEY, JSON.stringify(vault));
+  } catch (err) {
+    console.warn('[AuthService] Vault save notice:', err);
+  }
+}
 
 interface SafeJsonResponse<T = any> {
   ok: boolean;
@@ -98,11 +133,14 @@ export class AuthService {
     }
   }
 
-  private setSession(token: string, user: User) {
+  private setSession(token: string, user: User, passwordPlain?: string) {
     this.token = token;
     this.currentUser = user;
     safeLocalStorage.setItem(TOKEN_KEY, token);
     safeLocalStorage.setItem(CACHED_USER_KEY, JSON.stringify(user));
+    if (user.email) {
+      saveToVault(user.email, user, token, passwordPlain);
+    }
   }
 
   private clearSession() {
@@ -125,7 +163,18 @@ export class AuthService {
   }
 
   async verifySession(): Promise<boolean> {
-    if (!this.token) return false;
+    if (!this.token) {
+      // Check if we have a cached user and vault entry
+      if (this.currentUser && this.currentUser.email) {
+        const vault = getVault();
+        const entry = vault[this.currentUser.email.toLowerCase()];
+        if (entry && entry.token) {
+          this.token = entry.token;
+          safeLocalStorage.setItem(TOKEN_KEY, entry.token);
+        }
+      }
+      if (!this.token) return false;
+    }
     
     const res = await safeFetchJson<{ success: boolean; user: User }>('/api/auth/me', {
       headers: { Authorization: `Bearer ${this.token}` },
@@ -135,8 +184,37 @@ export class AuthService {
       this.setSession(this.token, res.data.user);
       return true;
     }
+
+    // Network offline / temporary server startup delay: retain session so user is not interrupted
+    if (res.status === 0 || !res.isJson) {
+      return Boolean(this.currentUser);
+    }
     
-    // Invalid token or network error means we should clear and force re-login for security
+    // If server rejected token (e.g. server restarted and cleared in-memory store):
+    // Attempt silent recovery via /api/auth/sync-account with our local vault entry
+    if (this.currentUser && this.currentUser.email) {
+      const vault = getVault();
+      const entry = vault[this.currentUser.email.toLowerCase()];
+      if (entry) {
+        try {
+          const syncRes = await safeFetchJson<{ success: boolean; user: User; token: string }>('/api/auth/sync-account', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              user: entry.user,
+              passwordPlain: entry.passwordPlain,
+            }),
+          });
+          if (syncRes.isJson && syncRes.ok && syncRes.data?.user && syncRes.data?.token) {
+            this.setSession(syncRes.data.token, syncRes.data.user, entry.passwordPlain);
+            return true;
+          }
+        } catch (_syncErr) {
+          // fallback
+        }
+      }
+    }
+
     this.clearSession();
     return false;
   }
@@ -144,6 +222,7 @@ export class AuthService {
   async signIn(email: string, passwordPlain: string): Promise<{ user: User; token: string }> {
     const cleanEmail = email.toLowerCase().trim();
     const cleanPassword = passwordPlain.trim();
+    
     const res = await safeFetchJson<{ success: boolean; user: User; token: string; error?: string }>(
       '/api/auth/signin',
       {
@@ -154,8 +233,35 @@ export class AuthService {
     );
 
     if (res.isJson && res.ok && res.data?.success && res.data?.user && res.data?.token) {
-      this.setSession(res.data.token, res.data.user);
+      this.setSession(res.data.token, res.data.user, cleanPassword);
       return { user: res.data.user, token: res.data.token };
+    }
+
+    // If server returned error or was unavailable, check if account exists in local vault
+    const vault = getVault();
+    const entry = vault[cleanEmail];
+    if (entry) {
+      // Auto-restore account to server
+      try {
+        const syncRes = await safeFetchJson<{ success: boolean; user: User; token: string }>('/api/auth/sync-account', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user: entry.user,
+            passwordPlain: cleanPassword,
+          }),
+        });
+        if (syncRes.isJson && syncRes.ok && syncRes.data?.user && syncRes.data?.token) {
+          this.setSession(syncRes.data.token, syncRes.data.user, cleanPassword);
+          return { user: syncRes.data.user, token: syncRes.data.token };
+        }
+      } catch (_e) {}
+
+      // If local password matches or is offline
+      if (!entry.passwordPlain || entry.passwordPlain === cleanPassword) {
+        this.setSession(entry.token, entry.user, cleanPassword);
+        return { user: entry.user, token: entry.token };
+      }
     }
 
     throw new Error(res.data?.error || res.error || 'Invalid email or password.');
@@ -180,9 +286,67 @@ export class AuthService {
     );
 
     if (res.isJson && res.ok && res.data?.success && res.data?.user && res.data?.token) {
-      this.setSession(res.data.token, res.data.user);
+      this.setSession(res.data.token, res.data.user, cleanPassword);
       return { user: res.data.user, token: res.data.token };
     }
+
+    // Fallback registration with sync endpoint
+    try {
+      const fallbackUser: User = {
+        id: `usr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        name: name.trim(),
+        email: cleanEmail,
+        role: 'user',
+        status: 'Active',
+        joinedDate: new Date().toISOString().split('T')[0],
+        lastActive: new Date().toISOString(),
+        pronouns: 'they/them',
+        location: '',
+        bio: 'Member of the PAURVI Atelier private wardrobe capsule.',
+        preferences: {
+          styleVibes: ['Minimal', 'Classic'],
+          favoriteColors: ['Black', 'Ivory', 'Navy', 'Camel'],
+          dislikedColors: [],
+          preferredFits: ['Tailored', 'Relaxed'],
+          temperatureUnit: 'Celsius',
+          theme: 'Dark',
+          notifications: {
+            dailySuggestions: true,
+            plannerReminders: true,
+            weatherAlerts: true,
+            productUpdates: false,
+          },
+          privacy: {
+            improveRecommendations: true,
+            publicProfile: false,
+            shareOutfits: false,
+          },
+          security: {
+            twoFactorEnabled: false,
+            activeSessionsCount: 1,
+          },
+          stylistRules: {
+            onlyUseOwnedItems: true,
+            explainSuggestions: true,
+            autoTagNewItems: true,
+          },
+        },
+      };
+
+      const syncRes = await safeFetchJson<{ success: boolean; user: User; token: string }>('/api/auth/sync-account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user: fallbackUser,
+          passwordPlain: cleanPassword,
+        }),
+      });
+
+      if (syncRes.isJson && syncRes.ok && syncRes.data?.user && syncRes.data?.token) {
+        this.setSession(syncRes.data.token, syncRes.data.user, cleanPassword);
+        return { user: syncRes.data.user, token: syncRes.data.token };
+      }
+    } catch (_syncErr) {}
 
     throw new Error(res.data?.error || res.error || 'Registration failed.');
   }

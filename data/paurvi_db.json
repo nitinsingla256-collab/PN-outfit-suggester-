@@ -885,6 +885,15 @@
   },
   "activityLogs": [
     {
+      "id": "log_1789834979982_19eeb0",
+      "userId": "guest_client",
+      "userName": "User",
+      "userEmail": "",
+      "action": "AI Stylist request: Wardrobe Auto-Organize (\"4 Aesthetic Clusters (Deterministic)\")",
+      "category": "AI_STYLIST",
+      "timestamp": "2026-09-19T16:22:59.982Z"
+    },
+    {
       "id": "log_1789821028265_7a2a3a",
       "userId": "usr_supervisor_paurvi",
       "userName": "Nitin Singla (Admin)",
@@ -1442,6 +1451,7 @@
     "usr_1788351778534_ba9f4efb": 0,
     "usr_1788434136737_ffcac08e": 0,
     "usr_1789570879038_0baf1c99": 0,
-    "usr_1789573180335_de7baa60": 0
+    "usr_1789573180335_de7baa60": 0,
+    "guest_client": 1
   }
 }

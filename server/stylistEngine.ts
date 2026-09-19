@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from '@google/genai';
-import { getGeminiModel } from './geminiConfig';
+import { getGeminiModel, FALLBACK_GEMINI_MODELS } from './geminiConfig';
 import {
   WardrobeItem,
   PersonalStyleProfile,
@@ -528,16 +528,36 @@ Return valid JSON:
   "warnings": []
 }`;
 
-  try {
-    const response = await ai.models.generateContent({
-      model: getGeminiModel(),
-      contents: [prompt],
-      config: {
-        responseMimeType: 'application/json',
-      },
-    });
+  const candidateModels = Array.from(new Set([getGeminiModel(), ...FALLBACK_GEMINI_MODELS]));
+  let parsed: any = null;
 
-    const parsed = JSON.parse(response.text || '{}');
+  for (const modelName of candidateModels) {
+    try {
+      const response = await ai.models.generateContent({
+        model: modelName,
+        contents: [prompt],
+        config: {
+          responseMimeType: 'application/json',
+        },
+      });
+
+      const raw = response.text || '';
+      if (raw) {
+        parsed = JSON.parse(raw);
+        if (parsed && (parsed.selectedCandidateId || parsed.outfitName)) {
+          break;
+        }
+      }
+    } catch (err) {
+      console.warn(`[stylistEngine] Model '${modelName}' reasoning fallback:`, err);
+    }
+  }
+
+  if (!parsed) {
+    return defaultDeterministicResult;
+  }
+
+  try {
     const validCandidateIds = new Set(topCandidates.map(c => c.candidateId));
 
     // Validate that selectedCandidateId is one of our verified candidates
@@ -566,7 +586,7 @@ Return valid JSON:
       lookEditorial: parsed.lookEditorial && typeof parsed.lookEditorial === 'object' ? parsed.lookEditorial : undefined,
     };
   } catch (err) {
-    console.warn('Gemini reasoning fallback to deterministic stylist logic:', err);
+    console.warn('Gemini response normalization fallback to deterministic stylist logic:', err);
     return defaultDeterministicResult;
   }
 }
