@@ -5,10 +5,44 @@
 
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 import crypto from 'crypto';
 
-const DATA_DIR = path.join(process.cwd(), 'data');
-const DB_FILE = path.join(DATA_DIR, 'paurvi_db.json');
+let cachedDataDir: string | null = null;
+let cachedDbFile: string | null = null;
+
+function getDataPaths(): { dataDir: string; dbFile: string } {
+  if (cachedDataDir && cachedDbFile) {
+    return { dataDir: cachedDataDir, dbFile: cachedDbFile };
+  }
+
+  // 1. Try local process.cwd()/data if writable
+  const preferredDir = path.join(process.cwd(), 'data');
+  try {
+    if (!fs.existsSync(preferredDir)) {
+      fs.mkdirSync(preferredDir, { recursive: true });
+    }
+    const testFile = path.join(preferredDir, `.write_test_${process.pid}`);
+    fs.writeFileSync(testFile, 'ok');
+    fs.unlinkSync(testFile);
+    cachedDataDir = preferredDir;
+    cachedDbFile = path.join(preferredDir, 'paurvi_db.json');
+    return { dataDir: cachedDataDir, dbFile: cachedDbFile };
+  } catch (_err) {
+    // 2. Fallback to /tmp which is always writable in serverless environments (EdgeOne/Lambda/SCF)
+    const tmpDir = path.join(os.tmpdir(), 'paurvi_data');
+    try {
+      if (!fs.existsSync(tmpDir)) {
+        fs.mkdirSync(tmpDir, { recursive: true });
+      }
+    } catch (tmpErr) {
+      console.warn('Warning: Could not create temp directory:', tmpErr);
+    }
+    cachedDataDir = tmpDir;
+    cachedDbFile = path.join(tmpDir, 'paurvi_db.json');
+    return { dataDir: cachedDataDir, dbFile: cachedDbFile };
+  }
+}
 
 export interface StoredUser {
   id: string;
@@ -171,16 +205,32 @@ class PaurviDatabase {
   }
 
   private ensureDataDirectory() {
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true });
+    try {
+      const { dataDir } = getDataPaths();
+      if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir, { recursive: true });
+      }
+    } catch (err) {
+      console.warn('ensureDataDirectory notice:', err);
     }
   }
 
   private load(): DatabaseSchema {
     try {
-      if (fs.existsSync(DB_FILE)) {
-        const raw = fs.readFileSync(DB_FILE, 'utf-8');
+      const { dbFile } = getDataPaths();
+      if (fs.existsSync(dbFile)) {
+        const raw = fs.readFileSync(dbFile, 'utf-8');
         return JSON.parse(raw);
+      }
+      // Check if there is an existing seeded DB file at process.cwd()/data/paurvi_db.json
+      const cwdDbFile = path.join(process.cwd(), 'data', 'paurvi_db.json');
+      if (cwdDbFile !== dbFile && fs.existsSync(cwdDbFile)) {
+        try {
+          const raw = fs.readFileSync(cwdDbFile, 'utf-8');
+          return JSON.parse(raw);
+        } catch (_seedErr) {
+          // ignore
+        }
       }
     } catch (err) {
       console.error('Failed to load database file, initializing fresh store:', err);
@@ -202,11 +252,12 @@ class PaurviDatabase {
   private save() {
     try {
       this.ensureDataDirectory();
-      const tempFile = `${DB_FILE}.tmp`;
+      const { dbFile } = getDataPaths();
+      const tempFile = `${dbFile}.tmp`;
       fs.writeFileSync(tempFile, JSON.stringify(this.data, null, 2), 'utf-8');
-      fs.renameSync(tempFile, DB_FILE);
+      fs.renameSync(tempFile, dbFile);
     } catch (err) {
-      console.error('Failed to write database file:', err);
+      console.error('Failed to write database file (keeping state in memory):', err);
     }
   }
 
@@ -1178,8 +1229,9 @@ class PaurviDatabase {
   getSystemHealth() {
     let totalStorageBytes = 0;
     try {
-      if (fs.existsSync(DB_FILE)) {
-        const stats = fs.statSync(DB_FILE);
+      const { dbFile } = getDataPaths();
+      if (fs.existsSync(dbFile)) {
+        const stats = fs.statSync(dbFile);
         totalStorageBytes = stats.size;
       }
     } catch {

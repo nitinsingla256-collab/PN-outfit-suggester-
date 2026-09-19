@@ -232,6 +232,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ initialMode }) => {
               src="https://images.unsplash.com/photo-1558769132-cb1fac08c044?auto=format&fit=crop&q=80&w=1000"
               alt="Curated Wardrobe"
               className="w-full h-full object-cover"
+              referrerPolicy="no-referrer"
             />
           </div>
 
