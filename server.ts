@@ -13,7 +13,6 @@ import { getGeminiModel, FALLBACK_GEMINI_MODELS } from "./server/geminiConfig";
 import express, { Request, Response, NextFunction } from 'express';
 import path from 'path';
 import fs from 'fs';
-import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI, Type } from '@google/genai';
 import dotenv from 'dotenv';
 import { db, StoredUser } from './server/db';
@@ -2055,6 +2054,7 @@ async function startServer() {
 
   // Vite middleware in dev or static files in production
   if (process.env.NODE_ENV !== 'production') {
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
