@@ -352,6 +352,59 @@
           "autoTagNewItems": true
         }
       }
+    },
+    {
+      "id": "usr_1789573180335_de7baa60",
+      "name": "Test",
+      "email": "test2@test.com",
+      "passwordHash": "1e0f3a51f6438cdf13be37fbd478a9fb1e2af079a53fe84ab03e3f2364ede20d1d284210c05c76a44541dd3d2e0cf3310428cee654e319680458f55911b137cc",
+      "salt": "75dc0b5ea337ba210f710978bad5bfc9",
+      "role": "user",
+      "status": "Active",
+      "joinedDate": "2026-09-16",
+      "lastActive": "2026-09-16T15:39:40.343Z",
+      "pronouns": "they/them",
+      "bio": "Member of the PAURVI Atelier private wardrobe capsule.",
+      "location": "",
+      "preferences": {
+        "styleVibes": [
+          "Minimal",
+          "Classic"
+        ],
+        "favoriteColors": [
+          "Black",
+          "Ivory",
+          "Navy",
+          "Camel"
+        ],
+        "dislikedColors": [],
+        "preferredFits": [
+          "Tailored",
+          "Relaxed"
+        ],
+        "temperatureUnit": "Celsius",
+        "theme": "Dark",
+        "notifications": {
+          "dailySuggestions": true,
+          "plannerReminders": true,
+          "weatherAlerts": true,
+          "productUpdates": false
+        },
+        "privacy": {
+          "improveRecommendations": true,
+          "publicProfile": false,
+          "shareOutfits": false
+        },
+        "security": {
+          "twoFactorEnabled": false,
+          "activeSessionsCount": 1
+        },
+        "stylistRules": {
+          "onlyUseOwnedItems": true,
+          "explainSuggestions": true,
+          "autoTagNewItems": true
+        }
+      }
     }
   ],
   "sessions": [
@@ -498,6 +551,12 @@
       "userId": "usr_1789570879038_0baf1c99",
       "createdAt": "2026-09-16T15:01:19.046Z",
       "expiresAt": "2026-10-16T15:01:19.046Z"
+    },
+    {
+      "token": "paurvi_tok_241f8ba3e71c0ac77d242582e378f48c8b9249f370a207548ce60e8799d514a4",
+      "userId": "usr_1789573180335_de7baa60",
+      "createdAt": "2026-09-16T15:39:40.343Z",
+      "expiresAt": "2026-10-16T15:39:40.343Z"
     }
   ],
   "wardrobes": {
@@ -507,7 +566,8 @@
     "usr_1788347656399_e86996db": [],
     "usr_1788351778534_ba9f4efb": [],
     "usr_1788434136737_ffcac08e": [],
-    "usr_1789570879038_0baf1c99": []
+    "usr_1789570879038_0baf1c99": [],
+    "usr_1789573180335_de7baa60": []
   },
   "outfits": {
     "usr_supervisor_paurvi": [],
@@ -516,7 +576,8 @@
     "usr_1788347656399_e86996db": [],
     "usr_1788351778534_ba9f4efb": [],
     "usr_1788434136737_ffcac08e": [],
-    "usr_1789570879038_0baf1c99": []
+    "usr_1789570879038_0baf1c99": [],
+    "usr_1789573180335_de7baa60": []
   },
   "plans": {
     "usr_supervisor_paurvi": [],
@@ -525,7 +586,8 @@
     "usr_1788347656399_e86996db": [],
     "usr_1788351778534_ba9f4efb": [],
     "usr_1788434136737_ffcac08e": [],
-    "usr_1789570879038_0baf1c99": []
+    "usr_1789570879038_0baf1c99": [],
+    "usr_1789573180335_de7baa60": []
   },
   "wearHistory": {
     "usr_supervisor_paurvi": [],
@@ -534,7 +596,8 @@
     "usr_1788347656399_e86996db": [],
     "usr_1788351778534_ba9f4efb": [],
     "usr_1788434136737_ffcac08e": [],
-    "usr_1789570879038_0baf1c99": []
+    "usr_1789570879038_0baf1c99": [],
+    "usr_1789573180335_de7baa60": []
   },
   "stylistConversations": {
     "usr_supervisor_paurvi": [],
@@ -543,9 +606,28 @@
     "usr_1788347656399_e86996db": [],
     "usr_1788351778534_ba9f4efb": [],
     "usr_1788434136737_ffcac08e": [],
-    "usr_1789570879038_0baf1c99": []
+    "usr_1789570879038_0baf1c99": [],
+    "usr_1789573180335_de7baa60": []
   },
   "activityLogs": [
+    {
+      "id": "log_1789573180343_97e8e9",
+      "userId": "usr_1789573180335_de7baa60",
+      "userName": "Test",
+      "userEmail": "test2@test.com",
+      "action": "User signed into PAURVI",
+      "category": "AUTH",
+      "timestamp": "2026-09-16T15:39:40.343Z"
+    },
+    {
+      "id": "log_1789573180335_db4aad",
+      "userId": "usr_1789573180335_de7baa60",
+      "userName": "Test",
+      "userEmail": "test2@test.com",
+      "action": "User registered new PAURVI account",
+      "category": "AUTH",
+      "timestamp": "2026-09-16T15:39:40.335Z"
+    },
     {
       "id": "log_1789570879046_7932b9",
       "userId": "usr_1789570879038_0baf1c99",
@@ -1040,6 +1122,7 @@
     "usr_1788347656399_e86996db": 0,
     "usr_1788351778534_ba9f4efb": 0,
     "usr_1788434136737_ffcac08e": 0,
-    "usr_1789570879038_0baf1c99": 0
+    "usr_1789570879038_0baf1c99": 0,
+    "usr_1789573180335_de7baa60": 0
   }
 }

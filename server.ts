@@ -1870,6 +1870,6 @@ async function startServer() {
   });
 }
 
-if (!process.env.VERCEL && !process.env.EDGEONE) {
+if (process.env.RUN_LOCAL_SERVER === 'true') {
   startServer();
 }
